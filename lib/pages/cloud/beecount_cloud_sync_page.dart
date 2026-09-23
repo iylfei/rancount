@@ -100,12 +100,19 @@ class _BeeCountCloudSyncPageState extends ConsumerState<BeeCountCloudSyncPage> {
       if (report.hasDiff && mounted) {
         setState(() => _autoSyncing = true);
         try {
-          await engine.sync(ledgerId: ledgerId.toString());
+          final result = await engine.sync(ledgerId: ledgerId.toString());
           if (!mounted) return;
-          final after = await engine.checkSyncHealth(ledgerId: ledgerId);
-          if (mounted) setState(() => _latestReport = after);
+          ref.read(lastSyncErrorProvider.notifier).state = result.error;
+          if (result.hasError) {
+            showToast(context,
+                '${AppLocalizations.of(context).commonFailed}: ${result.error}');
+          } else {
+            final after = await engine.checkSyncHealth(ledgerId: ledgerId);
+            if (mounted) setState(() => _latestReport = after);
+          }
         } catch (e) {
           if (mounted) {
+            ref.read(lastSyncErrorProvider.notifier).state = e.toString();
             showToast(
                 context, '${AppLocalizations.of(context).commonFailed}: $e');
           }
@@ -119,6 +126,10 @@ class _BeeCountCloudSyncPageState extends ConsumerState<BeeCountCloudSyncPage> {
       if (mounted) {
         ref.read(syncStatusRefreshProvider.notifier).state++;
       }
+    } catch (e) {
+      if (mounted) {
+        ref.read(lastSyncErrorProvider.notifier).state = e.toString();
+      }
     } finally {
       if (mounted) setState(() => _checking = false);
     }
@@ -129,6 +140,7 @@ class _BeeCountCloudSyncPageState extends ConsumerState<BeeCountCloudSyncPage> {
     final authAsync = ref.watch(authServiceProvider);
     final ledgerId = ref.watch(currentLedgerIdProvider);
     final l10n = AppLocalizations.of(context);
+    final syncError = ref.watch(lastSyncErrorProvider);
 
     if (ledgerId == 0) {
       return Scaffold(
@@ -183,6 +195,18 @@ class _BeeCountCloudSyncPageState extends ConsumerState<BeeCountCloudSyncPage> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
+                        if (syncError != null) ...[
+                          SectionCard(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Text(
+                                '同步失败：$syncError',
+                                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                         // Section 1: 账号
                         SectionCard(
                           child: _buildAccountSection(context, user),

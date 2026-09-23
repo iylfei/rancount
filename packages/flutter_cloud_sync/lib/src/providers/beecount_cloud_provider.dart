@@ -14,6 +14,7 @@ import '../core/cloud_provider.dart';
 import '../core/exceptions.dart';
 import '../core/storage_service.dart';
 import '../utils/path_helper.dart';
+import 'sync_push_ack.dart';
 
 // ============================================================================
 // 2FA(TOTP)— 见 BeeCount 主仓 .docs/2fa-design.md
@@ -2148,13 +2149,14 @@ class BeeCountCloudStorageService implements CloudStorageService {
         'changes': changes,
       },
     );
-    final bodyPreview = response.body.length > 200
-        ? response.body.substring(0, 200)
-        : response.body;
-    debugPrint('[BCC] pushEntityChanges response: ${response.statusCode} $bodyPreview');
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw CloudStorageException(
           'Push entity changes failed (${response.statusCode}): ${_extractErrorMessage(response)}');
+    }
+    try {
+      verifySyncPushAcknowledgement(_decodeJsonObject(response.body), changes.length);
+    } on FormatException {
+      throw CloudStorageException('云端同步回执无法读取，本机修改仍保留。请稍后重试。');
     }
   }
 

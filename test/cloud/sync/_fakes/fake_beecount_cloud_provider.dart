@@ -138,6 +138,8 @@ class FakeBeeCountCloudProvider extends BeeCountCloudProvider {
   /// 历次 push 操作记录(用于断言"几次 push" / "推了哪些 change")
   final List<List<Map<String, dynamic>>> pushedBatches = [];
 
+  Exception? pushError;
+
   /// 历次 pullChanges 调用记录(用于断言"几次 pull" / "since 序列")
   final List<({int? since, int limit, bool persistCursor})> pullCalls = [];
 
@@ -201,6 +203,7 @@ class FakeBeeCountCloudProvider extends BeeCountCloudProvider {
     required List<Map<String, dynamic>> changes,
   }) async {
     pushedBatches.add(changes);
+    if (pushError != null) throw pushError!;
   }
 
   @override

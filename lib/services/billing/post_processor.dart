@@ -106,7 +106,8 @@ class PostProcessor {
       final refresh = ref.read(syncStatusRefreshProvider.notifier);
       Future(() async {
         try {
-          await sync.sync(ledgerId: ledgerId.toString());
+          final result = await sync.sync(ledgerId: ledgerId.toString());
+          if (result.hasError) throw StateError(result.error!);
           refresh.state++;
           logger.info('PostProcessor', 'BeeCount Cloud 自动同步完成', 'ledgerId=$ledgerId');
         } catch (e) {
@@ -146,7 +147,8 @@ class PostProcessor {
       final refresh = c.read(syncStatusRefreshProvider.notifier);
       Future(() async {
         try {
-          await sync.sync(ledgerId: ledgerId.toString());
+          final result = await sync.sync(ledgerId: ledgerId.toString());
+          if (result.hasError) throw StateError(result.error!);
           refresh.state++;
           logger.info('PostProcessor', 'BeeCount Cloud 自动同步完成', 'ledgerId=$ledgerId');
         } catch (e) {
@@ -186,7 +188,8 @@ class PostProcessor {
       final refresh = ref.read(syncStatusRefreshProvider.notifier);
       Future(() async {
         try {
-          await sync.sync(ledgerId: ledgerId.toString());
+          final result = await sync.sync(ledgerId: ledgerId.toString());
+          if (result.hasError) throw StateError(result.error!);
           refresh.state++;
           logger.info('PostProcessor', 'BeeCount Cloud 自动同步完成', 'ledgerId=$ledgerId');
         } catch (e) {

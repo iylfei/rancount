@@ -380,6 +380,25 @@ void main() {
   });
 
   group('push 路径', () {
+    test('云端拒绝 push 时本机变更仍待上传', () async {
+      final ledgerId = await db.into(db.ledgers).insert(
+          LedgersCompanion.insert(name: 'L', syncId: const Value('L1')));
+      await repo.insertTransactionsBatch([
+        TransactionsCompanion.insert(
+          ledgerId: ledgerId,
+          type: 'expense',
+          amount: 25,
+          syncId: const Value('tx-rejected'),
+        ),
+      ]);
+      provider.pushError = Exception('push rejected');
+
+      await expectLater(engine.push(ledgerId.toString()), throwsException);
+      final remaining = await changeTracker.getUnpushedChangesForLedger(ledgerId);
+      expect(remaining, hasLength(1));
+      expect(remaining.single.entitySyncId, 'tx-rejected');
+    });
+
     test('本地有 unpushed change → engine.push 推到 server', () async {
       // 本地通过 repo 写一条 tx(会触发 changeTracker.recordLedgerChange)
       final ledgerId = await db.into(db.ledgers).insert(

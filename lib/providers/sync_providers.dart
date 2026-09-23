@@ -452,8 +452,10 @@ final syncServiceProvider = Provider<SyncService>((ref) {
           final result = await engine.sync(ledgerId: currentLedgerId.toString());
           if (result.hasError) {
             logger.error('SyncProvider', '自动同步返回错误: ${result.error}');
+            ref.read(lastSyncErrorProvider.notifier).state = result.error;
           } else {
             logger.info('SyncProvider', '自动同步成功: pushed=${result.pushed}, pulled=${result.pulled}');
+            ref.read(lastSyncErrorProvider.notifier).state = null;
           }
           ref.read(syncStatusRefreshProvider.notifier).state++;
           ref.read(ledgerListRefreshProvider.notifier).state++;
@@ -466,7 +468,6 @@ final syncServiceProvider = Provider<SyncService>((ref) {
           ref.read(cachedTransactionsProvider.notifier).state = null;
           // 不再无条件 bump avatarRefreshProvider — engine.onAvatarChanged
           // 只在真下载头像时触发,避免每次 bootstrap 闪一次头像。
-          ref.read(lastSyncErrorProvider.notifier).state = null;
         } catch (e, st) {
           logger.error('SyncProvider', '自动同步异常', e, st);
           ref.read(lastSyncErrorProvider.notifier).state = e.toString();
