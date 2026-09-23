@@ -1,6 +1,6 @@
 # RanCount 自托管同步
 
-RanCount 沿用 BeeCount Cloud 的账户与账本协议。新增的商家、商品描述、支付渠道和退款关联字段需要配套的 [RanCount Cloud fork](https://github.com/iylfei/rancount-cloud)；旧服务端不会完整保存这些字段。
+RanCount 沿用 BeeCount Cloud 的账户与账本协议。新增的商家、商品描述、支付渠道和退款关联字段需要配套的 [RanCount Cloud fork 开发分支](https://github.com/iylfei/rancount-cloud/tree/rancount-dev)；旧服务端不会完整保存这些字段。
 
 1. 按 Cloud 仓库的 `docs/DEPLOYMENT.md` 部署其 `rancount-dev` 分支。首次部署可在服务目录运行 `docker compose up -d --build`；升级已有服务前，按其备份说明备份数据库与 `/data` 持久卷，再运行 `alembic upgrade head`。迁移 `0020_rancount_tx_details` 只添加可空交易字段及索引。
 2. 用 HTTPS 反向代理公开 API，并检查 `GET /healthz`、`GET /ready`。保存 `/data` 卷及 JWT 密钥；不要在公开配置中写入 API 密钥。
