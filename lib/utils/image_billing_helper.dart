@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import '../pages/automation/image_draft_page.dart';
 
 import '../ai/core/prompt_builder.dart';
 import '../ai/providers/ai_provider_config.dart';
@@ -21,14 +24,38 @@ class ImageBillingHelper {
     BuildContext context,
     WidgetRef ref,
   ) =>
-      _processImageBilling(context, ref, ImageSource.gallery);
+      Platform.isAndroid
+          ? _pickDraft(context, ImageSource.gallery)
+          : _processImageBilling(context, ref, ImageSource.gallery);
 
   /// 打开相机拍照并自动记账
   static Future<void> openCameraForBilling(
     BuildContext context,
     WidgetRef ref,
   ) =>
-      _processImageBilling(context, ref, ImageSource.camera);
+      Platform.isAndroid
+          ? _pickDraft(context, ImageSource.camera)
+          : _processImageBilling(context, ref, ImageSource.camera);
+
+  static Future<void> _pickDraft(
+      BuildContext context, ImageSource source) async {
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 85,
+    );
+    if (picked == null || !context.mounted) return;
+    final cache = await getTemporaryDirectory();
+    final ownsImage = p.isWithin(cache.path, p.normalize(picked.path));
+    if (!context.mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ImageDraftPage(
+        image: File(picked.path),
+        ownsImage: ownsImage,
+      ),
+    ));
+  }
 
   static Future<void> _processImageBilling(
     BuildContext context,

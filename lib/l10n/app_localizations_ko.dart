@@ -24,7 +24,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get aboutChangelog => 'Changelog';
 
   @override
-  String get appTitle => '꿀벌 가계부';
+  String get appTitle => 'rancount';
 
   @override
   String get tabHome => '홈';

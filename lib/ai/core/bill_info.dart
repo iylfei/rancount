@@ -28,6 +28,11 @@ class BillInfo {
   /// 备注(注意 ≤15 字,prompt 已要求 AI 自行精简长标题)
   final String? note;
 
+  /// 图片草稿中的商家、商品描述与支付渠道，和资金账户分别保留。
+  final String? merchant;
+  final String? itemDescription;
+  final String? paymentChannel;
+
   /// 分类名称(从用户分类列表中匹配,或 AI 自行命名)
   final String? category;
 
@@ -60,6 +65,9 @@ class BillInfo {
     this.amount,
     this.time,
     this.note,
+    this.merchant,
+    this.itemDescription,
+    this.paymentChannel,
     this.category,
     this.type,
     this.account,
@@ -83,6 +91,9 @@ class BillInfo {
     double? amount,
     DateTime? time,
     String? note,
+    String? merchant,
+    String? itemDescription,
+    String? paymentChannel,
     String? category,
     BillType? type,
     String? account,
@@ -97,6 +108,9 @@ class BillInfo {
       amount: amount ?? this.amount,
       time: time ?? this.time,
       note: note ?? this.note,
+      merchant: merchant ?? this.merchant,
+      itemDescription: itemDescription ?? this.itemDescription,
+      paymentChannel: paymentChannel ?? this.paymentChannel,
       category: category ?? this.category,
       type: type ?? this.type,
       account: account ?? this.account,
@@ -126,6 +140,11 @@ class BillInfo {
       amount: _parseDouble(json['amount']),
       time: _parseTime(json['time']),
       note: json['note'] as String? ?? json['merchant'] as String?,
+      merchant: json['merchant'] as String?,
+      itemDescription: json['item_description'] as String? ??
+          json['itemDescription'] as String?,
+      paymentChannel: json['payment_channel'] as String? ??
+          json['paymentChannel'] as String?,
       category: json['category'] as String?,
       type: _parseBillType(json['type']),
       account: json['account'] as String?,
@@ -144,6 +163,9 @@ class BillInfo {
         'amount': amount,
         'time': time?.toIso8601String(),
         'note': note,
+        'merchant': merchant,
+        'item_description': itemDescription,
+        'payment_channel': paymentChannel,
         'category': category,
         'type': type?.name,
         'account': account,

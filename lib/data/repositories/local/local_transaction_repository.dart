@@ -423,6 +423,10 @@ class LocalTransactionRepository implements TransactionRepository {
     required DateTime happenedAt,
     String? note,
     String? syncId,
+    String? merchant,
+    String? itemDescription,
+    String? paymentChannel,
+    String? refundOfSyncId,
     String? categorySyncIdOverride,
     String? accountSyncIdOverride,
     String? toAccountSyncIdOverride,
@@ -443,6 +447,10 @@ class LocalTransactionRepository implements TransactionRepository {
           happenedAt: d.Value(happenedAt),
           note: d.Value(note),
           syncId: d.Value(syncId ?? _uuid.v4()),
+          merchant: d.Value(merchant),
+          itemDescription: d.Value(itemDescription),
+          paymentChannel: d.Value(paymentChannel),
+          refundOfSyncId: d.Value(refundOfSyncId),
           categorySyncIdOverride: d.Value(categorySyncIdOverride),
           accountSyncIdOverride: d.Value(accountSyncIdOverride),
           toAccountSyncIdOverride: d.Value(toAccountSyncIdOverride),
@@ -569,6 +577,42 @@ class LocalTransactionRepository implements TransactionRepository {
     String? currencyCode,
     double? nativeAmount,
   }) async {
+    final existing = await getTransactionById(id);
+    if (existing?.refundOfSyncId != null &&
+        (type != 'expense' || amount >= 0)) {
+      throw StateError('A linked refund must remain a negative expense');
+    }
+    if (existing?.refundOfSyncId != null) {
+      final original = await (db.select(db.transactions)
+            ..where((t) => t.syncId.equals(existing!.refundOfSyncId!)))
+          .getSingleOrNull();
+      if (original == null || categoryId != original.categoryId) {
+        throw StateError('The refund must keep its original category');
+      }
+      final siblings = await (db.select(db.transactions)
+            ..where((t) =>
+                t.refundOfSyncId.equals(existing!.refundOfSyncId!) &
+                t.id.isNotValue(id)))
+          .get();
+      final siblingTotal =
+          siblings.fold<double>(0, (sum, tx) => sum - tx.amount);
+      if (-amount + siblingTotal > original.amount + 0.005) {
+        throw StateError('Refund exceeds the original expense');
+      }
+    }
+    if (existing?.syncId != null) {
+      final refunds = await (db.select(db.transactions)
+            ..where((t) => t.refundOfSyncId.equals(existing!.syncId!)))
+          .get();
+      if (refunds.isNotEmpty) {
+        final refunded = refunds.fold<double>(0, (sum, tx) => sum - tx.amount);
+        if (type != 'expense' ||
+            amount + 0.005 < refunded ||
+            categoryId != existing!.categoryId) {
+          throw StateError('Delete linked refunds before changing the expense');
+        }
+      }
+    }
     // 处理 accountId 参数
     final d.Value<int?> accountIdValue;
     if (accountId == null) {
@@ -631,6 +675,16 @@ class LocalTransactionRepository implements TransactionRepository {
 
   @override
   Future<void> deleteTransaction(int id) async {
+    final original = await getTransactionById(id);
+    if (original?.syncId != null) {
+      final linked = await (db.select(db.transactions)
+            ..where((t) => t.refundOfSyncId.equals(original!.syncId!))
+            ..limit(1))
+          .getSingleOrNull();
+      if (linked != null) {
+        throw StateError('Delete linked refunds before deleting the expense');
+      }
+    }
     // 先删除关联的标签
     await (db.delete(db.transactionTags)
           ..where((tt) => tt.transactionId.equals(id)))

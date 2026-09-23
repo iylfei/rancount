@@ -153,6 +153,12 @@ class Transactions extends Table {
   /// 单币种/未折算 == amount(隐含汇率 1.0)。账本维度统计读本列(?? amount),
   /// 账户维度(余额等)仍读 amount。
   RealColumn get nativeAmount => real().nullable()();
+
+  /// v34: 图片草稿的结构化信息与退款关联；图片本身不进入交易表。
+  TextColumn get merchant => text().nullable()();
+  TextColumn get itemDescription => text().nullable()();
+  TextColumn get paymentChannel => text().nullable()();
+  TextColumn get refundOfSyncId => text().nullable()();
 }
 
 class RecurringTransactions extends Table {
@@ -511,7 +517,7 @@ class BeeDatabase extends _$BeeDatabase {
   BeeDatabase.forTesting(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 33; // v33: Agent 本地记忆、摘要与审计表
+  int get schemaVersion => 34; // v34: 图片交易字段与退款关联
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1258,6 +1264,20 @@ class BeeDatabase extends _$BeeDatabase {
             await _createAgentMemoryFtsTable();
             logger.info('DBMigration', 'v33 迁移完成');
           }
+          if (from < 34) {
+            for (final column in [
+              'merchant',
+              'item_description',
+              'payment_channel',
+              'refund_of_sync_id',
+            ]) {
+              await _addColumnIfMissing('transactions', column,
+                  'ALTER TABLE transactions ADD COLUMN $column TEXT;');
+            }
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_transactions_refund_of '
+                'ON transactions (refund_of_sync_id);');
+          }
         },
         onCreate: (m) async {
           await m.createAll();
@@ -1265,6 +1285,9 @@ class BeeDatabase extends _$BeeDatabase {
               'CREATE UNIQUE INDEX IF NOT EXISTS idx_rate_override_pair '
               'ON exchange_rate_overrides (base_currency, quote_currency);');
           await _createAgentMemoryFtsTable();
+          await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_transactions_refund_of '
+              'ON transactions (refund_of_sync_id);');
         },
       );
 

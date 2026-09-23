@@ -16,9 +16,11 @@ class TransactionListItem extends ConsumerWidget {
   final db.Category? category; // 可选的分类对象，用于显示自定义图标
   final String title;
   final double amount;
+
   /// v30 多币种:交易原币种(null/等于账本本位币 → 维持无符号纯数字;
   /// 外币 → 金额前显示其币种符号,如 JP¥/US$,一眼区分原币)。
   final String? currencyCode;
+
   /// v30 多币种:折账本本位币快照。外币交易在金额右下角显示 ≈ 折算小字(反馈13)。
   final double? nativeAmount;
   final bool isExpense; // 决定正负号
@@ -26,6 +28,7 @@ class TransactionListItem extends ConsumerWidget {
   final bool isAdjustment; // 是否为估值调整
   final bool? hide; // 改为可选,null时使用全局状态
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback? onCategoryTap; // 点击分类图标/名称的回调
   final String? categoryName; // 分类名称，用于显示
   final String? ledgerName; // 账本名称（仅"全部账本"模式下显示标签）
@@ -51,36 +54,36 @@ class TransactionListItem extends ConsumerWidget {
   final bool excludeFromBudget; // 不计入预算:第二行显示「不计预算」标签
 
   const TransactionListItem({
-      super.key,
-      required this.icon,
-      this.category,
-      required this.title,
-      required this.amount,
-      this.currencyCode,
-      this.nativeAmount,
-      required this.isExpense,
-      this.isTransfer = false,
-      this.isAdjustment = false,
-      this.hide,
-      this.onTap,
-      this.onCategoryTap,
-      this.categoryName,
-      this.ledgerName,
-      this.onDelete,
-      this.accountName,
-      this.happenedAt,
-      this.isSelectionMode = false,
-      this.isSelected = false,
-      this.onSelectionChanged,
-      this.showFullDate = false,
-      this.tags,
-      this.onTagTap,
-      this.attachmentCount = 0,
-      this.onAttachmentTap,
-      this.excludeFromStats = false,
-      this.excludeFromBudget = false,
+    super.key,
+    required this.icon,
+    this.category,
+    required this.title,
+    required this.amount,
+    this.currencyCode,
+    this.nativeAmount,
+    required this.isExpense,
+    this.isTransfer = false,
+    this.isAdjustment = false,
+    this.hide,
+    this.onTap,
+    this.onLongPress,
+    this.onCategoryTap,
+    this.categoryName,
+    this.ledgerName,
+    this.onDelete,
+    this.accountName,
+    this.happenedAt,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onSelectionChanged,
+    this.showFullDate = false,
+    this.tags,
+    this.onTagTap,
+    this.attachmentCount = 0,
+    this.onAttachmentTap,
+    this.excludeFromStats = false,
+    this.excludeFromBudget = false,
   });
-
 
   /// 检查是否有次要信息需要显示（时间、账户或附件）
   bool _hasSecondaryInfo(WidgetRef ref) {
@@ -90,7 +93,9 @@ class TransactionListItem extends ConsumerWidget {
     // 显示时间（设置开启 + 有数据 + 不是00:00:00）
     final showTime = ref.watch(showTransactionTimeProvider) &&
         happenedAt != null &&
-        (happenedAt!.hour != 0 || happenedAt!.minute != 0 || happenedAt!.second != 0);
+        (happenedAt!.hour != 0 ||
+            happenedAt!.minute != 0 ||
+            happenedAt!.second != 0);
 
     return showTime ||
         accountName != null ||
@@ -133,7 +138,9 @@ class TransactionListItem extends ConsumerWidget {
           '${happenedAt!.hour.toString().padLeft(2, '0')}:${happenedAt!.minute.toString().padLeft(2, '0')}',
         );
       } else if (ref.watch(showTransactionTimeProvider) &&
-          (happenedAt!.hour != 0 || happenedAt!.minute != 0 || happenedAt!.second != 0)) {
+          (happenedAt!.hour != 0 ||
+              happenedAt!.minute != 0 ||
+              happenedAt!.second != 0)) {
         // 完整时间模式（HH:mm:ss）
         parts.add(
           '${happenedAt!.hour.toString().padLeft(2, '0')}:${happenedAt!.minute.toString().padLeft(2, '0')}:${happenedAt!.second.toString().padLeft(2, '0')}',
@@ -147,9 +154,9 @@ class TransactionListItem extends ConsumerWidget {
     }
 
     final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: BeeTokens.textTertiary(context),
-      fontSize: 11,
-    );
+          color: BeeTokens.textTertiary(context),
+          fontSize: 11,
+        );
 
     // 构建附件图标部件（可点击）
     Widget buildAttachmentWidget() {
@@ -184,7 +191,8 @@ class TransactionListItem extends ConsumerWidget {
       if (excludeFromStats)
         _flagChip(context, AppLocalizations.of(context).txFlagExcludedTag),
       if (excludeFromBudget)
-        _flagChip(context, AppLocalizations.of(context).txFlagBudgetExcludedTag),
+        _flagChip(
+            context, AppLocalizations.of(context).txFlagBudgetExcludedTag),
     ];
 
     // 如果只有附件 / 标签，没有时间·账户文字
@@ -235,6 +243,7 @@ class TransactionListItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     Widget child = InkWell(
       onTap: isSelectionMode ? onSelectionChanged : onTap,
+      onLongPress: isSelectionMode ? null : onLongPress,
       child: Padding(
         padding: const EdgeInsets.symmetric(
             horizontal: 12, vertical: BeeDimens.listRowVertical),
@@ -295,9 +304,13 @@ class TransactionListItem extends ConsumerWidget {
                                   if (composed.parenNote != null)
                                     TextSpan(
                                       text: '  (${composed.parenNote})',
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: BeeTokens.textSecondary(context),
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: BeeTokens.textSecondary(
+                                                context),
+                                          ),
                                     ),
                                 ],
                               ),
@@ -310,9 +323,12 @@ class TransactionListItem extends ConsumerWidget {
                         if (ledgerName != null && ledgerName!.isNotEmpty) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: ref.watch(primaryColorProvider).withValues(alpha: 0.1),
+                              color: ref
+                                  .watch(primaryColorProvider)
+                                  .withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -347,7 +363,9 @@ class TransactionListItem extends ConsumerWidget {
                 AmountText(
                     value: isAdjustment
                         ? amount // adjustment 直接显示原始值（含正负）
-                        : isExpense ? -amount : amount,
+                        : isExpense
+                            ? -amount
+                            : amount,
                     hide: hide,
                     signed: !isTransfer, // 转账不显示正负号
                     // v30:外币交易显示其币种符号(原币语义);本位币维持纯数字
@@ -361,7 +379,7 @@ class TransactionListItem extends ConsumerWidget {
                               : BeeTokens.expenseColor(context, ref))
                           : isTransfer
                               ? BeeTokens.textPrimary(context)
-                              : isExpense
+                              : isExpense && amount >= 0
                                   ? BeeTokens.expenseColor(context, ref)
                                   : BeeTokens.incomeColor(context, ref),
                     )),
@@ -390,8 +408,7 @@ class TransactionListItem extends ConsumerWidget {
                             spacing: 4,
                             onTagTap: onTagTap,
                           ),
-                        if (hasTags && showConverted)
-                          const SizedBox(width: 6),
+                        if (hasTags && showConverted) const SizedBox(width: 6),
                         if (showConverted)
                           Text(
                             '≈${nativeAmount!.toStringAsFixed(2)}',
@@ -429,10 +446,11 @@ class TransactionListItem extends ConsumerWidget {
         confirmDismiss: (direction) async {
           // 显示确认对话框
           return await AppDialog.confirm<bool>(
-            context,
-            title: '确认删除',
-            message: '确定要删除这笔交易吗？此操作无法撤销。',
-          ) ?? false;
+                context,
+                title: '确认删除',
+                message: '确定要删除这笔交易吗？此操作无法撤销。',
+              ) ??
+              false;
         },
         onDismissed: (direction) {
           onDelete!();

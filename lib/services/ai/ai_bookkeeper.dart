@@ -51,7 +51,8 @@ class AiBookkeeper {
       repository: _repo,
       ledgerId: ledgerId,
     );
-    final bills = await _engine.extractFromText(text, context, billGuard: billGuard);
+    final bills =
+        await _engine.extractFromText(text, context, billGuard: billGuard);
     return _persistAll(
       bills: bills,
       ledgerId: ledgerId,
@@ -79,7 +80,8 @@ class AiBookkeeper {
       repository: _repo,
       ledgerId: ledgerId,
     );
-    final bills = await _engine.extractFromImage(image, context, billGuard: billGuard);
+    final bills =
+        await _engine.extractFromImage(image, context, billGuard: billGuard);
     return _persistAll(
       bills: bills,
       ledgerId: ledgerId,
@@ -113,6 +115,24 @@ class AiBookkeeper {
 
   /// 仅语音转文字(快捷指令首步,不走提取)
   Future<String?> speechToText(File audio) => _engine.speechToText(audio);
+
+  /// Confirmed image drafts use a stable sync ID so a retry cannot insert twice.
+  Future<int?> saveConfirmedImageBill({
+    required BillInfo bill,
+    required int ledgerId,
+    required String syncId,
+    List<String> billingTypes = const [],
+    List<String> customTagNames = const [],
+    AppLocalizations? l10n,
+  }) =>
+      _persister.createFromBill(
+        bill: bill.copyWith(ledgerId: ledgerId),
+        ledgerId: ledgerId,
+        syncId: syncId,
+        billingTypes: billingTypes,
+        customTagNames: customTagNames,
+        l10n: l10n,
+      );
 
   // ============================================================
   // 内部:落库 + 聚合结果
@@ -168,8 +188,8 @@ class AiBookkeeper {
         try {
           enriched = await _enrichWithActualNames(bill, txId);
         } catch (e, st) {
-          logger.error(_tag, 'enrichWithActualNames 异常,用 AI 原始 BillInfo',
-              e, st);
+          logger.error(
+              _tag, 'enrichWithActualNames 异常,用 AI 原始 BillInfo', e, st);
           enriched = bill;
         }
         saved.add(enriched);
@@ -195,14 +215,14 @@ class AiBookkeeper {
 
   /// 找出本批里「外币且未折算」的币种(A5)。判定条件与 L11 补折算横幅一致:
   /// `currencyCode != 账本本位币 && nativeAmount == amount`。
-  Future<List<String>> _collectUnconverted(List<int> txIds, int ledgerId) async {
+  Future<List<String>> _collectUnconverted(
+      List<int> txIds, int ledgerId) async {
     if (txIds.isEmpty) return const [];
     try {
       final ledger = await _repo.getLedgerById(ledgerId);
-      final base = ((ledger?.currency.isNotEmpty ?? false)
-              ? ledger!.currency
-              : 'CNY')
-          .toUpperCase();
+      final base =
+          ((ledger?.currency.isNotEmpty ?? false) ? ledger!.currency : 'CNY')
+              .toUpperCase();
       final codes = <String>{};
       for (final id in txIds) {
         final tx = await _repo.getTransactionById(id);

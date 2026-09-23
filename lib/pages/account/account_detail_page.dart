@@ -12,6 +12,7 @@ import '../../utils/transaction_edit_utils.dart';
 import '../../utils/currencies.dart';
 import '../../widgets/category_icon.dart';
 import '../../utils/account_type_utils.dart';
+import '../../services/billing/post_processor.dart';
 import '../../widgets/charts/account_category_pie_chart.dart';
 import '../transaction/transaction_editor_page.dart';
 import 'account_edit_page.dart';
@@ -49,6 +50,7 @@ class AccountTransactionsPaginationNotifier
     extends StateNotifier<AccountTransactionsPaginationState> {
   final Ref ref;
   final int accountId;
+
   /// 资金流向过滤:'expense'=支出+转出,'income'=收入+转入,null=全部
   final String? flow;
   static const _pageSize = 50;
@@ -62,8 +64,8 @@ class AccountTransactionsPaginationNotifier
     state = state.copyWith(isLoading: true);
     try {
       final repo = ref.read(repositoryProvider);
-      final transactions = await repo.getAccountTransactions(
-          accountId, limit: _pageSize, offset: 0, flow: flow);
+      final transactions = await repo.getAccountTransactions(accountId,
+          limit: _pageSize, offset: 0, flow: flow);
       state = AccountTransactionsPaginationState(
         transactions: transactions,
         isLoading: false,
@@ -99,8 +101,8 @@ class AccountTransactionsPaginationNotifier
     state = const AccountTransactionsPaginationState(isLoading: true);
     try {
       final repo = ref.read(repositoryProvider);
-      final transactions = await repo.getAccountTransactions(
-          accountId, limit: _pageSize, offset: 0, flow: flow);
+      final transactions = await repo.getAccountTransactions(accountId,
+          limit: _pageSize, offset: 0, flow: flow);
       state = AccountTransactionsPaginationState(
         transactions: transactions,
         isLoading: false,
@@ -120,9 +122,9 @@ final accountTransactionsPaginatedProvider = StateNotifierProvider.family
 );
 
 /// 分类统计 Provider
-final accountCategoryStatsProvider = FutureProvider.family
-    .autoDispose<List<({int? id, String name, String? icon, double total})>,
-        ({int accountId, String type})>((ref, params) async {
+final accountCategoryStatsProvider = FutureProvider.family.autoDispose<
+    List<({int? id, String name, String? icon, double total})>,
+    ({int accountId, String type})>((ref, params) async {
   final repo = ref.watch(repositoryProvider);
   return repo.getAccountCategoryStats(params.accountId, type: params.type);
 });
@@ -146,6 +148,7 @@ class AccountDetailPage extends ConsumerStatefulWidget {
 
 class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
   final ScrollController _scrollController = ScrollController();
+
   /// 详情页图表 tab: 0=支出分布, 1=收入分布
   int _detailChartTab = 0;
 
@@ -174,10 +177,60 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
         _scrollController.position.maxScrollExtent - 200) {
       ref
           .read(accountTransactionsPaginatedProvider(
-                  (accountId: widget.account.id, flow: _listFlow))
-              .notifier)
+              (accountId: widget.account.id, flow: _listFlow)).notifier)
           .loadMore();
     }
+  }
+
+  Future<void> _calibrateBalance() async {
+    final repo = ref.read(repositoryProvider);
+    final current = await repo.getAccountBalance(widget.account.id);
+    if (!mounted) return;
+    final input = TextEditingController(text: current.toStringAsFixed(2));
+    final target = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('余额校准'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(
+              '当前账面余额：${current.toStringAsFixed(2)} ${widget.account.currency}'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: input,
+            keyboardType: const TextInputType.numberWithOptions(
+                decimal: true, signed: true),
+            decoration: const InputDecoration(labelText: '实际余额（信用卡欠款填负数）'),
+          ),
+        ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('取消')),
+          FilledButton(
+              onPressed: () => Navigator.pop(
+                  dialogContext, double.tryParse(input.text.trim())),
+              child: const Text('确认')),
+        ],
+      ),
+    );
+    input.dispose();
+    if (target == null ||
+        !target.isFinite ||
+        (target - current).abs() < 0.005) {
+      return;
+    }
+    await repo.createAdjustmentTransaction(
+      ledgerId: widget.account.ledgerId,
+      accountId: widget.account.id,
+      amount: target - current,
+      happenedAt: DateTime.now(),
+      note: '余额校准',
+    );
+    if (!mounted) return;
+    ref.invalidate(accountStatsProvider(widget.account.id));
+    ref.invalidate(accountTransactionsPaginatedProvider(
+        (accountId: widget.account.id, flow: _listFlow)));
+    await PostProcessor.run(ref, ledgerId: widget.account.ledgerId);
   }
 
   @override
@@ -213,6 +266,13 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
             showBack: true,
             compact: true,
             actions: [
+              if (!isValuation)
+                IconButton(
+                  tooltip: '余额校准',
+                  icon: Icon(Icons.tune,
+                      color: BeeTokens.iconPrimary(context), size: 20),
+                  onPressed: _calibrateBalance,
+                ),
               IconButton(
                 icon: Icon(
                   Icons.edit_outlined,
@@ -220,7 +280,8 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                   size: 20,
                 ),
                 onPressed: () async {
-                  final currentLedger = ref.read(currentLedgerProvider).asData?.value;
+                  final currentLedger =
+                      ref.read(currentLedgerProvider).asData?.value;
                   if (currentLedger == null) return;
                   final result = await Navigator.push(
                     context,
@@ -248,26 +309,39 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
               children: [
                 if (isValuation) ...[
                   // 估值账户：显示估值卡片
-                  _buildValuationCard(context, ref, account, statsAsync, currencyCode, primaryColor, l10n),
+                  _buildValuationCard(context, ref, account, statsAsync,
+                      currencyCode, primaryColor, l10n),
                 ] else ...[
                   // 信用卡不显示"收入/支出"卡(概念错位),概览卡=欠款/额度/还款即主卡;
                   // 其它可交易账户仍显示 余额/收入/支出
                   if (account.type != 'credit_card') ...[
-                    _buildStatsCard(context, ref, account, statsAsync, currencyCode, l10n),
+                    _buildStatsCard(
+                        context, ref, account, statsAsync, currencyCode, l10n),
                     SizedBox(height: 4.0.scaled(context, ref)),
                   ],
                   // 账户概览卡片（合并 metadata + 类型统计）
                   _buildOverviewCard(
-                    context, ref, account, statsAsync,
-                    currencyCode, primaryColor, typeColor, l10n,
+                    context,
+                    ref,
+                    account,
+                    statsAsync,
+                    currencyCode,
+                    primaryColor,
+                    typeColor,
+                    l10n,
                   ),
 
                   SizedBox(height: 8.0.scaled(context, ref)),
 
                   // 图表区域（支出分布/收入分布 切换;信用卡仅消费分布）
                   _buildDetailChartSection(
-                    context, ref, l10n, primaryColor,
-                    expenseStatsAsync, incomeStatsAsync, typeColor,
+                    context,
+                    ref,
+                    l10n,
+                    primaryColor,
+                    expenseStatsAsync,
+                    incomeStatsAsync,
+                    typeColor,
                     isCreditCard: account.type == 'credit_card',
                   ),
 
@@ -361,8 +435,10 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
     AppLocalizations l10n,
   ) {
     final isLiability = isLiabilityType(account.type);
-    final valueLabel = isLiability ? l10n.valuationCurrentDebt : l10n.valuationCurrentValue;
-    final updateLabel = isLiability ? l10n.valuationUpdateDebt : l10n.valuationUpdateValue;
+    final valueLabel =
+        isLiability ? l10n.valuationCurrentDebt : l10n.valuationCurrentValue;
+    final updateLabel =
+        isLiability ? l10n.valuationUpdateDebt : l10n.valuationUpdateValue;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 12.0.scaled(context, ref)),
@@ -403,7 +479,8 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                 ),
                 loading: () => SizedBox(
                   height: 36.0.scaled(context, ref),
-                  child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
                 error: (_, __) => const Text('-'),
               ),
@@ -439,17 +516,25 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => _showUpdateValuationDialog(
-                    context, ref, account, isLiability, currencyCode, l10n,
+                    context,
+                    ref,
+                    account,
+                    isLiability,
+                    currencyCode,
+                    l10n,
                   ),
-                  icon: Icon(Icons.edit_outlined, size: 16, color: Colors.white),
+                  icon:
+                      Icon(Icons.edit_outlined, size: 16, color: Colors.white),
                   label: Text(updateLabel),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    padding: EdgeInsets.symmetric(vertical: 12.0.scaled(context, ref)),
+                    padding: EdgeInsets.symmetric(
+                        vertical: 12.0.scaled(context, ref)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0.scaled(context, ref)),
+                      borderRadius:
+                          BorderRadius.circular(8.0.scaled(context, ref)),
                     ),
                   ),
                 ),
@@ -479,14 +564,18 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
       builder: (ctx) {
         final primaryColor = ref.watch(primaryColorProvider);
         return AlertDialog(
-          title: Text(isLiability ? l10n.valuationUpdateDebt : l10n.valuationUpdateValue),
+          title: Text(isLiability
+              ? l10n.valuationUpdateDebt
+              : l10n.valuationUpdateValue),
           content: TextField(
             controller: controller,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             autofocus: true,
             decoration: InputDecoration(
               prefixText: '${getCurrencySymbol(currencyCode)} ',
-              hintText: isLiability ? l10n.valuationDebtHint : l10n.valuationAccountHint,
+              hintText: isLiability
+                  ? l10n.valuationDebtHint
+                  : l10n.valuationAccountHint,
             ),
           ),
           actions: [
@@ -562,7 +651,14 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
               if (hasTypeStats)
                 statsAsync.when(
                   data: (stats) => _buildTypeStatsInline(
-                    context, ref, account, stats, currencyCode, primaryColor, typeColor, l10n,
+                    context,
+                    ref,
+                    account,
+                    stats,
+                    currencyCode,
+                    primaryColor,
+                    typeColor,
+                    l10n,
                   ),
                   loading: () => const Center(
                     child: Padding(
@@ -635,7 +731,8 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
           : 0.0;
 
       // 计算距还款日天数
-      final hasBillingInfo = account.billingDay != null && account.paymentDueDay != null;
+      final hasBillingInfo =
+          account.billingDay != null && account.paymentDueDay != null;
       int? daysUntilPayment;
       if (account.paymentDueDay != null) {
         final now = DateTime.now();
@@ -658,7 +755,8 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
             children: [
               Text(
                 l10n.creditCardOwed,
-                style: TextStyle(fontSize: 13, color: BeeTokens.textSecondary(context)),
+                style: TextStyle(
+                    fontSize: 13, color: BeeTokens.textSecondary(context)),
               ),
               const Spacer(),
               AmountText(
@@ -680,9 +778,16 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
             SizedBox(height: 12.0.scaled(context, ref)),
             Row(
               children: [
-                Expanded(child: _OverviewStatCell(label: l10n.creditLimit, value: creditLimit)),
-                Expanded(child: _OverviewStatCell(label: l10n.creditUsed, value: usedAmount)),
-                Expanded(child: _OverviewStatCell(label: l10n.creditAvailable, value: creditLimit - usedAmount)),
+                Expanded(
+                    child: _OverviewStatCell(
+                        label: l10n.creditLimit, value: creditLimit)),
+                Expanded(
+                    child: _OverviewStatCell(
+                        label: l10n.creditUsed, value: usedAmount)),
+                Expanded(
+                    child: _OverviewStatCell(
+                        label: l10n.creditAvailable,
+                        value: creditLimit - usedAmount)),
               ],
             ),
             SizedBox(height: 8.0.scaled(context, ref)),
@@ -692,9 +797,11 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                 value: usageRate,
                 backgroundColor: BeeTokens.divider(context),
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  usageRate < 0.5 ? BeeTokens.success(context)
-                      : usageRate < 0.8 ? BeeTokens.warning(context)
-                      : BeeTokens.error(context),
+                  usageRate < 0.5
+                      ? BeeTokens.success(context)
+                      : usageRate < 0.8
+                          ? BeeTokens.warning(context)
+                          : BeeTokens.error(context),
                 ),
                 minHeight: 4,
               ),
@@ -727,18 +834,21 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                       children: [
                         if (hasBillingInfo)
                           Text(
-                            l10n.creditCardBillingInfo(account.billingDay!, account.paymentDueDay!),
+                            l10n.creditCardBillingInfo(
+                                account.billingDay!, account.paymentDueDay!),
                             style: TextStyle(
                               fontSize: 12,
                               color: BeeTokens.textSecondary(context),
                             ),
                           ),
                         if (daysUntilPayment != null) ...[
-                          if (hasBillingInfo) SizedBox(height: 2.0.scaled(context, ref)),
+                          if (hasBillingInfo)
+                            SizedBox(height: 2.0.scaled(context, ref)),
                           Text(
                             daysUntilPayment == 0
                                 ? l10n.creditCardPaymentDueToday
-                                : l10n.creditCardDaysUntilPayment(daysUntilPayment),
+                                : l10n.creditCardDaysUntilPayment(
+                                    daysUntilPayment),
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
@@ -762,7 +872,8 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _quickTransfer(
-                context, account,
+                context,
+                account,
                 toAccountId: account.id,
               ),
               icon: Icon(Icons.payment, size: 16, color: primaryColor),
@@ -787,8 +898,10 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
     WidgetRef ref,
     AppLocalizations l10n,
     Color primaryColor,
-    AsyncValue<List<({int? id, String name, String? icon, double total})>> expenseStatsAsync,
-    AsyncValue<List<({int? id, String name, String? icon, double total})>> incomeStatsAsync,
+    AsyncValue<List<({int? id, String name, String? icon, double total})>>
+        expenseStatsAsync,
+    AsyncValue<List<({int? id, String name, String? icon, double total})>>
+        incomeStatsAsync,
     Color typeColor, {
     required bool isCreditCard,
   }) {
@@ -830,7 +943,9 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                       return SizedBox(
                         height: 180,
                         child: Center(
-                          child: Text('-', style: TextStyle(color: BeeTokens.textTertiary(context))),
+                          child: Text('-',
+                              style: TextStyle(
+                                  color: BeeTokens.textTertiary(context))),
                         ),
                       );
                     }
@@ -844,7 +959,8 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                   },
                   loading: () => const SizedBox(
                     height: 180,
-                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
                   error: (_, __) => const SizedBox(height: 180),
                 )
@@ -855,7 +971,9 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                       return SizedBox(
                         height: 180,
                         child: Center(
-                          child: Text('-', style: TextStyle(color: BeeTokens.textTertiary(context))),
+                          child: Text('-',
+                              style: TextStyle(
+                                  color: BeeTokens.textTertiary(context))),
                         ),
                       );
                     }
@@ -869,7 +987,8 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                   },
                   loading: () => const SizedBox(
                     height: 180,
-                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
                   error: (_, __) => const SizedBox(height: 180),
                 ),
@@ -975,8 +1094,7 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                   transaction: tx,
                   currencyCode: currencyCode,
                   primaryColor: primaryColor,
-                  ledgers:
-                      ref.watch(ledgersStreamProvider).asData?.value ?? [],
+                  ledgers: ref.watch(ledgersStreamProvider).asData?.value ?? [],
                   categories: categories,
                   currentAccountId: widget.account.id,
                   onTap: () => _editTransaction(context, ref, tx),
@@ -992,8 +1110,7 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                 child: SizedBox(
                   width: 24,
                   height: 24,
-                  child:
-                      CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
             )
@@ -1032,8 +1149,7 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
     ref.invalidate(accountStatsProvider(widget.account.id));
     ref
         .read(accountTransactionsPaginatedProvider(
-                (accountId: widget.account.id, flow: _listFlow))
-            .notifier)
+            (accountId: widget.account.id, flow: _listFlow)).notifier)
         .refresh();
     ref.invalidate(accountCategoryStatsProvider(
         (accountId: widget.account.id, type: 'expense')));
@@ -1059,7 +1175,6 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
       ),
     );
   }
-
 }
 
 // ============================================
@@ -1288,7 +1403,8 @@ class _TransactionTile extends ConsumerWidget {
       displayTitle = category != null
           ? category.name
           : (transaction.type == 'income' ? l10n.homeIncome : l10n.homeExpense);
-      if (transaction.note?.isNotEmpty == true && transaction.note != displayTitle) {
+      if (transaction.note?.isNotEmpty == true &&
+          transaction.note != displayTitle) {
         noteSuffix = transaction.note;
       }
     }
@@ -1363,8 +1479,8 @@ class _TransactionTile extends ConsumerWidget {
                           ),
                           decoration: BoxDecoration(
                             color: primaryColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(
-                                4.0.scaled(context, ref)),
+                            borderRadius:
+                                BorderRadius.circular(4.0.scaled(context, ref)),
                           ),
                           child: Text(
                             ledgerName,
@@ -1380,8 +1496,7 @@ class _TransactionTile extends ConsumerWidget {
                   ),
                   if (displaySubtitle != null)
                     Padding(
-                      padding:
-                          EdgeInsets.only(top: 2.0.scaled(context, ref)),
+                      padding: EdgeInsets.only(top: 2.0.scaled(context, ref)),
                       child: Text(
                         displaySubtitle,
                         style: TextStyle(
@@ -1391,8 +1506,7 @@ class _TransactionTile extends ConsumerWidget {
                       ),
                     ),
                   Padding(
-                    padding:
-                        EdgeInsets.only(top: 2.0.scaled(context, ref)),
+                    padding: EdgeInsets.only(top: 2.0.scaled(context, ref)),
                     child: Text(
                       _formatDate(transaction.happenedAt),
                       style: TextStyle(

@@ -38,6 +38,11 @@ class EntitySerializer {
       'amount': tx.amount,
       'happenedAt': tx.happenedAt.toUtc().toIso8601String(),
       'note': tx.note,
+      // Empty strings explicitly clear a field during server merge.
+      'merchant': tx.merchant ?? '',
+      'itemDescription': tx.itemDescription ?? '',
+      'paymentChannel': tx.paymentChannel ?? '',
+      'refundOfSyncId': tx.refundOfSyncId ?? '',
       // 账单标记(D2 两个独立 bool)。camelCase 键与 server 端
       // _LEDGER_MERGE_SPECS / projection upsert 对齐 —— 改键名会让标记跨设备静默丢失。
       'excludeFromStats': tx.excludeFromStats,

@@ -22,8 +22,15 @@ class JsonResponseParser {
 
   /// 解析 AI 响应文本为 `List<BillInfo>`。返回空 list 表示无有效账单。
   List<BillInfo> parse(String response) {
-    logger.debug(_tag, '原始响应: $response');
+    logger.debug(_tag, '收到模型响应，长度: ${response.length}');
+    return _parse(response, forDraft: false);
+  }
 
+  /// 图片草稿保留缺失字段供用户补全，不把模型原文写入日志。
+  List<BillInfo> parseDraft(String response) =>
+      _parse(response, forDraft: true);
+
+  List<BillInfo> _parse(String response, {required bool forDraft}) {
     // 数组路径优先 —— 新默认 prompt 期望此格式
     final arrayBlock = _extractBalancedBlock(response, '[', ']');
     if (arrayBlock != null) {
@@ -34,21 +41,20 @@ class JsonResponseParser {
           for (var i = 0; i < decoded.length; i++) {
             final item = decoded[i];
             if (item is! Map<String, dynamic>) {
-              logger.warning(_tag, '数组第 ${i + 1} 项不是对象,跳过: $item');
+              logger.warning(_tag, '数组第 ${i + 1} 项不是对象,跳过');
               continue;
             }
             try {
               final raw = BillInfo.fromJson(item);
-              _warnIfCurrencyDropped(item, raw);
-              final sanitized = _sanitize(raw);
+              if (!forDraft) _warnIfCurrencyDropped(item, raw);
+              final sanitized = forDraft ? raw : _sanitize(raw);
               if (sanitized == null) {
-                logger
-                    .warning(_tag, '数组第 ${i + 1} 项金额无效,跳过: ${raw.toJson()}');
+                logger.warning(_tag, '数组第 ${i + 1} 项金额无效,跳过');
                 continue;
               }
               bills.add(sanitized);
             } catch (e) {
-              logger.warning(_tag, '数组第 ${i + 1} 项解析失败,跳过: $e');
+              logger.warning(_tag, '数组第 ${i + 1} 项解析失败,跳过');
             }
           }
           if (bills.isNotEmpty) {
@@ -58,30 +64,31 @@ class JsonResponseParser {
           logger.warning(_tag, '数组中没有有效账单项');
           // 不直接 return,fallback 到单对象路径(防 AI 把单笔写成 `[]` 又附 `{...}`)
         }
-      } catch (e) {
-        logger.warning(_tag, '数组 JSON 解析失败,尝试单对象 fallback: $e');
+      } catch (_) {
+        logger.warning(_tag, '数组 JSON 解析失败,尝试单对象 fallback');
       }
     }
 
     // Fallback: 单对象(旧格式 / 用户自定义老 prompt)
     final objectBlock = _extractBalancedBlock(response, '{', '}');
     if (objectBlock == null) {
-      logger.warning(_tag, '响应中没有找到 JSON: $response');
+      logger.warning(_tag, '响应中没有找到 JSON');
       return const [];
     }
     try {
-      final json = jsonDecode(_cleanupJson(objectBlock)) as Map<String, dynamic>;
+      final json =
+          jsonDecode(_cleanupJson(objectBlock)) as Map<String, dynamic>;
       final raw = BillInfo.fromJson(json);
-      _warnIfCurrencyDropped(json, raw);
-      final sanitized = _sanitize(raw);
+      if (!forDraft) _warnIfCurrencyDropped(json, raw);
+      final sanitized = forDraft ? raw : _sanitize(raw);
       if (sanitized == null) {
-        logger.warning(_tag, '单对象金额无效: ${raw.toJson()}');
+        logger.warning(_tag, '单对象金额无效');
         return const [];
       }
-      logger.info(_tag, '账单提取成功(单对象): $sanitized');
+      logger.info(_tag, '账单提取成功(单对象)');
       return [sanitized];
-    } catch (e) {
-      logger.warning(_tag, '单对象 JSON 解析失败: $e');
+    } catch (_) {
+      logger.warning(_tag, '单对象 JSON 解析失败');
       return const [];
     }
   }
@@ -94,10 +101,10 @@ class JsonResponseParser {
   /// 模型回的是 `"$"`,被歧义保护丢掉了)。
   void _warnIfCurrencyDropped(Map<String, dynamic> json, BillInfo bill) {
     if (bill.currency != null) return;
-    final raw = json['currency'] ?? json['currency_code'] ?? json['currencyCode'];
+    final raw =
+        json['currency'] ?? json['currency_code'] ?? json['currencyCode'];
     if (raw == null || (raw is String && raw.trim().isEmpty)) return;
-    logger.warning(
-        _tag, '币种「$raw」无法解析成 ISO 代码,本笔按账本本位币入账');
+    logger.warning(_tag, '币种「$raw」无法解析成 ISO 代码,本笔按账本本位币入账');
   }
 
   /// 单笔统一校验 + 兜底。

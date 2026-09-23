@@ -201,6 +201,10 @@ extension SyncEngineApplyExt on SyncEngine {
     final excludeBudget = payload.containsKey('excludeFromBudget')
         ? (payload['excludeFromBudget'] as bool? ?? false)
         : null;
+    String? textField(String key) {
+      final value = payload[key] as String?;
+      return value == null || value.isEmpty ? null : value;
+    }
 
     // v30 交易级多币种:payload 带键 → 用 payload 值;缺键(旧 App 的 change,
     // sync_changes 存的是原始 push payload,不经 server merge)→ 快照保护
@@ -238,6 +242,18 @@ extension SyncEngineApplyExt on SyncEngine {
         amount: d.Value(amount),
         happenedAt: d.Value(happenedAt),
         note: d.Value(note),
+        merchant: payload.containsKey('merchant')
+            ? d.Value(textField('merchant'))
+            : const d.Value.absent(),
+        itemDescription: payload.containsKey('itemDescription')
+            ? d.Value(textField('itemDescription'))
+            : const d.Value.absent(),
+        paymentChannel: payload.containsKey('paymentChannel')
+            ? d.Value(textField('paymentChannel'))
+            : const d.Value.absent(),
+        refundOfSyncId: payload.containsKey('refundOfSyncId')
+            ? d.Value(textField('refundOfSyncId'))
+            : const d.Value.absent(),
         categoryId: d.Value(categoryId),
         accountId: d.Value(accountId),
         toAccountId: d.Value(toAccountId),
@@ -272,6 +288,10 @@ extension SyncEngineApplyExt on SyncEngine {
               amount: amount,
               happenedAt: d.Value(happenedAt),
               note: d.Value(note),
+              merchant: d.Value(textField('merchant')),
+              itemDescription: d.Value(textField('itemDescription')),
+              paymentChannel: d.Value(textField('paymentChannel')),
+              refundOfSyncId: d.Value(textField('refundOfSyncId')),
               categoryId: d.Value(categoryId),
               accountId: d.Value(accountId),
               toAccountId: d.Value(toAccountId),

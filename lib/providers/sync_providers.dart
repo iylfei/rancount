@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' show Color;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter/widgets.dart' show AppLifecycleListener, AppLifecycleState;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -319,6 +320,16 @@ final syncServiceProvider = Provider<SyncService>((ref) {
     };
 
     engine.startListeningRealtime();
+    final realtimeLifecycle = AppLifecycleListener(onStateChange: (state) {
+      if (state == AppLifecycleState.resumed) {
+        engine.startListeningRealtime();
+        engine.triggerAutoSync(reason: 'app_resumed');
+      } else if (state == AppLifecycleState.paused ||
+          state == AppLifecycleState.hidden ||
+          state == AppLifecycleState.detached) {
+        engine.stopListeningRealtime();
+      }
+    });
 
     // §7 共享账本兜底:切账本时(尤其是切回共享账本时)触发一次 sync。
     // 用户报告"切到自己账本再切回来 WS 不同步" — 实际可能 WS 还在但
@@ -359,6 +370,8 @@ final syncServiceProvider = Provider<SyncService>((ref) {
     // 当 Provider 被销毁时停止监听。engine.dispose 归 syncEngineProvider
     // (family),这里只清本 provider 自己持有的资源。
     ref.onDispose(() {
+      realtimeLifecycle.dispose();
+      engine.stopListeningRealtime();
       eventSub.cancel();
       connectivityDebounce?.cancel();
       connectivitySubscription.cancel();

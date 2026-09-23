@@ -131,7 +131,7 @@ abstract class AppLocalizations {
   /// The application title
   ///
   /// In en, this message translates to:
-  /// **'Bee Accounting'**
+  /// **'rancount'**
   String get appTitle;
 
   /// No description provided for @tabHome.
@@ -7817,7 +7817,7 @@ abstract class AppLocalizations {
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:
-  /// **'BeeCount'**
+  /// **'rancount'**
   String get appName;
 
   /// No description provided for @monthSuffix.

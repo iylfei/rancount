@@ -2013,6 +2013,30 @@ class $TransactionsTable extends Transactions
   late final GeneratedColumn<double> nativeAmount = GeneratedColumn<double>(
       'native_amount', aliasedName, true,
       type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _merchantMeta =
+      const VerificationMeta('merchant');
+  @override
+  late final GeneratedColumn<String> merchant = GeneratedColumn<String>(
+      'merchant', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _itemDescriptionMeta =
+      const VerificationMeta('itemDescription');
+  @override
+  late final GeneratedColumn<String> itemDescription = GeneratedColumn<String>(
+      'item_description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _paymentChannelMeta =
+      const VerificationMeta('paymentChannel');
+  @override
+  late final GeneratedColumn<String> paymentChannel = GeneratedColumn<String>(
+      'payment_channel', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _refundOfSyncIdMeta =
+      const VerificationMeta('refundOfSyncId');
+  @override
+  late final GeneratedColumn<String> refundOfSyncId = GeneratedColumn<String>(
+      'refund_of_sync_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2035,7 +2059,11 @@ class $TransactionsTable extends Transactions
         excludeFromStats,
         excludeFromBudget,
         currencyCode,
-        nativeAmount
+        nativeAmount,
+        merchant,
+        itemDescription,
+        paymentChannel,
+        refundOfSyncId
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2165,6 +2193,28 @@ class $TransactionsTable extends Transactions
           nativeAmount.isAcceptableOrUnknown(
               data['native_amount']!, _nativeAmountMeta));
     }
+    if (data.containsKey('merchant')) {
+      context.handle(_merchantMeta,
+          merchant.isAcceptableOrUnknown(data['merchant']!, _merchantMeta));
+    }
+    if (data.containsKey('item_description')) {
+      context.handle(
+          _itemDescriptionMeta,
+          itemDescription.isAcceptableOrUnknown(
+              data['item_description']!, _itemDescriptionMeta));
+    }
+    if (data.containsKey('payment_channel')) {
+      context.handle(
+          _paymentChannelMeta,
+          paymentChannel.isAcceptableOrUnknown(
+              data['payment_channel']!, _paymentChannelMeta));
+    }
+    if (data.containsKey('refund_of_sync_id')) {
+      context.handle(
+          _refundOfSyncIdMeta,
+          refundOfSyncId.isAcceptableOrUnknown(
+              data['refund_of_sync_id']!, _refundOfSyncIdMeta));
+    }
     return context;
   }
 
@@ -2219,6 +2269,14 @@ class $TransactionsTable extends Transactions
           .read(DriftSqlType.string, data['${effectivePrefix}currency_code']),
       nativeAmount: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}native_amount']),
+      merchant: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}merchant']),
+      itemDescription: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}item_description']),
+      paymentChannel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payment_channel']),
+      refundOfSyncId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}refund_of_sync_id']),
     );
   }
 
@@ -2263,6 +2321,12 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   /// 单币种/未折算 == amount(隐含汇率 1.0)。账本维度统计读本列(?? amount),
   /// 账户维度(余额等)仍读 amount。
   final double? nativeAmount;
+
+  /// v34: 图片草稿的结构化信息与退款关联；图片本身不进入交易表。
+  final String? merchant;
+  final String? itemDescription;
+  final String? paymentChannel;
+  final String? refundOfSyncId;
   const Transaction(
       {required this.id,
       required this.ledgerId,
@@ -2284,7 +2348,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       required this.excludeFromStats,
       required this.excludeFromBudget,
       this.currencyCode,
-      this.nativeAmount});
+      this.nativeAmount,
+      this.merchant,
+      this.itemDescription,
+      this.paymentChannel,
+      this.refundOfSyncId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2339,6 +2407,18 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     if (!nullToAbsent || nativeAmount != null) {
       map['native_amount'] = Variable<double>(nativeAmount);
     }
+    if (!nullToAbsent || merchant != null) {
+      map['merchant'] = Variable<String>(merchant);
+    }
+    if (!nullToAbsent || itemDescription != null) {
+      map['item_description'] = Variable<String>(itemDescription);
+    }
+    if (!nullToAbsent || paymentChannel != null) {
+      map['payment_channel'] = Variable<String>(paymentChannel);
+    }
+    if (!nullToAbsent || refundOfSyncId != null) {
+      map['refund_of_sync_id'] = Variable<String>(refundOfSyncId);
+    }
     return map;
   }
 
@@ -2390,6 +2470,18 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       nativeAmount: nativeAmount == null && nullToAbsent
           ? const Value.absent()
           : Value(nativeAmount),
+      merchant: merchant == null && nullToAbsent
+          ? const Value.absent()
+          : Value(merchant),
+      itemDescription: itemDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(itemDescription),
+      paymentChannel: paymentChannel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(paymentChannel),
+      refundOfSyncId: refundOfSyncId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(refundOfSyncId),
     );
   }
 
@@ -2423,6 +2515,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       excludeFromBudget: serializer.fromJson<bool>(json['excludeFromBudget']),
       currencyCode: serializer.fromJson<String?>(json['currencyCode']),
       nativeAmount: serializer.fromJson<double?>(json['nativeAmount']),
+      merchant: serializer.fromJson<String?>(json['merchant']),
+      itemDescription: serializer.fromJson<String?>(json['itemDescription']),
+      paymentChannel: serializer.fromJson<String?>(json['paymentChannel']),
+      refundOfSyncId: serializer.fromJson<String?>(json['refundOfSyncId']),
     );
   }
   @override
@@ -2453,6 +2549,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'excludeFromBudget': serializer.toJson<bool>(excludeFromBudget),
       'currencyCode': serializer.toJson<String?>(currencyCode),
       'nativeAmount': serializer.toJson<double?>(nativeAmount),
+      'merchant': serializer.toJson<String?>(merchant),
+      'itemDescription': serializer.toJson<String?>(itemDescription),
+      'paymentChannel': serializer.toJson<String?>(paymentChannel),
+      'refundOfSyncId': serializer.toJson<String?>(refundOfSyncId),
     };
   }
 
@@ -2477,7 +2577,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           bool? excludeFromStats,
           bool? excludeFromBudget,
           Value<String?> currencyCode = const Value.absent(),
-          Value<double?> nativeAmount = const Value.absent()}) =>
+          Value<double?> nativeAmount = const Value.absent(),
+          Value<String?> merchant = const Value.absent(),
+          Value<String?> itemDescription = const Value.absent(),
+          Value<String?> paymentChannel = const Value.absent(),
+          Value<String?> refundOfSyncId = const Value.absent()}) =>
       Transaction(
         id: id ?? this.id,
         ledgerId: ledgerId ?? this.ledgerId,
@@ -2514,6 +2618,14 @@ class Transaction extends DataClass implements Insertable<Transaction> {
             currencyCode.present ? currencyCode.value : this.currencyCode,
         nativeAmount:
             nativeAmount.present ? nativeAmount.value : this.nativeAmount,
+        merchant: merchant.present ? merchant.value : this.merchant,
+        itemDescription: itemDescription.present
+            ? itemDescription.value
+            : this.itemDescription,
+        paymentChannel:
+            paymentChannel.present ? paymentChannel.value : this.paymentChannel,
+        refundOfSyncId:
+            refundOfSyncId.present ? refundOfSyncId.value : this.refundOfSyncId,
       );
   Transaction copyWithCompanion(TransactionsCompanion data) {
     return Transaction(
@@ -2562,6 +2674,16 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       nativeAmount: data.nativeAmount.present
           ? data.nativeAmount.value
           : this.nativeAmount,
+      merchant: data.merchant.present ? data.merchant.value : this.merchant,
+      itemDescription: data.itemDescription.present
+          ? data.itemDescription.value
+          : this.itemDescription,
+      paymentChannel: data.paymentChannel.present
+          ? data.paymentChannel.value
+          : this.paymentChannel,
+      refundOfSyncId: data.refundOfSyncId.present
+          ? data.refundOfSyncId.value
+          : this.refundOfSyncId,
     );
   }
 
@@ -2588,7 +2710,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('excludeFromStats: $excludeFromStats, ')
           ..write('excludeFromBudget: $excludeFromBudget, ')
           ..write('currencyCode: $currencyCode, ')
-          ..write('nativeAmount: $nativeAmount')
+          ..write('nativeAmount: $nativeAmount, ')
+          ..write('merchant: $merchant, ')
+          ..write('itemDescription: $itemDescription, ')
+          ..write('paymentChannel: $paymentChannel, ')
+          ..write('refundOfSyncId: $refundOfSyncId')
           ..write(')'))
         .toString();
   }
@@ -2615,7 +2741,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
         excludeFromStats,
         excludeFromBudget,
         currencyCode,
-        nativeAmount
+        nativeAmount,
+        merchant,
+        itemDescription,
+        paymentChannel,
+        refundOfSyncId
       ]);
   @override
   bool operator ==(Object other) =>
@@ -2641,7 +2771,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.excludeFromStats == this.excludeFromStats &&
           other.excludeFromBudget == this.excludeFromBudget &&
           other.currencyCode == this.currencyCode &&
-          other.nativeAmount == this.nativeAmount);
+          other.nativeAmount == this.nativeAmount &&
+          other.merchant == this.merchant &&
+          other.itemDescription == this.itemDescription &&
+          other.paymentChannel == this.paymentChannel &&
+          other.refundOfSyncId == this.refundOfSyncId);
 }
 
 class TransactionsCompanion extends UpdateCompanion<Transaction> {
@@ -2666,6 +2800,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<bool> excludeFromBudget;
   final Value<String?> currencyCode;
   final Value<double?> nativeAmount;
+  final Value<String?> merchant;
+  final Value<String?> itemDescription;
+  final Value<String?> paymentChannel;
+  final Value<String?> refundOfSyncId;
   const TransactionsCompanion({
     this.id = const Value.absent(),
     this.ledgerId = const Value.absent(),
@@ -2688,6 +2826,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.excludeFromBudget = const Value.absent(),
     this.currencyCode = const Value.absent(),
     this.nativeAmount = const Value.absent(),
+    this.merchant = const Value.absent(),
+    this.itemDescription = const Value.absent(),
+    this.paymentChannel = const Value.absent(),
+    this.refundOfSyncId = const Value.absent(),
   });
   TransactionsCompanion.insert({
     this.id = const Value.absent(),
@@ -2711,6 +2853,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.excludeFromBudget = const Value.absent(),
     this.currencyCode = const Value.absent(),
     this.nativeAmount = const Value.absent(),
+    this.merchant = const Value.absent(),
+    this.itemDescription = const Value.absent(),
+    this.paymentChannel = const Value.absent(),
+    this.refundOfSyncId = const Value.absent(),
   })  : ledgerId = Value(ledgerId),
         type = Value(type),
         amount = Value(amount);
@@ -2736,6 +2882,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<bool>? excludeFromBudget,
     Expression<String>? currencyCode,
     Expression<double>? nativeAmount,
+    Expression<String>? merchant,
+    Expression<String>? itemDescription,
+    Expression<String>? paymentChannel,
+    Expression<String>? refundOfSyncId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2764,6 +2914,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (excludeFromBudget != null) 'exclude_from_budget': excludeFromBudget,
       if (currencyCode != null) 'currency_code': currencyCode,
       if (nativeAmount != null) 'native_amount': nativeAmount,
+      if (merchant != null) 'merchant': merchant,
+      if (itemDescription != null) 'item_description': itemDescription,
+      if (paymentChannel != null) 'payment_channel': paymentChannel,
+      if (refundOfSyncId != null) 'refund_of_sync_id': refundOfSyncId,
     });
   }
 
@@ -2788,7 +2942,11 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       Value<bool>? excludeFromStats,
       Value<bool>? excludeFromBudget,
       Value<String?>? currencyCode,
-      Value<double?>? nativeAmount}) {
+      Value<double?>? nativeAmount,
+      Value<String?>? merchant,
+      Value<String?>? itemDescription,
+      Value<String?>? paymentChannel,
+      Value<String?>? refundOfSyncId}) {
     return TransactionsCompanion(
       id: id ?? this.id,
       ledgerId: ledgerId ?? this.ledgerId,
@@ -2814,6 +2972,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       excludeFromBudget: excludeFromBudget ?? this.excludeFromBudget,
       currencyCode: currencyCode ?? this.currencyCode,
       nativeAmount: nativeAmount ?? this.nativeAmount,
+      merchant: merchant ?? this.merchant,
+      itemDescription: itemDescription ?? this.itemDescription,
+      paymentChannel: paymentChannel ?? this.paymentChannel,
+      refundOfSyncId: refundOfSyncId ?? this.refundOfSyncId,
     );
   }
 
@@ -2887,6 +3049,18 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (nativeAmount.present) {
       map['native_amount'] = Variable<double>(nativeAmount.value);
     }
+    if (merchant.present) {
+      map['merchant'] = Variable<String>(merchant.value);
+    }
+    if (itemDescription.present) {
+      map['item_description'] = Variable<String>(itemDescription.value);
+    }
+    if (paymentChannel.present) {
+      map['payment_channel'] = Variable<String>(paymentChannel.value);
+    }
+    if (refundOfSyncId.present) {
+      map['refund_of_sync_id'] = Variable<String>(refundOfSyncId.value);
+    }
     return map;
   }
 
@@ -2913,7 +3087,11 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('excludeFromStats: $excludeFromStats, ')
           ..write('excludeFromBudget: $excludeFromBudget, ')
           ..write('currencyCode: $currencyCode, ')
-          ..write('nativeAmount: $nativeAmount')
+          ..write('nativeAmount: $nativeAmount, ')
+          ..write('merchant: $merchant, ')
+          ..write('itemDescription: $itemDescription, ')
+          ..write('paymentChannel: $paymentChannel, ')
+          ..write('refundOfSyncId: $refundOfSyncId')
           ..write(')'))
         .toString();
   }
@@ -13412,6 +13590,10 @@ typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion
   Value<bool> excludeFromBudget,
   Value<String?> currencyCode,
   Value<double?> nativeAmount,
+  Value<String?> merchant,
+  Value<String?> itemDescription,
+  Value<String?> paymentChannel,
+  Value<String?> refundOfSyncId,
 });
 typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion
     Function({
@@ -13436,6 +13618,10 @@ typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion
   Value<bool> excludeFromBudget,
   Value<String?> currencyCode,
   Value<double?> nativeAmount,
+  Value<String?> merchant,
+  Value<String?> itemDescription,
+  Value<String?> paymentChannel,
+  Value<String?> refundOfSyncId,
 });
 
 class $$TransactionsTableFilterComposer
@@ -13517,6 +13703,21 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<double> get nativeAmount => $composableBuilder(
       column: $table.nativeAmount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get merchant => $composableBuilder(
+      column: $table.merchant, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get itemDescription => $composableBuilder(
+      column: $table.itemDescription,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get paymentChannel => $composableBuilder(
+      column: $table.paymentChannel,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get refundOfSyncId => $composableBuilder(
+      column: $table.refundOfSyncId,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$TransactionsTableOrderingComposer
@@ -13600,6 +13801,21 @@ class $$TransactionsTableOrderingComposer
   ColumnOrderings<double> get nativeAmount => $composableBuilder(
       column: $table.nativeAmount,
       builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get merchant => $composableBuilder(
+      column: $table.merchant, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get itemDescription => $composableBuilder(
+      column: $table.itemDescription,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get paymentChannel => $composableBuilder(
+      column: $table.paymentChannel,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get refundOfSyncId => $composableBuilder(
+      column: $table.refundOfSyncId,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$TransactionsTableAnnotationComposer
@@ -13673,6 +13889,18 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumn<double> get nativeAmount => $composableBuilder(
       column: $table.nativeAmount, builder: (column) => column);
+
+  GeneratedColumn<String> get merchant =>
+      $composableBuilder(column: $table.merchant, builder: (column) => column);
+
+  GeneratedColumn<String> get itemDescription => $composableBuilder(
+      column: $table.itemDescription, builder: (column) => column);
+
+  GeneratedColumn<String> get paymentChannel => $composableBuilder(
+      column: $table.paymentChannel, builder: (column) => column);
+
+  GeneratedColumn<String> get refundOfSyncId => $composableBuilder(
+      column: $table.refundOfSyncId, builder: (column) => column);
 }
 
 class $$TransactionsTableTableManager extends RootTableManager<
@@ -13722,6 +13950,10 @@ class $$TransactionsTableTableManager extends RootTableManager<
             Value<bool> excludeFromBudget = const Value.absent(),
             Value<String?> currencyCode = const Value.absent(),
             Value<double?> nativeAmount = const Value.absent(),
+            Value<String?> merchant = const Value.absent(),
+            Value<String?> itemDescription = const Value.absent(),
+            Value<String?> paymentChannel = const Value.absent(),
+            Value<String?> refundOfSyncId = const Value.absent(),
           }) =>
               TransactionsCompanion(
             id: id,
@@ -13745,6 +13977,10 @@ class $$TransactionsTableTableManager extends RootTableManager<
             excludeFromBudget: excludeFromBudget,
             currencyCode: currencyCode,
             nativeAmount: nativeAmount,
+            merchant: merchant,
+            itemDescription: itemDescription,
+            paymentChannel: paymentChannel,
+            refundOfSyncId: refundOfSyncId,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -13768,6 +14004,10 @@ class $$TransactionsTableTableManager extends RootTableManager<
             Value<bool> excludeFromBudget = const Value.absent(),
             Value<String?> currencyCode = const Value.absent(),
             Value<double?> nativeAmount = const Value.absent(),
+            Value<String?> merchant = const Value.absent(),
+            Value<String?> itemDescription = const Value.absent(),
+            Value<String?> paymentChannel = const Value.absent(),
+            Value<String?> refundOfSyncId = const Value.absent(),
           }) =>
               TransactionsCompanion.insert(
             id: id,
@@ -13791,6 +14031,10 @@ class $$TransactionsTableTableManager extends RootTableManager<
             excludeFromBudget: excludeFromBudget,
             currencyCode: currencyCode,
             nativeAmount: nativeAmount,
+            merchant: merchant,
+            itemDescription: itemDescription,
+            paymentChannel: paymentChannel,
+            refundOfSyncId: refundOfSyncId,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

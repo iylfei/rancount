@@ -1,519 +1,233 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
-import '../../widgets/ui/primary_header.dart';
-import '../../widgets/ui/toast.dart';
-import '../../providers.dart';
-import '../../services/platform/screenshot_monitor_service.dart';
-import '../../l10n/app_localizations.dart';
-import '../../utils/notification_factory.dart';
-import '../../utils/notification_android.dart';
+
+import '../../services/billing/image_draft_service.dart';
+import '../../services/billing/image_vision_config.dart';
+import 'image_draft_page.dart';
 import 'ios_auto_billing_page.dart';
 
-/// 自动记账设置页面（根据平台路由）
 class AutoBillingSettingsPage extends StatelessWidget {
   const AutoBillingSettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    if (Platform.isIOS) {
-      return const IOSAutoBillingPage();
-    } else {
-      return const AndroidAutoBillingPage();
-    }
-  }
+  Widget build(BuildContext context) => Platform.isIOS
+      ? const IOSAutoBillingPage()
+      : const AndroidAutoBillingPage();
 }
 
-/// Android自动记账设置页面
-class AndroidAutoBillingPage extends ConsumerStatefulWidget {
+class AndroidAutoBillingPage extends StatefulWidget {
   const AndroidAutoBillingPage({super.key});
 
   @override
-  ConsumerState<AndroidAutoBillingPage> createState() => _AndroidAutoBillingPageState();
+  State<AndroidAutoBillingPage> createState() => _AndroidAutoBillingPageState();
 }
 
-class _AndroidAutoBillingPageState extends ConsumerState<AndroidAutoBillingPage> with WidgetsBindingObserver {
-  late final ScreenshotMonitorService _screenshotMonitor;
-  bool _isMonitorEnabled = false;
-  bool _isBatteryOptimizationIgnored = false;
-  bool _isLoading = true;
-  bool _isInitialized = false;
+class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage> {
+  static const _channel = MethodChannel('com.tntlikely.beecount/capture');
+  final _store = ImageDraftStore();
+  late Future<List<ImageDraftSession>> _sessions = _store.load();
+  final _visionStore = const ImageVisionConfigStore();
+  final _baseUrl = TextEditingController();
+  final _model = TextEditingController();
+  final _apiKey = TextEditingController();
+  bool _hasKey = false;
+  bool _savingVision = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    _loadVision();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      final container = ProviderScope.containerOf(context);
-      _screenshotMonitor = ScreenshotMonitorService(container);
-      _loadMonitorStatus();
-      _isInitialized = true;
-    }
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    // 当应用从后台恢复到前台时，重新检查状态
-    if (state == AppLifecycleState.resumed) {
-      _loadMonitorStatus();
-    }
-  }
-
-  Future<void> _loadMonitorStatus() async {
-    final enabled = await _screenshotMonitor.isEnabled();
-
-    // 检查电池优化状态
-    bool batteryOptimizationIgnored = false;
+  Future<void> _loadVision() async {
     try {
-      final androidUtil = NotificationFactory.getInstance() as AndroidNotificationUtil;
-      final batteryInfo = await androidUtil.getBatteryOptimizationInfo();
-      batteryOptimizationIgnored = batteryInfo['isIgnoring'] == true;
-    } catch (e) {
-      print('检查电池优化状态失败: $e');
+      final config = await _visionStore.load();
+      if (!mounted) return;
+      setState(() {
+        _baseUrl.text = config.baseUrl;
+        _model.text = config.model;
+        _hasKey = config.apiKey.isNotEmpty;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _hasKey = false);
     }
-
-    setState(() {
-      _isMonitorEnabled = enabled;
-      _isBatteryOptimizationIgnored = batteryOptimizationIgnored;
-      _isLoading = false;
-    });
   }
 
-  Future<void> _toggleMonitor(bool value) async {
-    final l10n = AppLocalizations.of(context);
-
-    if (value) {
-      // 请求存储权限（适用于所有Android设备包括华为）
-      print('📸 [AutoBilling] 准备请求存储权限');
-      PermissionStatus status;
-
-      // Android 13+ 使用 photos，Android 13以下使用 storage
-      if (await Permission.photos.isRestricted || await Permission.photos.isPermanentlyDenied) {
-        // 如果photos权限受限，尝试使用storage
-        status = await Permission.storage.request();
-        print('📸 [AutoBilling] 存储权限请求结果: $status');
-      } else {
-        // 尝试photos权限
-        status = await Permission.photos.request();
-        print('📸 [AutoBilling] 照片权限请求结果: $status');
-
-        // 如果photos被拒绝，尝试storage
-        if (!status.isGranted) {
-          status = await Permission.storage.request();
-          print('📸 [AutoBilling] 存储权限请求结果: $status');
-        }
+  Future<void> _saveVision() async {
+    if (_savingVision) return;
+    final url = _baseUrl.text.trim();
+    final model = _model.text.trim();
+    final parsed = Uri.tryParse(url);
+    ImageVisionConfig old;
+    try {
+      old = await _visionStore.load();
+    } catch (_) {
+      old = const ImageVisionConfig(baseUrl: '', model: '', apiKey: '');
+    }
+    final key = _apiKey.text.trim().isEmpty ? old.apiKey : _apiKey.text.trim();
+    if (parsed == null ||
+        !parsed.hasScheme ||
+        parsed.host.isEmpty ||
+        model.isEmpty ||
+        key.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_label('请填写有效 API 地址、视觉模型和密钥',
+              'Enter a valid API URL, vision model and key')),
+        ));
       }
-
-      if (!status.isGranted) {
-        if (mounted) {
-          showToast(context, l10n.photosPermissionRequired);
-        }
-        return;
+      return;
+    }
+    setState(() => _savingVision = true);
+    try {
+      await _visionStore
+          .save(ImageVisionConfig(baseUrl: url, model: model, apiKey: key));
+      _apiKey.clear();
+      if (!mounted) return;
+      setState(() => _hasKey = true);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_label(
+            '视觉接口配置已保存在本机', 'Vision configuration saved on this device')),
+      ));
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_label('安全存储不可用，配置未保存',
+              'Secure storage unavailable; configuration not saved')),
+        ));
       }
-
-      try {
-        print('📸 [AutoBilling] 开始启用截图监听');
-        await _screenshotMonitor.enable();
-        print('📸 [AutoBilling] 截图监听启用完成');
-        setState(() {
-          _isMonitorEnabled = true;
-        });
-        if (mounted) {
-          showToast(context, l10n.enableSuccess);
-        }
-      } catch (e) {
-        if (mounted) {
-          showToast(context, '${l10n.enableFailed}: $e', duration: const Duration(seconds: 3));
-        }
-      }
-    } else {
-      try {
-        await _screenshotMonitor.disable();
-        setState(() {
-          _isMonitorEnabled = false;
-        });
-        if (mounted) {
-          showToast(context, l10n.disableSuccess);
-        }
-      } catch (e) {
-        if (mounted) {
-          showToast(context, '${l10n.disableFailed}: $e', duration: const Duration(seconds: 3));
-        }
-      }
+    } finally {
+      if (mounted) setState(() => _savingVision = false);
     }
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _screenshotMonitor.dispose();
+    _baseUrl.dispose();
+    _model.dispose();
+    _apiKey.dispose();
     super.dispose();
   }
 
+  String _label(String zh, String en) =>
+      Localizations.localeOf(context).languageCode == 'zh' ? zh : en;
+
+  Future<void> _addTile() async {
+    try {
+      final added =
+          await _channel.invokeMethod<bool>('requestAddTile') ?? false;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(added
+              ? _label('已添加截图记账按钮', 'Screenshot billing tile added')
+              : _label('请在快捷设置的编辑页面手动添加「截图记账」按钮',
+                  'Open Quick Settings edit and add the screenshot billing tile'))));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            _label('请在快捷设置中手动添加按钮', 'Add the tile manually in Quick Settings')),
+      ));
+    }
+  }
+
+  Future<void> _open(ImageDraftSession session) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ImageDraftPage(existing: session),
+    ));
+    if (mounted) setState(() => _sessions = _store.load());
+  }
+
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
-    final l10n = AppLocalizations.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: Column(
-        children: [
-          PrimaryHeader(
-            title: l10n.autoScreenshotBillingTitle,
-            showBack: true,
-            leadingIcon: Icons.auto_fix_high,
-            leadingPlain: true,
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // 功能说明卡片
-                _buildInfoCard(
-                  context,
-                  primaryColor,
-                  l10n,
-                  icon: Icons.info_outline,
-                  title: l10n.featureDescription,
-                  content: l10n.featureDescriptionContent,
-                ),
-
-                const SizedBox(height: 16),
-
-                // 开关卡片
-                _buildSwitchCard(
-                  context,
-                  primaryColor,
-                  l10n,
-                  icon: Icons.auto_awesome,
-                  title: l10n.autoBilling,
-                  subtitle: _isMonitorEnabled ? l10n.enabled : l10n.disabled,
-                  value: _isMonitorEnabled,
-                  onChanged: _isLoading ? null : _toggleMonitor,
-                ),
-
-                const SizedBox(height: 16),
-
-                // 电池优化状态卡片
-                _buildBatteryOptimizationStatusCard(context, primaryColor, l10n),
-
-                const SizedBox(height: 16),
-
-                // 电池优化设置引导卡片
-                _buildBatteryOptimizationCard(context, primaryColor, l10n),
-
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(
-    BuildContext context,
-    Color primaryColor,
-    AppLocalizations l10n, {
-    required IconData icon,
-    required String title,
-    required String content,
-  }) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: primaryColor, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              content,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSwitchCard(
-    BuildContext context,
-    Color primaryColor,
-    AppLocalizations l10n, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required void Function(bool)? onChanged,
-  }) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: primaryColor, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: Text(_label('截图记账', 'Screenshot billing'))),
+        body: ListView(padding: const EdgeInsets.all(16), children: [
+          Card(
+              child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Text(_label('截图视觉接口', 'Screenshot vision API'),
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _baseUrl,
+                    keyboardType: TextInputType.url,
+                    decoration: InputDecoration(
+                        labelText: _label('OpenAI 兼容 API 基础地址',
+                            'OpenAI-compatible API base URL'),
+                        hintText: 'https://example.com/v1'),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: value ? primaryColor : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                  TextField(
+                    controller: _model,
+                    decoration: InputDecoration(
+                        labelText: _label('视觉模型', 'Vision model')),
                   ),
-                ],
-              ),
-            ),
-            Switch(
-              value: value,
-              onChanged: onChanged,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBatteryOptimizationStatusCard(BuildContext context, Color primaryColor, AppLocalizations l10n) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: (_isBatteryOptimizationIgnored ? Colors.green : Colors.orange).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                _isBatteryOptimizationIgnored ? Icons.check_circle : Icons.battery_saver,
-                color: _isBatteryOptimizationIgnored ? Colors.green : Colors.orange,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.autoBillingBatteryTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  TextField(
+                    controller: _apiKey,
+                    obscureText: true,
+                    autocorrect: false,
+                    decoration: InputDecoration(
+                        labelText: _label('API 密钥', 'API key'),
+                        hintText: _hasKey
+                            ? _label(
+                                '已保存，留空则保持原密钥', 'Saved; leave blank to keep it')
+                            : null),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _isBatteryOptimizationIgnored
-                        ? l10n.reminderBatteryIgnored
-                        : l10n.reminderBatteryNotIgnored,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: _isBatteryOptimizationIgnored
-                          ? Colors.green
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                  const SizedBox(height: 8),
+                  Text(_label('密钥仅保存在本机，不随账本同步。图片直接发送到所填接口。',
+                      'The key stays on this device. Images go directly to this endpoint.')),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                      onPressed: _savingVision ? null : _saveVision,
+                      child: Text(_label('保存接口配置', 'Save API configuration'))),
+                ]),
+          )),
+          const SizedBox(height: 16),
+          Card(
+              child: Padding(
+            padding: const EdgeInsets.all(20),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_label('从快捷设置主动截屏', 'Capture from Quick Settings'),
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              Text(_label(
+                '1. 将「截图记账」加入快捷设置。\n2. 在支付页面下拉并点击按钮。\n3. 同意系统截屏授权。\n4. 逐笔核对草稿后确认入账。',
+                '1. Add Screenshot billing to Quick Settings.\n2. Open it on the payment page.\n3. Grant one-time screen capture consent.\n4. Review drafts before saving.',
+              )),
+              const SizedBox(height: 16),
+              FilledButton(
+                  onPressed: _addTile,
+                  child: Text(_label('添加快捷设置按钮', 'Add Quick Settings tile'))),
+            ]),
+          )),
+          const SizedBox(height: 24),
+          Text(_label('稍后继续的草稿', 'Saved drafts'),
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          FutureBuilder<List<ImageDraftSession>>(
+            future: _sessions,
+            builder: (context, snapshot) {
+              final sessions = snapshot.data ?? const <ImageDraftSession>[];
+              if (sessions.isEmpty) {
+                return Text(_label('暂无草稿', 'No drafts'));
+              }
+              return Column(children: [
+                for (final session in sessions)
+                  ListTile(
+                    title: Text(_label('${session.entries.length} 笔待核对',
+                        '${session.entries.length} drafts to review')),
+                    subtitle: Text(session.createdAt.toLocal().toString()),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _open(session),
                   ),
-                ],
-              ),
-            ),
-            Icon(
-              _isBatteryOptimizationIgnored ? Icons.check : Icons.warning_amber,
-              color: _isBatteryOptimizationIgnored ? Colors.green : Colors.orange,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBatteryOptimizationCard(BuildContext context, Color primaryColor, AppLocalizations l10n) {
-    final theme = Theme.of(context);
-
-    return Card(
-      color: primaryColor.withValues(alpha: 0.05),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.battery_charging_full, color: primaryColor, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.autoBillingBatteryGuideTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              l10n.autoBillingBatteryDesc,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () async {
-                  final androidUtil = NotificationFactory.getInstance() as AndroidNotificationUtil;
-                  final batteryInfo = await androidUtil.getBatteryOptimizationInfo();
-                  if (mounted && context.mounted) {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text(l10n.reminderBatteryStatus),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.reminderManufacturer(batteryInfo['manufacturer'] ?? 'Unknown')),
-                            Text(l10n.reminderModel(batteryInfo['model'] ?? 'Unknown')),
-                            Text(l10n.reminderAndroidVersion(batteryInfo['androidVersion'] ?? 'Unknown')),
-                            const SizedBox(height: 8),
-                            Text(
-                              (batteryInfo['isIgnoring'] == true)
-                                  ? l10n.reminderBatteryIgnored
-                                  : l10n.reminderBatteryNotIgnored,
-                              style: TextStyle(
-                                color: (batteryInfo['isIgnoring'] == true) ? Colors.green : Colors.orange,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            if (batteryInfo['isIgnoring'] != true) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                l10n.autoBillingBatteryWarning,
-                                style: const TextStyle(fontSize: 12, color: Colors.red),
-                              ),
-                            ],
-                          ],
-                        ),
-                        actions: [
-                          if (batteryInfo['isIgnoring'] != true && batteryInfo['canRequest'] == true)
-                            TextButton(
-                              onPressed: () async {
-                                Navigator.of(context).pop();
-                                final androidUtil = NotificationFactory.getInstance() as AndroidNotificationUtil;
-                                await androidUtil.requestIgnoreBatteryOptimizations();
-                                // 重新加载状态
-                                _loadMonitorStatus();
-                              },
-                              child: Text(l10n.commonSettings),
-                            ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text(l10n.commonConfirm),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.settings),
-                label: Text(l10n.autoBillingCheckBattery),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSupportCard(
-    BuildContext context,
-    Color primaryColor,
-    AppLocalizations l10n, {
-    required IconData icon,
-    required String title,
-    required List<String> items,
-  }) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: primaryColor, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...items.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                item,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-              ),
-            )),
-          ],
-        ),
-      ),
-    );
-  }
+              ]);
+            },
+          ),
+        ]),
+      );
 }

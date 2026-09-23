@@ -50,6 +50,7 @@ dependencies:
   # 最新版 0.9.2+1。
   home_widget: ^0.9.2
   image_picker: ^1.1.2
+  flutter_secure_storage: 9.2.4
   flutter_image_compress: ^2.3.0
   image_cropper: ^10.0.0
   gbk_codec: ^0.4.0
@@ -95,8 +96,10 @@ dependencies:
   webview_flutter_wkwebview: ^3.23.0
   country_flags: ^3.2.0
   jovial_svg: ^1.1.29
+  workmanager: 0.7.0
 
 dev_dependencies:
+  sqlite3: 2.9.4
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0

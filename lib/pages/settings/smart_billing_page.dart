@@ -13,10 +13,6 @@ import '../automation/auto_billing_settings_page.dart';
 import 'shortcuts_guide_page.dart';
 import '../../l10n/app_localizations.dart';
 
-/// Google Play 版本(CI 注入)。截屏自动记账依赖 READ_MEDIA_IMAGES,在 Google
-/// Play 渠道被砍掉,这里用来隐藏入口。详见 release.yml 的临时 manifest 配置。
-const _isGooglePlayBuild = bool.fromEnvironment('GOOGLE_PLAY', defaultValue: false);
-
 /// 智能记账二级页面
 class SmartBillingPage extends ConsumerWidget {
   const SmartBillingPage({super.key});
@@ -38,7 +34,8 @@ class SmartBillingPage extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
+            Icon(Icons.info_outline,
+                color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
             Text(title),
           ],
@@ -77,7 +74,8 @@ class SmartBillingPage extends ConsumerWidget {
                       aiRequirement,
                       style: TextStyle(
                         fontSize: 13,
-                        color: requiresAI ? Colors.orange[900] : Colors.blue[900],
+                        color:
+                            requiresAI ? Colors.orange[900] : Colors.blue[900],
                       ),
                     ),
                   ),
@@ -88,7 +86,10 @@ class SmartBillingPage extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -137,10 +138,10 @@ class SmartBillingPage extends ConsumerWidget {
           AppListTile(
             leading: Icons.mic_none_outlined,
             title: l10n.smartBillingVoiceTrigger,
-            subtitle: isAuto
-                ? l10n.voiceTriggerModeAuto
-                : l10n.voiceTriggerModeHold,
-            onTap: () => _showVoiceTriggerDialog(context, ref, settings.triggerMode),
+            subtitle:
+                isAuto ? l10n.voiceTriggerModeAuto : l10n.voiceTriggerModeHold,
+            onTap: () =>
+                _showVoiceTriggerDialog(context, ref, settings.triggerMode),
           ),
           if (isAuto) ...[
             BeeTokens.cardDivider(context),
@@ -207,6 +208,7 @@ class SmartBillingPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final isChinese = Localizations.localeOf(context).languageCode == 'zh';
 
     return Scaffold(
       backgroundColor: BeeTokens.scaffoldBackground(context),
@@ -233,7 +235,8 @@ class SmartBillingPage extends ConsumerWidget {
                         subtitle: l10n.aiSettingsSubtitle,
                         onTap: () async {
                           await Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const AISettingsPage()),
+                            MaterialPageRoute(
+                                builder: (_) => const AISettingsPage()),
                           );
                         },
                       ),
@@ -303,48 +306,56 @@ class SmartBillingPage extends ConsumerWidget {
 
                 const SizedBox(height: 16),
 
-                // 截图自动记账
+                // 图片和截图入口
                 SectionCard(
                   margin: EdgeInsets.zero,
                   child: Column(
                     children: [
-                      // 分享记账（Android：门槛低、GP 版唯一截图类入口，置顶）
+                      // Android 分享图片先进入草稿确认。
                       if (Platform.isAndroid) ...[
                         AppListTile(
                           leading: Icons.share_outlined,
                           title: l10n.shareBilling,
-                          subtitle: l10n.shareBillingDesc,
+                          subtitle: isChinese
+                              ? '分享图片后核对草稿，再确认入账'
+                              : 'Review a draft before saving a shared image',
                           onTap: () {
                             _showFeatureGuideDialog(
                               context,
                               l10n.shareBilling,
-                              l10n.shareBillingGuide,
+                              isChinese
+                                  ? '从支付应用分享图片，识别完成后逐笔核对并确认保存。'
+                                  : 'Share a payment image, review each draft, then confirm.',
                               l10n.smartBillingVisionAIRequired,
                               true,
-                              actionHint: l10n.shareBillingActionHint,
+                              actionHint: isChinese
+                                  ? '分享不会直接入账'
+                                  : 'Sharing does not save a transaction',
                             );
                           },
                         ),
                         BeeTokens.cardDivider(context),
                       ],
-                      // 截图自动记账
-                      if (!(Platform.isAndroid && _isGooglePlayBuild)) ...[
-                        AppListTile(
+                      // Android 快捷设置主动截图；iOS 保持原有快捷指令入口。
+                      AppListTile(
                           leading: Icons.auto_fix_high,
                           title: Platform.isAndroid
-                              ? l10n.autoScreenshotBilling
+                              ? (isChinese ? '截图记账' : 'Screenshot billing')
                               : l10n.autoScreenshotBillingIosTitle,
                           subtitle: Platform.isAndroid
-                              ? l10n.autoScreenshotBillingDesc
+                              ? (isChinese
+                                  ? '从快捷设置截屏，编辑草稿后确认入账'
+                                  : 'Capture from Quick Settings, review, then save')
                               : l10n.autoScreenshotBillingIosDesc,
                           onTap: () async {
                             await Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const AutoBillingSettingsPage()),
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                      const AutoBillingSettingsPage()),
                             );
                           },
                         ),
-                        BeeTokens.cardDivider(context),
-                      ],
+                      BeeTokens.cardDivider(context),
                       // 快捷指令
                       AppListTile(
                         leading: Icons.app_shortcut,
@@ -352,7 +363,8 @@ class SmartBillingPage extends ConsumerWidget {
                         subtitle: l10n.shortcutsGuideDesc,
                         onTap: () async {
                           await Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const ShortcutsGuidePage()),
+                            MaterialPageRoute(
+                                builder: (_) => const ShortcutsGuidePage()),
                           );
                         },
                       ),
@@ -376,7 +388,9 @@ class SmartBillingPage extends ConsumerWidget {
                           value: ref.watch(smartBillingAutoTagsProvider),
                           activeColor: ref.watch(primaryColorProvider),
                           onChanged: (value) {
-                            ref.read(smartBillingAutoTagsProvider.notifier).state = value;
+                            ref
+                                .read(smartBillingAutoTagsProvider.notifier)
+                                .state = value;
                           },
                         ),
                       ),
@@ -390,7 +404,10 @@ class SmartBillingPage extends ConsumerWidget {
                           value: ref.watch(smartBillingAutoAttachmentProvider),
                           activeColor: ref.watch(primaryColorProvider),
                           onChanged: (value) {
-                            ref.read(smartBillingAutoAttachmentProvider.notifier).state = value;
+                            ref
+                                .read(
+                                    smartBillingAutoAttachmentProvider.notifier)
+                                .state = value;
                           },
                         ),
                       ),

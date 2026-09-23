@@ -1,0 +1,10 @@
+# RanCount 自托管同步
+
+RanCount 沿用 BeeCount Cloud 的账户与账本协议。新增的商家、商品描述、支付渠道和退款关联字段需要配套的 [RanCount Cloud fork](https://github.com/iylfei/rancount-cloud)；旧服务端不会完整保存这些字段。
+
+1. 按 Cloud 仓库的 `docs/DEPLOYMENT.md` 部署其 `rancount-dev` 分支。首次部署可在服务目录运行 `docker compose up -d --build`；升级已有服务前，按其备份说明备份数据库与 `/data` 持久卷，再运行 `alembic upgrade head`。迁移 `0020_rancount_tx_details` 只添加可空交易字段及索引。
+2. 用 HTTPS 反向代理公开 API，并检查 `GET /healthz`、`GET /ready`。保存 `/data` 卷及 JWT 密钥；不要在公开配置中写入 API 密钥。
+3. 在 RanCount 的现有云服务设置中选择 BeeCount Cloud，填写自建服务的 HTTPS 地址并登录。仅确认入账的记录进入同步；未确认草稿与截图不进入 Cloud。
+4. 在“截图记账”设置中单独填写 OpenAI 兼容视觉接口的基础地址、模型和密钥。该配置只保存在本机安全存储中，每台设备需分别设置。
+
+本地 APK 构建使用 `flutter build apk --release --flavor prod`。仓库默认的 Release 签名设置仅适合本地试用；正式分发应配置自己的签名材料，并保存其私钥以便后续升级。

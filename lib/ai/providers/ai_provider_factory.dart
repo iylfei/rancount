@@ -176,6 +176,17 @@ class AIProviderFactory {
     }
   }
 
+  /// Screenshot billing uses its own device-local OpenAI-compatible endpoint.
+  static Future<String> visionWithConfig(
+      File image, String prompt, AIServiceProviderConfig config) async {
+    if (!config.isValid ||
+        !config.supportsVision ||
+        Uri.tryParse(config.baseUrl)?.hasScheme != true) {
+      throw AIException('图片视觉服务配置不完整');
+    }
+    return _visionOpenAI(config, image, prompt);
+  }
+
   /// 语音转文字
   ///
   /// [audio] 音频文件
@@ -587,8 +598,6 @@ class AIProviderFactory {
     }
     messages.add({'role': 'user', 'content': prompt});
 
-    logger.debug('AIFactory', '请求: ${config.baseUrl}/chat/completions');
-
     try {
       final response = await _postChatCompletions(dio, {
         'model': config.textModel,
@@ -610,12 +619,24 @@ class AIProviderFactory {
     File image,
     String prompt,
   ) async {
-    final dio = _getDio(config);
+    final dio = Dio(BaseOptions(
+      baseUrl: config.baseUrl,
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 60),
+      headers: {
+        'Authorization': 'Bearer ${config.apiKey}',
+        'Content-Type': 'application/json',
+      },
+    ));
 
     final imageBytes = await image.readAsBytes();
     final base64Image = base64Encode(imageBytes);
-
-    logger.debug('AIFactory', '请求: ${config.baseUrl}/chat/completions');
+    final lowerPath = image.path.toLowerCase();
+    final mimeType = lowerPath.endsWith('.png')
+        ? 'image/png'
+        : lowerPath.endsWith('.webp')
+            ? 'image/webp'
+            : 'image/jpeg';
 
     try {
       final response = await dio.post(
@@ -630,7 +651,7 @@ class AIProviderFactory {
                 {
                   'type': 'image_url',
                   'image_url': {
-                    'url': 'data:image/jpeg;base64,$base64Image',
+                    'url': 'data:$mimeType;base64,$base64Image',
                   },
                 },
               ],
@@ -645,6 +666,8 @@ class AIProviderFactory {
       return message['content'] as String;
     } on DioException catch (e) {
       throw AIException(_extractDioError(e));
+    } finally {
+      dio.close(force: true);
     }
   }
 
@@ -687,13 +710,8 @@ class AIProviderFactory {
     final statusCode = e.response?.statusCode;
     final responseData = e.response?.data;
 
-    // 打印详细错误信息用于调试
-    logger.warning(tag, 'HTTP错误: $statusCode, 响应: $responseData');
-    logger.warning(tag, '  错误类型: ${e.type}');
-    logger.warning(tag, '  请求URL: ${e.requestOptions.uri}');
-    if (e.error != null) {
-      logger.warning(tag, '  底层错误: ${e.error}');
-    }
+    // 服务商响应可能包含图片、模型原文或密钥，日志只记录状态。
+    logger.warning(tag, 'HTTP错误: $statusCode, 类型: ${e.type}');
 
     if (responseData is Map) {
       final data = responseData as Map<String, dynamic>;

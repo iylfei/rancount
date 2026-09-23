@@ -8,11 +8,7 @@
     <!-- Required for downloading APK files and saving images (API <= 29) -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
-    <!-- Required for reading screenshots (Android 13+) -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- Required for reading screenshots (Android 10-12) -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <!-- Required for installing APK files -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Required for showing notifications -->
@@ -37,7 +33,28 @@
         android:label="@string/app_name"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:fullBackupContent="@xml/rancount_backup_rules"
+        android:dataExtractionRules="@xml/rancount_data_extraction_rules"
         android:requestLegacyExternalStorage="true">
+        <service
+            android:name=".ScreenshotTileService"
+            android:label="截图记账"
+            android:icon="@mipmap/ic_launcher"
+            android:exported="true"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <activity
+            android:name=".ScreenshotCaptureActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:exported="false"
+            android:excludeFromRecents="true" />
+        <service
+            android:name=".ScreenshotCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

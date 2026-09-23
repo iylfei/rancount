@@ -4,9 +4,12 @@ import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.StatusBarManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -21,16 +24,20 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity: FlutterFragmentActivity() {
     private val CHANNEL = "notification_channel"
     private val INSTALL_CHANNEL = "com.tntlikely.beecount/install"
-    private val SCREENSHOT_CHANNEL = "com.tntlikely.beecount/screenshot"
     private val LOGGER_CHANNEL = "com.beecount.logger"
     private val SHARE_CHANNEL = "com.tntlikely.beecount/share"
+    private val CAPTURE_CHANNEL = "com.tntlikely.beecount/capture"
+    private var captureChannel: MethodChannel? = null
+    private var pendingCapturePath: String? = null
+    private var shareChannel: MethodChannel? = null
+    private var pendingSharePath: String? = null
 
-    private var screenshotObserver: ScreenshotObserver? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         handleNotificationIntent(intent)
         handleSharedImage(intent)
+        handleCaptureIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -38,6 +45,14 @@ class MainActivity: FlutterFragmentActivity() {
         setIntent(intent) // 重要：更新当前intent
         handleNotificationIntent(intent)
         handleSharedImage(intent)
+        handleCaptureIntent(intent)
+    }
+
+    private fun handleCaptureIntent(intent: Intent?) {
+        val path = intent?.getStringExtra(EXTRA_CAPTURE_PATH) ?: return
+        pendingCapturePath = path
+        captureChannel?.invokeMethod("onCaptureReady", null)
+        intent.removeExtra(EXTRA_CAPTURE_PATH)
     }
 
     private fun handleSharedImage(intent: Intent?) {
@@ -47,15 +62,13 @@ class MainActivity: FlutterFragmentActivity() {
 
             val imageUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
             if (imageUri != null) {
-                android.util.Log.d("MainActivity", "图片URI: $imageUri")
-                LoggerPlugin.info("MainActivity", "分享图片URI: $imageUri")
 
                 try {
                     // 复制图片到临时文件
                     val imagePath = copySharedImageToTemp(imageUri)
                     if (imagePath != null) {
-                        android.util.Log.d("MainActivity", "图片已保存到: $imagePath")
-                        LoggerPlugin.info("MainActivity", "分享图片已保存: $imagePath")
+                        LoggerPlugin.info("MainActivity", "分享图片已复制到应用临时目录")
+                        pendingSharePath = imagePath
 
                         // 通知Flutter端（延迟一下确保Flutter已初始化）
                         android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
@@ -79,7 +92,12 @@ class MainActivity: FlutterFragmentActivity() {
             tempDir.mkdirs()
 
             val timestamp = System.currentTimeMillis()
-            val tempFile = File(tempDir, "shared_$timestamp.jpg")
+            val extension = when (contentResolver.getType(uri)) {
+                "image/png" -> "png"
+                "image/webp" -> "webp"
+                else -> "jpg"
+            }
+            val tempFile = File(tempDir, "shared_$timestamp.$extension")
 
             // 复制图片数据
             tempFile.outputStream().use { output ->
@@ -97,11 +115,8 @@ class MainActivity: FlutterFragmentActivity() {
 
     private fun notifyFlutterSharedImage(imagePath: String) {
         try {
-            flutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
-                MethodChannel(messenger, SHARE_CHANNEL).invokeMethod("onImageShared", imagePath)
-                android.util.Log.d("MainActivity", "✅ 已通知Flutter端: $imagePath")
-                LoggerPlugin.info("MainActivity", "已通知Flutter端收到分享图片")
-            }
+            pendingSharePath = imagePath
+            shareChannel?.invokeMethod("onImageShared", null)
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "通知Flutter失败: $e")
             LoggerPlugin.error("MainActivity", "通知Flutter失败: ${e.message}")
@@ -133,6 +148,48 @@ class MainActivity: FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
+        captureChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CAPTURE_CHANNEL)
+        captureChannel!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "consumePendingCapture" -> {
+                    result.success(pendingCapturePath)
+                    pendingCapturePath = null
+                }
+                "peekPendingCapture" -> result.success(pendingCapturePath)
+                "requestAddTile" -> {
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        try {
+                            val statusBar = getSystemService(StatusBarManager::class.java)
+                            statusBar.requestAddTileService(
+                                ComponentName(this, ScreenshotTileService::class.java),
+                                "截图记账", Icon.createWithResource(this, R.mipmap.ic_launcher),
+                                mainExecutor
+                            ) { code -> result.success(
+                                code == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED ||
+                                    code == StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED
+                            ) }
+                        } catch (_: Exception) {
+                            result.success(false)
+                        }
+                    } else {
+                        result.success(false)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+        shareChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SHARE_CHANNEL)
+        shareChannel!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "consumePendingShare" -> {
+                    result.success(pendingSharePath)
+                    pendingSharePath = null
+                }
+                "peekPendingShare" -> result.success(pendingSharePath)
+                else -> result.notImplemented()
+            }
+        }
+
         android.util.Log.e("MainActivity", "==========================================")
         android.util.Log.e("MainActivity", "configureFlutterEngine 被调用！！！")
         android.util.Log.e("MainActivity", "==========================================")
@@ -153,21 +210,6 @@ class MainActivity: FlutterFragmentActivity() {
             LoggerPlugin.warning("MainActivity", "这是一条 WARNING 日志")
             LoggerPlugin.error("MainActivity", "这是一条 ERROR 日志")
         }, 2000)
-
-        // 截图监听的MethodChannel
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREENSHOT_CHANNEL).setMethodCallHandler { call, result ->
-            when (call.method) {
-                "startScreenshotObserver" -> {
-                    startScreenshotObserver(flutterEngine)
-                    result.success(true)
-                }
-                "stopScreenshotObserver" -> {
-                    stopScreenshotObserver()
-                    result.success(true)
-                }
-                else -> result.notImplemented()
-            }
-        }
 
         // 安装APK的MethodChannel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, INSTALL_CHANNEL).setMethodCallHandler { call, result ->
@@ -481,75 +523,8 @@ class MainActivity: FlutterFragmentActivity() {
         }
     }
 
-    private fun startScreenshotObserver(flutterEngine: FlutterEngine) {
-        try {
-            android.util.Log.d("MainActivity", "========== 开始启动截图监听服务 ==========")
-            LoggerPlugin.info("MainActivity", "开始启动截图监听服务")
-
-            // 先停止旧的监听(如果有)
-            stopScreenshotObserver()
-
-            // 使用 ContentObserver 监听媒体库变化
-            android.util.Log.d("MainActivity", "启动 ContentObserver 模式")
-            LoggerPlugin.info("MainActivity", "截图监听模式: ContentObserver (监听媒体库变化)")
-            startContentObserverMonitor(flutterEngine)
-
-            android.util.Log.d("MainActivity", "========== 截图监听服务启动完成 ==========")
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "❌ 启动截图监听失败", e)
-            LoggerPlugin.error("MainActivity", "启动截图监听失败: ${e.message}")
-        }
-    }
-
-    /**
-     * 启动 ContentObserver 截图监听
-     * 监听媒体库变化，检测新增的截图文件
-     */
-    private fun startContentObserverMonitor(flutterEngine: FlutterEngine) {
-        android.util.Log.d("MainActivity", "📸 配置 ContentObserver 模式...")
-        LoggerPlugin.info("MainActivity", "开始配置 ContentObserver 截图监听")
-
-        // 创建ContentObserver
-        screenshotObserver = ScreenshotObserver(this) { screenshotPath ->
-            android.util.Log.d("MainActivity", "✅ ContentObserver 检测到截图: $screenshotPath")
-            LoggerPlugin.info("MainActivity", "ContentObserver 检测到截图，路径: ${screenshotPath.substringAfterLast('/')}")
-
-            // 通知 Flutter 端
-            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SCREENSHOT_CHANNEL)
-                .invokeMethod("onScreenshotDetected", screenshotPath)
-        }
-
-        // 注册ContentObserver
-        val uri = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            android.provider.MediaStore.Images.Media.getContentUri(android.provider.MediaStore.VOLUME_EXTERNAL)
-        } else {
-            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        }
-
-        android.util.Log.d("MainActivity", "   监听URI: $uri")
-        contentResolver.registerContentObserver(uri, true, screenshotObserver!!)
-        android.util.Log.d("MainActivity", "✅ ContentObserver 已注册到 MediaStore")
-        LoggerPlugin.info("MainActivity", "ContentObserver 已注册到 MediaStore")
-    }
-
-    private fun stopScreenshotObserver() {
-        try {
-            // 停止ContentObserver
-            screenshotObserver?.let {
-                contentResolver.unregisterContentObserver(it)
-                screenshotObserver = null
-                android.util.Log.d("MainActivity", "✅ ContentObserver已注销")
-            }
-
-            android.util.Log.d("MainActivity", "✅ 截图监听已停止")
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "❌ 停止截图监听失败", e)
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        stopScreenshotObserver()
+    companion object {
+        const val EXTRA_CAPTURE_PATH = "rancount_capture_path"
     }
 
     private fun installApkWithIntent(filePath: String): Boolean {

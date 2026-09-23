@@ -93,6 +93,16 @@ $_currencyFieldSpec
 
 注意：只返回 JSON 数组（即使只有一笔也用数组包裹），尽量推断时间不要返回 null，note 必须 ≤15 字（长标题要精简）。外币的 currency 一律填 ISO 代码（USD，不是 \$ 或"美元"）''';
 
+  /// 图片记账只提取可见证据，缺失字段留给用户在草稿里补全。
+  static const String draftImageTemplate =
+      '''{{BILL_GUARD}}分析当前图片中的实际交易，输出 JSON 数组；每笔独立交易一个对象。
+{{CATEGORIES}}{{ACCOUNTS}}{{CURRENCIES}}
+字段：type (expense/income/transfer)、amount、time (ISO 8601)、category、merchant、item_description、payment_channel、account、from_account、to_account、currency、note。
+payment_channel 是微信支付、支付宝等渠道；account 是实际扣款或收款的资金账户，二者不能混为一谈。
+只有图片明确显示或可可靠推导的字段才填写。金额、日期、分类、账户不明确时填 null，不用当前时间、默认账户或虚构值填充。
+一笔支付中的多件商品合并为一笔；多笔独立支付分别返回。非交易图片返回 []。
+只返回 JSON 数组，不输出解释。''';
+
   /// 币种字段说明。**默认模板与「插入币种段落」补丁共用同一份**,避免两处漂移。
   ///
   /// 写法上刻意做了三件事(2026-08-12 实测「日元能识别、美元不行」后调整):
@@ -112,7 +122,8 @@ $_currencyFieldSpec
   /// 币种段落(A7)。给**自定义模板用户**的「插入币种段落」一键补丁用 ——
   /// 我们不覆盖用户模板(方案 a),但让他们一次点击就能把这个能力补进自己的
   /// 模板。内容与默认模板共用 [_currencyFieldSpec],不会漂移。
-  static const String currencySectionSnippet = '$_currencyFieldSpec\n{{CURRENCIES}}';
+  static const String currencySectionSnippet =
+      '$_currencyFieldSpec\n{{CURRENCIES}}';
 
   /// 默认模板用到的全部占位符。**新增占位符必须在此登记** ——
   /// [placeholdersMatchDefaultTemplate] 会双向校验,漏登记或登记了模板里没有的
@@ -181,16 +192,18 @@ $_currencyFieldSpec
     required String inputSource,
     String billGuard = '',
     String ocrText = '',
+    String? templateOverride,
     DateTime? now,
   }) {
     final ts = now ?? DateTime.now();
     final currentDate = '${ts.year}-${_pad(ts.month)}-${_pad(ts.day)}';
     final currentTime = '$currentDate ${_pad(ts.hour)}:${_pad(ts.minute)}';
 
-    final template = (context.customPromptTemplate != null &&
-            context.customPromptTemplate!.trim().isNotEmpty)
-        ? context.customPromptTemplate!
-        : defaultTemplate;
+    final template = templateOverride ??
+        ((context.customPromptTemplate != null &&
+                context.customPromptTemplate!.trim().isNotEmpty)
+            ? context.customPromptTemplate!
+            : defaultTemplate);
 
     return template
         .replaceAll('{{BILL_GUARD}}', billGuard)

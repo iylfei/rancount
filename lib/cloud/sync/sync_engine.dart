@@ -81,6 +81,7 @@ class SyncEngine implements app.SyncService {
 
   /// WebSocket 实时监听
   StreamSubscription<BeeCountCloudRealtimeEvent>? _realtimeSubscription;
+  Future<void> _realtimeTransition = Future.value();
   Timer? _pullDebounce;
 
   /// 当前正在自动拉取的 ledgerId（防止重复触发）

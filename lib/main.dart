@@ -21,8 +21,9 @@ import 'pages/auth/app_lock_screen.dart';
 import 'providers/security_providers.dart';
 import 'services/system/reminder_monitor_service.dart';
 import 'providers/credit_card_reminder_providers.dart';
-import 'services/platform/screenshot_monitor_service.dart';
 import 'services/platform/image_share_handler_service.dart';
+import 'services/billing/background_sync_retry.dart';
+import 'pages/automation/image_draft_page.dart';
 import 'services/platform/app_link_service.dart';
 import 'services/system/logger_service.dart';
 import 'l10n/app_localizations.dart';
@@ -36,10 +37,10 @@ import 'dart:ui';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-
 /// 全局 navigator key — 给 service 层(没有 BuildContext)push 路由使用。
 /// 当前用途:BeeCount Cloud 登录拿到 requires_2fa 时弹出 [Login2FAChallengeView]。
-final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> globalNavigatorKey =
+    GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -126,11 +127,32 @@ Future<void> main() async {
     logger.warning('App', '小组件回调注册失败（可能在不支持的平台上运行）: $e');
   }
 
-  // 恢复截图自动识别设置（Android专属），传入container
-  await _restoreScreenshotMonitor(container);
+  // 旧版本的全局截图监听开关不再生效。普通系统截图不会触发识别。
+  if (Platform.isAndroid) {
+    await BackgroundSyncRetry.initialize();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('screenshot_monitor_enabled');
+    _setupScreenshotCaptureHandler(container);
+    String? pendingPath;
+    try {
+      pendingPath =
+          await _captureChannel.invokeMethod<String>('peekPendingCapture');
+    } catch (_) {
+      // The native capture bridge must never block normal app startup.
+    }
+    await _cleanStaleCaptureFiles(keepPath: pendingPath);
+  }
 
   // 初始化图片分享处理服务（Android专属）
   if (Platform.isAndroid) {
+    String? pendingSharePath;
+    try {
+      pendingSharePath =
+          await const MethodChannel('com.tntlikely.beecount/share')
+              .invokeMethod<String>('peekPendingShare');
+    } catch (_) {}
+    await _cleanStaleCaptureFiles(
+        folderName: 'shared_images', keepPath: pendingSharePath);
     _setupImageShareHandler(container);
   }
 
@@ -158,6 +180,11 @@ Future<void> main() async {
     parent: container,
     child: const MainApp(),
   ));
+  if (Platform.isAndroid) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_consumePendingCapture(container));
+    });
+  }
 }
 
 /// Provider observer to update widget on app start
@@ -232,7 +259,8 @@ Future<void> _restoreUserReminder() async {
     if (isEnabled) {
       final hour = prefs.getInt('reminder_hour') ?? 21;
       final minute = prefs.getInt('reminder_minute') ?? 0;
-      print('✅ 发现用户已启用记账提醒: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
+      print(
+          '✅ 发现用户已启用记账提醒: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
       print('🔔 正在重新设置提醒任务...');
 
       try {
@@ -253,37 +281,6 @@ Future<void> _restoreUserReminder() async {
     }
   } catch (e) {
     print('❌ 恢复记账提醒失败: $e');
-    // 不抛出异常，避免影响应用启动
-  }
-}
-
-/// 恢复截图自动识别设置（仅Android）
-///
-/// 问题场景：
-/// - 应用重启后，截图监听服务会丢失
-/// - 需要自动恢复用户之前的设置
-///
-/// 解决方案：
-/// - 在应用启动时检查用户是否开启了截图监听
-/// - 如果开启了，重新启动监听服务
-Future<void> _restoreScreenshotMonitor(ProviderContainer container) async {
-  if (!Platform.isAndroid) return;
-
-  try {
-    print('📸 检查并恢复截图自动识别...');
-    final screenshotMonitor = ScreenshotMonitorService(container);
-    final isEnabled = await screenshotMonitor.isEnabled();
-
-    if (isEnabled) {
-      print('✅ 发现用户已启用截图自动识别');
-      print('🔄 正在重新启动监听服务...');
-      await screenshotMonitor.enable();
-      print('✅ 截图监听服务已成功恢复');
-    } else {
-      print('ℹ️  用户未启用截图自动识别，跳过恢复');
-    }
-  } catch (e) {
-    print('❌ 恢复截图监听失败: $e');
     // 不抛出异常，避免影响应用启动
   }
 }
@@ -313,7 +310,6 @@ Future<void> _initializeAppMode(ProviderContainer container) async {
   }
 }
 
-
 /// 设置图片分享处理（Android专属）
 ///
 /// 初始化 ImageShareHandlerService 以接收从相册或其他应用分享的图片
@@ -323,13 +319,73 @@ void _setupImageShareHandler(ProviderContainer container) {
     logger.info('App', '🖼️  [Android] 初始化图片分享处理服务...');
 
     // 初始化服务（会自动设置MethodChannel监听器）
-    ImageShareHandlerService(container);
+    ImageShareHandlerService(
+      onImageShared: (path) =>
+          _openImageDraft(container, File(path), ownsImage: true),
+    );
 
     logger.info('App', '✅ [Android] 图片分享处理服务已启动');
   } catch (e) {
     logger.error('App', '❌ [Android] 图片分享处理服务初始化失败', e);
     // 不抛出异常，避免影响应用启动
   }
+}
+
+const _captureChannel = MethodChannel('com.tntlikely.beecount/capture');
+bool _captureOpening = false;
+
+void _setupScreenshotCaptureHandler(ProviderContainer container) {
+  _captureChannel.setMethodCallHandler((call) async {
+    if (call.method == 'onCaptureReady') {
+      await _consumePendingCapture(container);
+    }
+  });
+}
+
+Future<void> _consumePendingCapture(ProviderContainer container) async {
+  if (_captureOpening) return;
+  _captureOpening = true;
+  try {
+    final path =
+        await _captureChannel.invokeMethod<String>('consumePendingCapture');
+    if (path != null && path.isNotEmpty) {
+      await _openImageDraft(container, File(path), ownsImage: true);
+    }
+  } finally {
+    _captureOpening = false;
+  }
+}
+
+Future<void> _openImageDraft(ProviderContainer container, File image,
+    {required bool ownsImage}) async {
+  // Keep draft contents behind the existing splash and app lock screens.
+  for (var attempt = 0; attempt < 1200; attempt++) {
+    final ready = container.read(appInitStateProvider) == AppInitState.ready &&
+        !container.read(shouldShowWelcomeProvider) &&
+        !container.read(isAppLockedProvider);
+    final navigator = globalNavigatorKey.currentState;
+    if (ready && navigator != null) {
+      await navigator.push(MaterialPageRoute(
+        builder: (_) => ImageDraftPage(image: image, ownsImage: ownsImage),
+      ));
+      return;
+    }
+    await Future.delayed(const Duration(milliseconds: 500));
+  }
+  // A capture left waiting for unlock must not remain on disk indefinitely.
+  if (ownsImage && await image.exists()) await image.delete();
+}
+
+Future<void> _cleanStaleCaptureFiles(
+    {String folderName = 'rancount_capture', String? keepPath}) async {
+  try {
+    final cache = await getTemporaryDirectory();
+    final folder = Directory(p.join(cache.path, folderName));
+    if (!await folder.exists()) return;
+    await for (final item in folder.list()) {
+      if (item is File && item.path != keepPath) await item.delete();
+    }
+  } catch (_) {}
 }
 
 /// 设置 URL 监听（用于 AppLink）
@@ -354,7 +410,8 @@ void _setupUrlListener(ProviderContainer container) {
     appLinkService.onNavigate = (action, {params}) {
       logger.info('AppLink', '触发导航: $action');
       if (action == AppLinkAction.newTransaction && params != null) {
-        container.read(pendingNewTransactionTypeProvider.notifier).state = params.type;
+        container.read(pendingNewTransactionTypeProvider.notifier).state =
+            params.type;
         container.read(pendingNewTransactionCategoryIdProvider.notifier).state =
             params.categoryId;
       }
@@ -566,10 +623,12 @@ class MainApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
         theme: theme,
         darkTheme: BeeTheme.darkTheme(platform: platform).copyWith(
-          colorScheme: BeeTheme.darkTheme(platform: platform).colorScheme.copyWith(primary: primary),
+          colorScheme: BeeTheme.darkTheme(platform: platform)
+              .colorScheme
+              .copyWith(primary: primary),
           primaryColor: primary,
-        ),                                                // ⭐ 暗黑主题（使用动态主题色）
-        themeMode: ref.watch(themeModeProvider),         // ⭐ 使用 provider 支持手动切换
+        ), // ⭐ 暗黑主题（使用动态主题色）
+        themeMode: ref.watch(themeModeProvider), // ⭐ 使用 provider 支持手动切换
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,

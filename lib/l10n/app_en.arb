@@ -5,7 +5,7 @@
   "aiConsentAgree": "Agree & enable",
   "aboutPrivacyPolicy": "Privacy Policy",
   "aboutChangelog": "Changelog",
-  "appTitle": "Bee Accounting",
+  "appTitle": "rancount",
   "@appTitle": {
     "description": "The application title"
   },
