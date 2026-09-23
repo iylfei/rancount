@@ -4093,7 +4093,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get widgetQuickEntryDesc => 'Tap the left side of the widget to quickly add an expense, or tap the right side to add an income. You can also use beecount://new?type=transfer via Shortcuts to quickly start a transfer.';
 
   @override
-  String get appName => 'BeeCount';
+  String get appName => 'rancount';
 
   @override
   String get monthSuffix => '';

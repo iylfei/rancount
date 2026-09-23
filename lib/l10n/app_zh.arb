@@ -1609,7 +1609,7 @@
   "widgetDescription": "小组件会自动同步显示今日和本月的收支数据，每30分钟自动刷新一次。打开应用后会立即更新数据。",
   "widgetQuickEntryTitle": "快捷记账",
   "widgetQuickEntryDesc": "点击小组件左侧区域可快速新建支出，点击右侧区域可快速新建收入。也可通过快捷指令使用 beecount://new?type=transfer 快速发起转账。",
-  "appName": "蜜蜂记账",
+  "appName": "rancount",
   "monthSuffix": "月",
   "todayExpense": "今日支出",
   "todayIncome": "今日收入",

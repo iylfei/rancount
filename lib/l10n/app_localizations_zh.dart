@@ -4093,7 +4093,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get widgetQuickEntryDesc => '点击小组件左侧区域可快速新建支出，点击右侧区域可快速新建收入。也可通过快捷指令使用 beecount://new?type=transfer 快速发起转账。';
 
   @override
-  String get appName => '蜜蜂记账';
+  String get appName => 'rancount';
 
   @override
   String get monthSuffix => '月';
@@ -11977,7 +11977,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get widgetQuickEntryDesc => '點擊小組件左側區域可快速新建支出，點擊右側區域可快速新建收入。也可透過捷徑使用 beecount://new?type=transfer 快速發起轉帳。';
 
   @override
-  String get appName => '蜜蜂記帳';
+  String get appName => 'rancount';
 
   @override
   String get monthSuffix => '月';

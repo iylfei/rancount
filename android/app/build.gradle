@@ -51,11 +51,11 @@ android {
         dev {
             dimension "env"
             applicationIdSuffix ".dev"
-            resValue "string", "app_name", "蜜蜂记账测试版"
+            resValue "string", "app_name", "rancount dev"
         }
         prod {
             dimension "env"
-            resValue "string", "app_name", "蜜蜂记账"
+            resValue "string", "app_name", "rancount"
         }
     }
 

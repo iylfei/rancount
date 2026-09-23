@@ -1227,7 +1227,7 @@
   "widgetDescription": "위젯은 오늘과 이번 달의 수입/지출 데이터를 자동으로 동기화해 표시하며, 30분마다 새로고침됩니다. 앱을 열면 즉시 업데이트됩니다.",
   "widgetQuickEntryTitle": "빠른 입력",
   "widgetQuickEntryDesc": "위젯의 왼쪽을 누르면 지출을 빠르게 추가하고, 오른쪽을 누르면 수입을 추가합니다. 단축어에서 beecount://new?type=transfer 를 사용해 이체를 빠르게 시작할 수도 있습니다.",
-  "appName": "BeeCount",
+  "appName": "rancount",
   "monthSuffix": "",
   "todayExpense": "오늘 지출",
   "todayIncome": "오늘 수입",

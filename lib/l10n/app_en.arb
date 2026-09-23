@@ -1745,7 +1745,7 @@
   "widgetDescription": "Widget automatically syncs to display today's and this month's income and expense data, refreshing every 30 minutes. Data updates immediately when app is opened.",
   "widgetQuickEntryTitle": "Quick Entry",
   "widgetQuickEntryDesc": "Tap the left side of the widget to quickly add an expense, or tap the right side to add an income. You can also use beecount://new?type=transfer via Shortcuts to quickly start a transfer.",
-  "appName": "BeeCount",
+  "appName": "rancount",
   "monthSuffix": "",
   "todayExpense": "Today's Expense",
   "todayIncome": "Today's Income",

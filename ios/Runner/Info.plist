@@ -6,11 +6,8 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>$(APP_DISPLAY_NAME)</string>
-	<!-- 桌面图标 / 任务台显示的 app 名按系统语言本地化:简中显示「蜜蜂记账」、
-	     繁中「蜜蜂記帳」、英文 / 其它语言 fallback 到「BeeCount」。
-	     真实文案在 Runner/{en,zh-Hans,zh-Hant}.lproj/InfoPlist.strings。
-	     解决 App Store 审核 2.3.8 — 英文环境下 marketplace 名 (BeeCount -
-	     Simple Ledger) 跟设备显示名 (蜜蜂记账) 不一致的问题。 -->
+	<!-- 桌面图标与任务切换器名称在 Runner/{en,zh-Hans,zh-Hant}.lproj/
+	     InfoPlist.strings 中本地化，均显示 rancount。 -->
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>en</string>

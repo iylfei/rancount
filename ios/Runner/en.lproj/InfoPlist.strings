@@ -1,6 +1,3 @@
-/* Localized BeeCount app names — solves App Store reviewer hitting 2.3.8
-   when the device language is English but CFBundleDisplayName falls back
-   to the default Chinese "蜜蜂记账" (which doesn't match the App Store
-   marketplace name "BeeCount - Simple Ledger"). */
-"CFBundleDisplayName" = "BeeCount";
-"CFBundleName" = "BeeCount";
+/* Localized app display name. */
+"CFBundleDisplayName" = "rancount";
+"CFBundleName" = "rancount";
