@@ -922,6 +922,7 @@
   "updateDownloadCompletedContext": "다운로드가 완료되었습니다. 수동으로 설치해 주세요",
   "updateDownloadFailedGeneric": "다운로드 실패",
   "updateCheckingUpdate": "업데이트 확인 중...",
+  "updateConfigureCloudServer": "클라우드 서비스에서 BeeCount Cloud 서버를 먼저 설정하세요",
   "updateCurrentLatestVersion": "이미 최신 버전입니다",
   "updateCheckFailedGeneric": "업데이트 확인 실패",
   "updateDownloadProgress": "다운로드 중: {percent}%",

@@ -40,14 +40,19 @@ void main() {
 
   test('draft parser keeps missing values and all independent transactions',
       () {
+    final before = DateTime.now();
     final bills = const JsonResponseParser().parseDraft('''[
       {"type":"expense","amount":-25,"merchant":"咖啡店","account":null},
       {"type":"expense","amount":-8,"time":"2026-09-23T09:00:00",
        "payment_channel":"微信支付","account":"招商银行卡"}
     ]''');
+    final after = DateTime.now();
     expect(bills, hasLength(2));
-    expect(bills.first.time, isNull);
+    expect(bills.first.time, isNotNull);
+    expect(bills.first.time!.isBefore(before), isFalse);
+    expect(bills.first.time!.isAfter(after), isFalse);
     expect(bills.first.account, isNull);
+    expect(bills.last.time, DateTime(2026, 9, 23, 9));
     expect(bills.last.paymentChannel, '微信支付');
     expect(bills.last.account, '招商银行卡');
   });

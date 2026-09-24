@@ -1219,6 +1219,7 @@
   "updateDownloadCompletedContext": "下载完成，请手动安装",
   "updateDownloadFailedGeneric": "下载失败",
   "updateCheckingUpdate": "正在检查更新...",
+  "updateConfigureCloudServer": "请先在云服务中配置 BeeCount Cloud 服务器",
   "updateCurrentLatestVersion": "当前已是最新版本",
   "updateCheckFailedGeneric": "检查更新失败",
   "updateDownloadProgress": "下载中: {percent}%",

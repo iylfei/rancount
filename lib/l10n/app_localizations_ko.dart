@@ -3057,6 +3057,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get updateCheckingUpdate => '업데이트 확인 중...';
 
   @override
+  String get updateConfigureCloudServer => '클라우드 서비스에서 BeeCount Cloud 서버를 먼저 설정하세요';
+
+  @override
   String get updateCurrentLatestVersion => '이미 최신 버전입니다';
 
   @override

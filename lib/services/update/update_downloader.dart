@@ -51,7 +51,10 @@ class UpdateDownloader {
     try {
       // 获取选择的镜像并转换 URL
       final mirror = await GitHubMirrorService.getSelectedMirror();
-      final downloadUrl = GitHubMirrorService.convertToMirrorUrl(url, mirror);
+      final isGitHub = Uri.tryParse(url)?.host == 'github.com';
+      final downloadUrl = isGitHub
+          ? GitHubMirrorService.convertToMirrorUrl(url, mirror)
+          : url;
       logger.info('UpdateDownloader', '使用镜像: ${mirror.name}');
       logger.info('UpdateDownloader', '原始URL: $url');
       logger.info('UpdateDownloader', '下载URL: $downloadUrl');
@@ -105,10 +108,11 @@ class UpdateDownloader {
                     LinearProgressIndicator(value: progress),
                     const SizedBox(height: 8),
                     // 显示当前使用的镜像
-                    Text(
-                      AppLocalizations.of(context).updateDownloadMirror(currentMirrorName),
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                    ),
+                    if (isGitHub)
+                      Text(
+                        AppLocalizations.of(context).updateDownloadMirror(currentMirrorName),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      ),
                     const SizedBox(height: 8),
                     Text(AppLocalizations.of(context).updateDownloadBackgroundHint,
                         style: TextStyle(fontSize: 12, color: Colors.grey)),
@@ -148,7 +152,6 @@ class UpdateDownloader {
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache',
-            'Referer': 'https://github.com/TNT-Likely/BeeCount/releases',
           },
         ),
         onReceiveProgress: (received, total) {

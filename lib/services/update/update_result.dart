@@ -6,6 +6,7 @@ class UpdateResult {
   final String? filePath;
   final String? version;
   final String? downloadUrl;
+  final String? sha256;
   final String? releaseNotes;
   final UpdateResultType? type;
 
@@ -16,6 +17,7 @@ class UpdateResult {
     this.filePath,
     this.version,
     this.downloadUrl,
+    this.sha256,
     this.releaseNotes,
     this.type,
   });
@@ -29,7 +31,7 @@ class UpdateResult {
     this.downloadUrl,
     this.releaseNotes,
     required this.type,
-  });
+  }) : sha256 = null;
 
   factory UpdateResult.downloadSuccess(String filePath) => UpdateResult._(
         success: true,

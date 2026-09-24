@@ -51,6 +51,8 @@ String _localizeUpdateMessage(BuildContext context, String? message) {
       return AppLocalizations.of(context).updateNoApkFound;
     case '__UPDATE_ALREADY_LATEST_SIMPLE__':
       return AppLocalizations.of(context).updateAlreadyLatest;
+    case '__UPDATE_SERVER_NOT_CONFIGURED__':
+      return AppLocalizations.of(context).updateConfigureCloudServer;
     default:
       return message;
   }
@@ -67,7 +69,8 @@ class UpdateService {
   /// 下载并安装APK更新
   static Future<UpdateResult> downloadAndInstallUpdate(
     BuildContext context,
-    String downloadUrl, {
+    String downloadUrl,
+    String expectedSha256, {
     Function(double progress, String status)? onProgress,
   }) async {
     try {
@@ -105,7 +108,8 @@ class UpdateService {
         logger.info('UpdateService', '找到缓存的APK: $cachedApkPath');
 
         // 验证APK文件完整性
-        final isValid = await UpdateCache.validateApkFile(cachedApkPath);
+        final isValid = await UpdateCache.validateApkFile(cachedApkPath) &&
+            await UpdateCache.matchesSha256(cachedApkPath, expectedSha256);
 
         if (!isValid) {
           // APK文件损坏，询问用户是否重新下载
@@ -173,6 +177,13 @@ class UpdateService {
       );
 
       if (downloadResult.success && downloadResult.filePath != null) {
+        final isValid = await UpdateCache.validateApkFile(downloadResult.filePath!) &&
+            await UpdateCache.matchesSha256(
+                downloadResult.filePath!, expectedSha256);
+        if (!isValid) {
+          await UpdateCache.deleteApkFile(downloadResult.filePath!);
+          return UpdateResult.downloadFailed('安装包校验失败，请重新下载');
+        }
         // 下载成功，询问是否立即安装
         logger.info('UpdateService', '下载成功，准备显示安装确认弹窗');
         logger.info('UpdateService', 'Context挂载状态: ${context.mounted}');
@@ -330,7 +341,9 @@ class UpdateService {
               checkResult.message?.startsWith('__UPDATE_CHECK') == true;
           if (isNetworkError) {
             // 网络错误或API错误，提供去GitHub的兜底选项
-            await UpdateDialogs.showUpdateErrorWithFallback(context, message);
+            await AppDialog.error(context,
+                title: AppLocalizations.of(context).updateCheckFailedTitle,
+                message: message);
           } else {
             // 正常情况（已是最新版本）
             await AppDialog.info(
@@ -364,6 +377,7 @@ class UpdateService {
         final downloadResult = await downloadAndInstallUpdate(
           context,
           checkResult.downloadUrl!,
+          checkResult.sha256!,
           onProgress: setProgress,
         );
 
@@ -390,15 +404,20 @@ class UpdateService {
           // 显示下载错误信息，并提供GitHub fallback
           logger.warning('UpdateService', 'UPDATE_CRASH: 🚨 即将显示下载失败弹窗');
           final localizedError = _localizeUpdateMessage(context, downloadResult.message!);
-          await UpdateDialogs.showDownloadErrorWithFallback(
-              context, localizedError.isNotEmpty ? localizedError : downloadResult.message!);
+          await AppDialog.error(context,
+              title: AppLocalizations.of(context).updateDownloadFailedTitle,
+              message: localizedError.isNotEmpty
+                  ? localizedError
+                  : downloadResult.message!);
         } else if (downloadResult.success) {
           logger.info('UpdateService', 'UPDATE_CRASH: ✅ 下载和安装流程成功完成');
         }
         // 成功下载的情况不需要额外提示，UpdateService内部已处理
       } catch (e) {
         if (context.mounted) {
-          await UpdateDialogs.showUpdateErrorWithFallback(context, AppLocalizations.of(context).updateCheckingUpdateError('$e'));
+          await AppDialog.error(context,
+              title: AppLocalizations.of(context).updateCheckFailedTitle,
+              message: AppLocalizations.of(context).updateCheckingUpdateError('$e'));
         }
       } finally {
         setLoading(false);

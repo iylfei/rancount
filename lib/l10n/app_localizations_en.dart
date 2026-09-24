@@ -3057,6 +3057,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get updateCheckingUpdate => 'Checking for updates...';
 
   @override
+  String get updateConfigureCloudServer => 'Configure a BeeCount Cloud server in Cloud Services first';
+
+  @override
   String get updateCurrentLatestVersion => 'Already latest version';
 
   @override

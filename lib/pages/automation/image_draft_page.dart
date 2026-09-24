@@ -18,6 +18,8 @@ import '../../services/billing/post_processor.dart';
 import '../../services/data/tag_seed_service.dart';
 import '../transaction/transaction_editor_page.dart';
 import '../../utils/beijing_time.dart';
+import '../../utils/category_utils.dart';
+import '../../widgets/category_icon.dart';
 
 class ImageDraftPage extends ConsumerStatefulWidget {
   final File? image;
@@ -440,18 +442,69 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
     final session = _session!;
     final bill = session.entries[index].bill;
     final repo = ref.read(repositoryProvider);
-    final List<({String name, String label})> options;
     if (field == 'category') {
-      options = (await repo.getAllCategories())
+      final categories = (await repo.getAllCategories())
           .where((c) => c.kind == bill.type?.name)
-          .map((c) => (name: c.name, label: c.name))
           .toList();
-    } else {
-      options = (await repo.getAllAccounts())
-          .where((a) => a.ledgerId == session.ledgerId && !a.hidden)
-          .map((a) => (name: a.name, label: '${a.name} (${a.currency})'))
-          .toList();
+      if (!mounted || _saving || _confirmPending) return;
+      final selected = await showModalBottomSheet<Category>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => SafeArea(
+          child: SizedBox(
+            height: MediaQuery.sizeOf(context).height * 0.72,
+            child: categories.isEmpty
+                ? const Center(child: Text('暂无可选分类，请先创建分类'))
+                : LayoutBuilder(builder: (context, constraints) {
+                    final columns = (constraints.maxWidth / 82).floor().clamp(4, 6);
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(12),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        mainAxisSpacing: 8,
+                        crossAxisSpacing: 4,
+                        childAspectRatio: 0.82,
+                      ),
+                      itemCount: categories.length,
+                      itemBuilder: (context, categoryIndex) {
+                        final category = categories[categoryIndex];
+                        return InkWell(
+                          onTap: () => Navigator.pop(context, category),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CategoryIconWidget(
+                                category: category,
+                                size: 38,
+                                circular: true,
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                CategoryUtils.getDisplayName(category.name, context),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  }),
+          ),
+        ),
+      );
+      if (selected != null && mounted && !_saving && !_confirmPending) {
+        _edit(index, field, selected.name);
+      }
+      return;
     }
+    final options = (await repo.getAllAccounts())
+        .where((a) => a.ledgerId == session.ledgerId && !a.hidden)
+        .map((a) => (name: a.name, label: '${a.name} (${a.currency})'))
+        .toList();
     if (!mounted || _saving || _confirmPending) return;
     final selected = await showModalBottomSheet<String>(
         context: context,

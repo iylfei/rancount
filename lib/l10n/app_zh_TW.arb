@@ -2118,6 +2118,7 @@
   "updateCheckingCache": "檢查本地快取...",
   "updateCheckingPermissions": "檢查權限...",
   "updateCheckingUpdate": "正在檢查更新...",
+  "updateConfigureCloudServer": "請先在雲端服務中設定 BeeCount Cloud 伺服器",
   "updateCheckingUpdateError": "檢查更新失敗: {error}",
   "updateConfirmDownload": "立即下載並安裝",
   "updateCorruptedFileMessage": "檢測到之前下載的安裝包不完整或已損壞，是否刪除並重新下載？",

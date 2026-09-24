@@ -21,6 +21,7 @@ import '../../pages/transaction/refund_page.dart';
 import '../../pages/tag/tag_detail_page.dart';
 import '../../pages/attachment/attachment_preview_page.dart';
 import '../../l10n/app_localizations.dart';
+import '../../services/data/tag_seed_service.dart';
 import '../../services/attachment_service.dart';
 import '../../utils/month_range.dart';
 
@@ -555,7 +556,16 @@ class TransactionListState extends ConsumerState<TransactionList> {
                     builder: (context) {
                       // 获取该交易的标签（优先使用预加载数据）
                       final transactionTags = _getTagsForTransaction(it.t.id);
+                      final hiddenBillingTags = {
+                        TagSeedService.getBillingTagName(
+                            TagSeedService.billingTypeImage,
+                            AppLocalizations.of(context)),
+                        TagSeedService.getBillingTagName(
+                            TagSeedService.billingTypeAi,
+                            AppLocalizations.of(context)),
+                      };
                       final tagsList = transactionTags
+                          .where((tag) => !hiddenBillingTags.contains(tag.name))
                           .map((t) => (id: t.id, name: t.name, color: t.color))
                           .toList();
 

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.projection.MediaProjectionManager
+import android.media.projection.MediaProjectionConfig
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -38,7 +39,14 @@ class ScreenshotCaptureActivity : Activity() {
         if (savedInstanceState == null) {
             val manager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             @Suppress("DEPRECATION")
-            startActivityForResult(manager.createScreenCaptureIntent(), REQUEST_CAPTURE)
+            val captureIntent = if (Build.VERSION.SDK_INT >= 34) {
+                manager.createScreenCaptureIntent(
+                    MediaProjectionConfig.createConfigForDefaultDisplay()
+                )
+            } else {
+                manager.createScreenCaptureIntent()
+            }
+            startActivityForResult(captureIntent, REQUEST_CAPTURE)
         }
     }
 

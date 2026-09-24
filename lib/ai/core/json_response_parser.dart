@@ -50,11 +50,13 @@ class JsonResponseParser {
         'note',
       };
       final bills = <BillInfo>[];
+      final recognizedAt = DateTime.now();
       for (final item in items) {
         if (item is! Map<String, dynamic> || !item.keys.any(fields.contains)) {
           throw const FormatException('账单响应包含无法识别的项目');
         }
-        bills.add(BillInfo.fromJson(item));
+        final bill = BillInfo.fromJson(item);
+        bills.add(bill.time == null ? bill.copyWith(time: recognizedAt) : bill);
       }
       return bills;
     } catch (_) {

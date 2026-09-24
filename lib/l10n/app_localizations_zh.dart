@@ -3057,6 +3057,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get updateCheckingUpdate => '正在检查更新...';
 
   @override
+  String get updateConfigureCloudServer => '请先在云服务中配置 BeeCount Cloud 服务器';
+
+  @override
   String get updateCurrentLatestVersion => '当前已是最新版本';
 
   @override
@@ -10942,6 +10945,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get updateCheckingUpdate => '正在檢查更新...';
+
+  @override
+  String get updateConfigureCloudServer => '請先在雲端服務中設定 BeeCount Cloud 伺服器';
 
   @override
   String get updateCurrentLatestVersion => '當前已是最新版本';

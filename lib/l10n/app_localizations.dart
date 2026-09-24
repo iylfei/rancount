@@ -5822,6 +5822,12 @@ abstract class AppLocalizations {
   /// **'Checking for updates...'**
   String get updateCheckingUpdate;
 
+  /// No description provided for @updateConfigureCloudServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure a BeeCount Cloud server in Cloud Services first'**
+  String get updateConfigureCloudServer;
+
   /// No description provided for @updateCurrentLatestVersion.
   ///
   /// In en, this message translates to:

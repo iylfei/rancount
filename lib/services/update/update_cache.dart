@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crypto/crypto.dart';
 import '../system/logger_service.dart';
 
 /// 更新缓存管理类
@@ -10,6 +11,13 @@ class UpdateCache {
   // APK缓存相关常量
   static const String _cachedApkPathKey = 'cached_apk_path';
   static const String _cachedApkVersionKey = 'cached_apk_version';
+
+  static Future<bool> matchesSha256(String filePath, String expected) async {
+    final file = File(filePath);
+    if (!await file.exists()) return false;
+    final actual = await sha256.bind(file.openRead()).first;
+    return actual.toString().toLowerCase() == expected.toLowerCase();
+  }
 
   /// 检查是否有缓存的APK文件对应给定的下载URL
   static Future<String?> checkCachedApkForUrl(String downloadUrl) async {

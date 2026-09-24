@@ -1255,6 +1255,7 @@
   "updateDownloadCompletedContext": "Download completed, please install manually",
   "updateDownloadFailedGeneric": "Download failed",
   "updateCheckingUpdate": "Checking for updates...",
+  "updateConfigureCloudServer": "Configure a BeeCount Cloud server in Cloud Services first",
   "updateCurrentLatestVersion": "Already latest version",
   "updateCheckFailedGeneric": "Update check failed",
   "updateDownloadProgress": "Downloading: {percent}%",
