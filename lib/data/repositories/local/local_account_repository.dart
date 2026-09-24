@@ -819,7 +819,7 @@ class LocalAccountRepository implements AccountRepository {
 
     for (final account in accounts) {
       final balance = await getAccountBalance(account.id);
-      if (isAssetType(account.type)) {
+      if (isAssetType(account.type) || balance > 0) {
         totalAssets += balance;
       } else {
         totalLiabilities += balance;
@@ -843,7 +843,7 @@ class LocalAccountRepository implements AccountRepository {
       final currency = account.currency.toUpperCase();
       final prev = result[currency] ?? (totalAssets: 0.0, totalLiabilities: 0.0, netWorth: 0.0);
 
-      if (isAssetType(account.type)) {
+      if (isAssetType(account.type) || balance > 0) {
         result[currency] = (
           totalAssets: prev.totalAssets + balance,
           totalLiabilities: prev.totalLiabilities,
@@ -930,7 +930,7 @@ class LocalAccountRepository implements AccountRepository {
           final rate = ratesToBase[account.currency.toUpperCase()];
           if (rate == null) continue;
           final bal = balances[dayIndex].balance * rate;
-          if (isAssetType(account.type)) {
+          if (isAssetType(account.type) || bal > 0) {
             assets += bal;
           } else {
             liabilities += bal;

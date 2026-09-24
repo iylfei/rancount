@@ -2930,7 +2930,8 @@
       }
     }
   },
-  "creditCardInitialBalanceHint": "Current debt (negative number)",
+  "creditCardInitialDebt": "Initial debt",
+  "creditCardInitialBalanceHint": "Positive for debt; negative for prepaid credit",
   "selectDay": "Select Day",
   "accountBankName": "Bank",
   "accountBankNameHint": "e.g. ICBC",

@@ -10,10 +10,31 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  test('draft parser distinguishes empty bills from invalid model output', () {
+    const parser = JsonResponseParser();
+    expect(parser.parseDraft('```json\n[]\n```'), isEmpty);
+    for (final response in [
+      '',
+      '无法识别',
+      '[',
+      '[null]',
+      '[{}]',
+      '{"error":"invalid model"}',
+      '[{"amount":-1},null]'
+    ]) {
+      expect(() => parser.parseDraft(response), throwsFormatException);
+    }
+    expect(parser.parseDraft('{"merchant":"咖啡店"}').single.merchant, '咖啡店');
+  });
+
   test('concurrent store instances preserve independent drafts', () async {
-    await Future.wait(List.generate(8, (i) => ImageDraftStore().put(
-        ImageDraftSession(id: 'draft-$i', ledgerId: 1,
-            createdAt: DateTime(2026, 9, 1), entries: const []))));
+    await Future.wait(List.generate(
+        8,
+        (i) => ImageDraftStore().put(ImageDraftSession(
+            id: 'draft-$i',
+            ledgerId: 1,
+            createdAt: DateTime(2026, 9, 1),
+            entries: const []))));
     expect(await ImageDraftStore().load(), hasLength(8));
   });
 

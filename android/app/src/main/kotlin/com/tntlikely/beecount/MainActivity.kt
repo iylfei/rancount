@@ -29,6 +29,15 @@ class MainActivity: FlutterFragmentActivity() {
     private val CAPTURE_CHANNEL = "com.tntlikely.beecount/capture"
     private var captureChannel: MethodChannel? = null
     private var pendingCapturePath: String? = null
+    private var draftRevision = ScreenshotDraftActivity.revision
+
+    override fun onResume() {
+        super.onResume()
+        if (draftRevision != ScreenshotDraftActivity.revision) {
+            draftRevision = ScreenshotDraftActivity.revision
+            captureChannel?.invokeMethod("onDraftClosed", null)
+        }
+    }
     private var shareChannel: MethodChannel? = null
     private var pendingSharePath: String? = null
 
@@ -147,6 +156,7 @@ class MainActivity: FlutterFragmentActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        ImageDraftStoreBridge.register(this, flutterEngine.dartExecutor.binaryMessenger)
 
         captureChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CAPTURE_CHANNEL)
         captureChannel!!.setMethodCallHandler { call, result ->
@@ -155,7 +165,7 @@ class MainActivity: FlutterFragmentActivity() {
                     result.success(pendingCapturePath)
                     pendingCapturePath = null
                 }
-                "peekPendingCapture" -> result.success(pendingCapturePath)
+                "peekPendingCapture" -> result.success(pendingCapturePath ?: ScreenshotDraftActivity.activeCapturePath)
                 "requestAddTile" -> {
                     if (Build.VERSION.SDK_INT >= 33) {
                         try {

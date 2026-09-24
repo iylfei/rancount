@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -11,6 +12,7 @@ import '../../ai/core/prompt_builder.dart';
 import '../../ai/providers/ai_provider_factory.dart';
 import '../../ai/providers/ai_provider_config.dart';
 import '../../data/repositories/base_repository.dart';
+import '../system/logger_service.dart';
 import 'image_vision_config.dart';
 
 class ImageDraftEntry {
@@ -92,6 +94,8 @@ class ImageDraftSession {
 
 /// Drafts stay on this device; screenshots and model responses are never saved here.
 class ImageDraftStore {
+  static const _channel = MethodChannel('com.tntlikely.beecount/draft_store');
+  final bool _nativeStore;
   static const _key = 'rancount_image_drafts_v1';
   static Future<void> _pendingWrite = Future.value();
 
@@ -104,11 +108,13 @@ class ImageDraftStore {
   final Future<SharedPreferences> Function() _preferences;
 
   ImageDraftStore({Future<SharedPreferences> Function()? preferences})
-      : _preferences = preferences ?? SharedPreferences.getInstance;
+      : _preferences = preferences ?? SharedPreferences.getInstance,
+        _nativeStore = Platform.isAndroid && preferences == null;
 
   Future<List<ImageDraftSession>> load() async {
-    final prefs = await _preferences();
-    final raw = prefs.getString(_key);
+    final raw = _nativeStore
+        ? await _channel.invokeMethod<String>('load')
+        : (await _preferences()).getString(_key);
     if (raw == null) return [];
     try {
       final decoded = jsonDecode(raw) as List;
@@ -122,6 +128,11 @@ class ImageDraftStore {
   }
 
   Future<void> put(ImageDraftSession session) => _serialized(() async {
+        if (_nativeStore) {
+          await _channel.invokeMethod<void>(
+              'put', jsonEncode(session.toJson()));
+          return;
+        }
         final sessions = await load();
         sessions.removeWhere((item) => item.id == session.id);
         sessions.insert(0, session);
@@ -132,6 +143,10 @@ class ImageDraftStore {
       });
 
   Future<void> remove(String id) => _serialized(() async {
+        if (_nativeStore) {
+          await _channel.invokeMethod<void>('remove', id);
+          return;
+        }
         final sessions = await load();
         sessions.removeWhere((item) => item.id == id);
         final prefs = await _preferences();
@@ -153,18 +168,22 @@ class ImageDraftService {
   });
 
   Future<ImageDraftSession> recognize(File image, int ledgerId) async {
-    final context = await AiExtractionContext.forLedger(
-      repository: repository,
-      ledgerId: ledgerId,
-    );
+    final timer = Stopwatch()..start();
+    final (context, config) = await (
+      AiExtractionContext.forLedger(
+        repository: repository,
+        ledgerId: ledgerId,
+      ),
+      const ImageVisionConfigStore().load(),
+    ).wait;
+    if (!config.isComplete) throw StateError('image-vision-not-configured');
     final prompt = const PromptBuilder().build(
       context: context,
       inputSource: '分析支付页面截图，从中',
       billGuard: PromptBuilder.billGuardForImage,
       templateOverride: PromptBuilder.draftImageTemplate,
     );
-    final config = await const ImageVisionConfigStore().load();
-    if (!config.isComplete) throw StateError('image-vision-not-configured');
+    logger.info('ImageBillingTiming', 'contextMs=${timer.elapsedMilliseconds}');
     final response = await AIProviderFactory.visionWithConfig(
       image,
       prompt,

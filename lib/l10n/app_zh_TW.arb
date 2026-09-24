@@ -2525,7 +2525,8 @@
       }
     }
   },
-  "creditCardInitialBalanceHint": "目前欠款（填負數）",
+  "creditCardInitialDebt": "初始欠款",
+  "creditCardInitialBalanceHint": "欠款填正數，預存款填負數",
   "selectDay": "選擇日期",
   "accountBankName": "開戶行",
   "accountBankNameHint": "例如：工商銀行",

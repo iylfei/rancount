@@ -6619,7 +6619,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get creditCardInitialBalanceHint => '当前欠款（填负数）';
+  String get creditCardInitialDebt => '初始欠款';
+
+  @override
+  String get creditCardInitialBalanceHint => '欠款填正数，预存款填负数';
 
   @override
   String get selectDay => '选择日期';
@@ -14244,7 +14247,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get creditCardInitialBalanceHint => '目前欠款（填負數）';
+  String get creditCardInitialDebt => '初始欠款';
+
+  @override
+  String get creditCardInitialBalanceHint => '欠款填正數，預存款填負數';
 
   @override
   String get selectDay => '選擇日期';

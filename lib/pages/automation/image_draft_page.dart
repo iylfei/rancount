@@ -14,7 +14,6 @@ import '../../providers.dart';
 import '../../providers/ai_chat_providers.dart';
 import '../../services/billing/image_draft_service.dart';
 import '../../services/billing/image_billing_cache.dart';
-import '../../services/billing/image_vision_config.dart';
 import '../../services/billing/post_processor.dart';
 import '../../services/data/tag_seed_service.dart';
 import '../transaction/transaction_editor_page.dart';
@@ -24,9 +23,16 @@ class ImageDraftPage extends ConsumerStatefulWidget {
   final File? image;
   final bool ownsImage;
   final ImageDraftSession? existing;
+  final Future<void> Function()? onClose;
+  final Future<void> Function(int ledgerId)? onSaved;
 
   const ImageDraftPage(
-      {super.key, this.image, this.ownsImage = false, this.existing});
+      {super.key,
+      this.image,
+      this.ownsImage = false,
+      this.existing,
+      this.onClose,
+      this.onSaved});
 
   @override
   ConsumerState<ImageDraftPage> createState() => _ImageDraftPageState();
@@ -43,6 +49,19 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
   String? _error;
   Future<void> _writes = Future.value();
   bool _writeFailed = false;
+
+  Future<void> _close() async {
+    if (_saving || _confirmPending) return;
+    await _writes;
+    if (!mounted || _saving || _confirmPending || _writeFailed) return;
+    if (widget.onClose != null) {
+      await _deleteOwnedImage();
+      if (!mounted || _saving || _confirmPending) return;
+      await widget.onClose!();
+    } else {
+      Navigator.pop(context);
+    }
+  }
 
   String _label(String zh, String en) =>
       Localizations.localeOf(context).languageCode == 'zh' ? zh : en;
@@ -83,9 +102,6 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
       _error = null;
     });
     try {
-      if (!(await const ImageVisionConfigStore().load()).isComplete) {
-        throw StateError('vision-not-configured');
-      }
       final ledger = await ref.read(currentLedgerProvider.future);
       if (ledger == null) throw StateError('no-ledger');
       final service = ImageDraftService(
@@ -95,12 +111,19 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
       final result = await service.recognize(image, ledger.id);
       if (!mounted) return;
       if (result.entries.isEmpty) {
-        setState(() => _error = _label('没有识别到账单，可重试或手动填写',
-            'No transactions found. Retry or enter one manually.'));
+        setState(() => _error = _label(
+            '模型返回了空账单列表。请先查看本次截图：如果画面正确，可重试识别或检查视觉模型；如果截到了授权框或空白画面，请关闭后重新截图。',
+            'The model returned no bills. Check the captured image first. Retry recognition for a correct image, or capture again if it shows the permission dialog or a blank screen.'));
       } else {
         setState(() => _session = result);
         // The draft contains only text; the captured or shared temp image is done.
         await _deleteOwnedImage();
+      }
+    } on FormatException {
+      if (mounted) {
+        setState(() => _error = _label(
+            '视觉接口已返回，但账单格式无法解析。可重试识别，或检查视觉模型是否支持按要求返回 JSON。',
+            'The vision response could not be parsed as bills. Retry or check whether the model supports the requested JSON format.'));
       }
     } catch (_) {
       if (mounted) {
@@ -111,6 +134,27 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
       if (mounted) setState(() => _recognizing = false);
       if (!mounted) await _deleteOwnedImage();
     }
+  }
+
+  Future<void> _previewImage() async {
+    final image = _image;
+    if (image == null) return;
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (context) => Scaffold(
+        appBar: AppBar(
+            title: Text(_label('本次识别使用的图片', 'Image used for recognition'))),
+        body: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 5,
+          child: Center(
+              child: Image.file(
+            image,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Text('图片已失效，请重新截图'),
+          )),
+        ),
+      ),
+    ));
   }
 
   void _update(int index, ImageDraftEntry Function(ImageDraftEntry) change) {
@@ -307,8 +351,12 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
           await _store.remove(session.id);
         }
         if (savedCount > 0) {
-          await PostProcessor.run(ref,
-              ledgerId: session.ledgerId, tags: true, attachments: false);
+          if (widget.onSaved != null) {
+            await widget.onSaved!(session.ledgerId);
+          } else {
+            await PostProcessor.run(ref,
+                ledgerId: session.ledgerId, tags: true, attachments: false);
+          }
         }
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -321,7 +369,7 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
             _saving = false;
             _confirmPending = false;
           });
-          Navigator.pop(context);
+          await _close();
         }
       } catch (error) {
         if (mounted) {
@@ -349,7 +397,10 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
     await _writes;
     if (session != null) await _store.remove(session.id);
     await _deleteOwnedImage();
-    if (mounted) Navigator.pop(context);
+    if (mounted) {
+      setState(() => _writeFailed = false);
+      await _close();
+    }
   }
 
   void _manual() {
@@ -524,7 +575,10 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
               bill.time == null
                   ? null
                   : beijingTime(bill.time!).toString().split('.').first),
-          _field(index, 'currency', _label('币种（留空使用账户币种）', 'Currency (blank uses account currency)'),
+          _field(
+              index,
+              'currency',
+              _label('币种（留空使用账户币种）', 'Currency (blank uses account currency)'),
               bill.currency),
           if (bill.type != BillType.transfer)
             _choice(index, 'category', _label('分类', 'Category'), bill.category),
@@ -553,9 +607,24 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
   Widget build(BuildContext context) {
     final session = _session;
     return PopScope(
-        canPop: !_saving && !_confirmPending && !_writeFailed,
+        canPop: widget.onClose == null &&
+            !_saving &&
+            !_confirmPending &&
+            !_writeFailed,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && widget.onClose != null) unawaited(_close());
+        },
         child: Scaffold(
           appBar: AppBar(
+              leading: widget.onClose == null
+                  ? null
+                  : IconButton(
+                      tooltip: _label('关闭', 'Close'),
+                      icon: const Icon(Icons.close),
+                      onPressed: _saving || _confirmPending || _writeFailed
+                          ? null
+                          : _close,
+                    ),
               title: Text(_label('图片记账草稿', 'Image billing drafts')),
               actions: [
                 if (_writeFailed)
@@ -578,23 +647,33 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
                     ? Center(
                         child: Padding(
                         padding: const EdgeInsets.all(24),
-                        child:
-                            Column(mainAxisSize: MainAxisSize.min, children: [
-                          Text(_error ?? _label('暂无草稿', 'No drafts yet')),
-                          const SizedBox(height: 16),
-                          if (_image != null)
-                            FilledButton(
-                                onPressed: _recognize,
-                                child:
-                                    Text(_label('重试识别', 'Retry recognition'))),
-                          TextButton(
-                              onPressed: _pickNewImage,
-                              child:
-                                  Text(_label('换张图片', 'Choose another image'))),
-                          TextButton(
-                              onPressed: _manual,
-                              child: Text(_label('手动填写', 'Enter manually'))),
-                        ]),
+                        child: SingleChildScrollView(
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                              Text(_error ?? _label('暂无草稿', 'No drafts yet')),
+                              const SizedBox(height: 16),
+                              if (_image != null)
+                                OutlinedButton.icon(
+                                  onPressed: _previewImage,
+                                  icon: const Icon(Icons.image_outlined),
+                                  label: Text(
+                                      _label('查看本次截图', 'View captured image')),
+                                ),
+                              if (_image != null)
+                                FilledButton(
+                                    onPressed: _recognize,
+                                    child: Text(
+                                        _label('重试识别', 'Retry recognition'))),
+                              TextButton(
+                                  onPressed: _pickNewImage,
+                                  child: Text(
+                                      _label('换张图片', 'Choose another image'))),
+                              TextButton(
+                                  onPressed: _manual,
+                                  child:
+                                      Text(_label('手动填写', 'Enter manually'))),
+                            ])),
                       ))
                     : ListView(
                         padding: const EdgeInsets.all(16),

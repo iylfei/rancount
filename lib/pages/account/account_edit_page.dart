@@ -11,6 +11,7 @@ import '../../utils/currencies.dart';
 import '../../styles/tokens.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../../utils/account_type_utils.dart';
+import '../../utils/account_balance_input.dart';
 import '../../providers/credit_card_reminder_providers.dart';
 
 class AccountEditPage extends ConsumerStatefulWidget {
@@ -74,7 +75,8 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
     _initialBalanceController = TextEditingController(
       text: widget.account?.initialBalance != null &&
               widget.account!.initialBalance != 0.0
-          ? widget.account!.initialBalance.abs().toStringAsFixed(2)
+          ? accountBalanceForInput(widget.account!.type,
+                  widget.account!.initialBalance).toStringAsFixed(2)
           : '',
     );
     _creditLimitController = TextEditingController(
@@ -121,6 +123,7 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
   bool get isEditing => widget.account != null;
 
   String _getInitialBalanceLabel(AppLocalizations l10n) {
+    if (_selectedType == 'credit_card') return l10n.creditCardInitialDebt;
     if (isValuationOnlyType(_selectedType)) {
       return isLiabilityType(_selectedType)
           ? l10n.valuationCurrentDebt
@@ -757,13 +760,8 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
       final repo = ref.read(repositoryProvider);
       final name = _nameController.text.trim();
       final initialBalanceText = _initialBalanceController.text.trim();
-      var initialBalance =
-          initialBalanceText.isEmpty ? 0.0 : double.parse(initialBalanceText);
-
-      // 贷款类型：用户输入正数，存储为负数
-      if (_selectedType == 'loan' && initialBalance > 0) {
-        initialBalance = -initialBalance;
-      }
+      final initialBalance = accountBalanceFromInput(_selectedType,
+          initialBalanceText.isEmpty ? 0.0 : double.parse(initialBalanceText));
 
       // 信用卡字段
       final isCreditCard = _selectedType == 'credit_card';

@@ -24,7 +24,8 @@ class AndroidAutoBillingPage extends StatefulWidget {
   State<AndroidAutoBillingPage> createState() => _AndroidAutoBillingPageState();
 }
 
-class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage> {
+class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage>
+    with WidgetsBindingObserver {
   static const _channel = MethodChannel('com.tntlikely.beecount/capture');
   final _store = ImageDraftStore();
   late Future<List<ImageDraftSession>> _sessions = _store.load();
@@ -38,6 +39,7 @@ class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadVision();
   }
 
@@ -105,10 +107,18 @@ class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _baseUrl.dispose();
     _model.dispose();
     _apiKey.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setState(() => _sessions = _store.load());
+    }
   }
 
   String _label(String zh, String en) =>
@@ -216,7 +226,8 @@ class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage> {
                 return const Text('草稿暂时无法读取，原数据已保留，请重启后重试。');
               }
               final sessions = (snapshot.data ?? const <ImageDraftSession>[])
-                  .where((session) => session.entries.any((entry) => !entry.saved))
+                  .where(
+                      (session) => session.entries.any((entry) => !entry.saved))
                   .toList();
               if (sessions.isEmpty) {
                 return Text(_label('暂无草稿', 'No drafts'));
@@ -224,7 +235,8 @@ class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage> {
               return Column(children: [
                 for (final session in sessions)
                   ListTile(
-                    title: Text(_label('${session.entries.where((entry) => !entry.saved).length} 笔待核对',
+                    title: Text(_label(
+                        '${session.entries.where((entry) => !entry.saved).length} 笔待核对',
                         '${session.entries.length} drafts to review')),
                     subtitle: Text(session.createdAt.toLocal().toString()),
                     trailing: const Icon(Icons.chevron_right),

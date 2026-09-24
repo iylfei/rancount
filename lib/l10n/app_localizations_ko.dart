@@ -6625,7 +6625,10 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get creditCardInitialBalanceHint => '현재 채무액 (음수로 입력)';
+  String get creditCardInitialDebt => '초기 부채';
+
+  @override
+  String get creditCardInitialBalanceHint => '미납금은 양수, 선납금은 음수로 입력';
 
   @override
   String get selectDay => '날짜 선택';

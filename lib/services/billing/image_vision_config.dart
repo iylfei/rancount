@@ -27,11 +27,18 @@ class ImageVisionConfigStore {
 
   const ImageVisionConfigStore();
 
-  Future<ImageVisionConfig> load() async => ImageVisionConfig(
-        baseUrl: (await _storage.read(key: _urlKey) ?? '').trim(),
-        model: (await _storage.read(key: _modelKey) ?? '').trim(),
-        apiKey: (await _storage.read(key: _apiKey) ?? '').trim(),
-      );
+  Future<ImageVisionConfig> load() async {
+    final values = await Future.wait([
+      _storage.read(key: _urlKey),
+      _storage.read(key: _modelKey),
+      _storage.read(key: _apiKey),
+    ]);
+    return ImageVisionConfig(
+      baseUrl: (values[0] ?? '').trim(),
+      model: (values[1] ?? '').trim(),
+      apiKey: (values[2] ?? '').trim(),
+    );
+  }
 
   Future<void> save(ImageVisionConfig config) async {
     await _storage.write(key: _urlKey, value: config.baseUrl.trim());

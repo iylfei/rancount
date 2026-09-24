@@ -27,8 +27,41 @@ class JsonResponseParser {
   }
 
   /// 图片草稿保留缺失字段供用户补全，不把模型原文写入日志。
-  List<BillInfo> parseDraft(String response) =>
-      _parse(response, forDraft: true);
+  List<BillInfo> parseDraft(String response) {
+    // An explicit [] means no bill; malformed output must not masquerade as one.
+    final block = _extractBalancedBlock(response, '[', ']') ??
+        _extractBalancedBlock(response, '{', '}');
+    if (block == null) throw const FormatException('账单响应缺少 JSON');
+    try {
+      final decoded = jsonDecode(_cleanupJson(block));
+      final items = decoded is List ? decoded : [decoded];
+      const fields = {
+        'type',
+        'amount',
+        'time',
+        'category',
+        'merchant',
+        'item_description',
+        'payment_channel',
+        'account',
+        'from_account',
+        'to_account',
+        'currency',
+        'note',
+      };
+      final bills = <BillInfo>[];
+      for (final item in items) {
+        if (item is! Map<String, dynamic> || !item.keys.any(fields.contains)) {
+          throw const FormatException('账单响应包含无法识别的项目');
+        }
+        bills.add(BillInfo.fromJson(item));
+      }
+      return bills;
+    } catch (_) {
+      // Never include the source response or field values in error messages.
+      throw const FormatException('账单响应格式不正确');
+    }
+  }
 
   List<BillInfo> _parse(String response, {required bool forDraft}) {
     // 数组路径优先 —— 新默认 prompt 期望此格式

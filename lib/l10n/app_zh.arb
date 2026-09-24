@@ -2860,7 +2860,8 @@
       }
     }
   },
-  "creditCardInitialBalanceHint": "当前欠款（填负数）",
+  "creditCardInitialDebt": "初始欠款",
+  "creditCardInitialBalanceHint": "欠款填正数，预存款填负数",
   "selectDay": "选择日期",
   "accountBankName": "开户行",
   "accountBankNameHint": "例如：工商银行",

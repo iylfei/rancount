@@ -10,7 +10,9 @@ class ScreenshotTileService : TileService() {
     override fun onClick() {
         super.onClick()
         val launch = {
-            val intent = Intent(this, ScreenshotCaptureActivity::class.java)
+            val target = if (ScreenshotDraftActivity.isOpen) ScreenshotDraftActivity::class.java
+                else ScreenshotCaptureActivity::class.java
+            val intent = Intent(this, target)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             if (Build.VERSION.SDK_INT >= 34) {
                 val pending = PendingIntent.getActivity(

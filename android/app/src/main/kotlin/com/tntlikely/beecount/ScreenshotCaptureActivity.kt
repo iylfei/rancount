@@ -16,8 +16,7 @@ class ScreenshotCaptureActivity : Activity() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val path = intent?.getStringExtra(ScreenshotCaptureService.EXTRA_PATH)
             if (path != null) {
-                startActivity(Intent(this@ScreenshotCaptureActivity, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                startActivity(Intent(this@ScreenshotCaptureActivity, ScreenshotDraftActivity::class.java).apply {
                     putExtra(MainActivity.EXTRA_CAPTURE_PATH, path)
                 })
             } else {

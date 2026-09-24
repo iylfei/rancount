@@ -32,21 +32,24 @@ class BackgroundSyncRetry {
     }
   }
 
-  static Future<void> schedule(int ledgerId) async {
+  static Future<void> schedule(int ledgerId, {bool immediately = false}) async {
     if (!Platform.isAndroid || !_initialized) return;
     for (var attempt = 1; attempt < _delays.length; attempt++) {
-      await Workmanager().cancelByUniqueName('rancount-sync-$ledgerId-$attempt');
+      await Workmanager()
+          .cancelByUniqueName('rancount-sync-$ledgerId-$attempt');
     }
-    await _scheduleAttempt(ledgerId, 0);
+    await _scheduleAttempt(ledgerId, 0,
+        delay: immediately ? Duration.zero : null);
   }
 
-  static Future<void> _scheduleAttempt(int ledgerId, int attempt) async {
+  static Future<void> _scheduleAttempt(int ledgerId, int attempt,
+      {Duration? delay}) async {
     if (attempt >= _delays.length) return;
     await Workmanager().registerOneOffTask(
       'rancount-sync-$ledgerId-$attempt',
       _task,
       inputData: {'ledgerId': ledgerId, 'attempt': attempt},
-      initialDelay: _delays[attempt],
+      initialDelay: delay ?? _delays[attempt],
       constraints: Constraints(networkType: NetworkType.connected),
       existingWorkPolicy: ExistingWorkPolicy.replace,
     );

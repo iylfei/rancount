@@ -15,6 +15,40 @@ void main() {
   });
   tearDown(() async => db.close());
 
+  test('credit debt reduces net worth; prepaid credit counts as an asset',
+      () async {
+    await db.into(db.accounts).insert(AccountsCompanion.insert(
+        ledgerId: 1, name: '资产', initialBalance: const d.Value(1344.95)));
+    await db.into(db.accounts).insert(AccountsCompanion.insert(
+        ledgerId: 1,
+        name: '花呗',
+        type: const d.Value('credit_card'),
+        initialBalance: const d.Value(-763)));
+    final debt = await repo.getNetWorthBreakdown();
+    expect(debt.netWorth, closeTo(581.95, 0.001));
+    expect(debt.totalAssets, 1344.95);
+    expect(debt.totalLiabilities, -763);
+
+    await db.into(db.accounts).insert(AccountsCompanion.insert(
+        ledgerId: 1,
+        name: '溢缴款',
+        type: const d.Value('credit_card'),
+        initialBalance: const d.Value(100)));
+    final prepaid = await repo.getNetWorthBreakdown();
+    expect(prepaid.totalAssets, 1444.95);
+    expect(prepaid.totalLiabilities, -763);
+    expect(prepaid.netWorth, closeTo(681.95, 0.001));
+    final currency = (await repo.getNetWorthBreakdownByCurrency())['CNY']!;
+    expect(currency, prepaid);
+    final series = await repo.getNetWorthTrendSeries(
+        startDate: DateTime(2026, 9, 24),
+        endDate: DateTime(2026, 9, 24),
+        ratesToBase: const {'CNY': 1});
+    expect(series.single.assets, prepaid.totalAssets);
+    expect(series.single.liabilities, prepaid.totalLiabilities);
+    expect(series.single.net, prepaid.netWorth);
+  });
+
   test('三值序列:资产账户与负债账户分别累计,net = assets + liabilities', () async {
     final cashId = await db.into(db.accounts).insert(AccountsCompanion.insert(
         ledgerId: 1,

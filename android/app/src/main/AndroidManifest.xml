@@ -48,9 +48,22 @@
         </service>
         <activity
             android:name=".ScreenshotCaptureActivity"
+            android:taskAffinity="${applicationId}.capture"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:exported="false"
             android:excludeFromRecents="true" />
+        <activity
+            android:name=".ScreenshotDraftActivity"
+            android:theme="@style/ScreenshotDialogTheme"
+            android:taskAffinity="${applicationId}.capture"
+            android:launchMode="singleTop"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:hardwareAccelerated="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:windowSoftInputMode="adjustResize" />
         <service
             android:name=".ScreenshotCaptureService"
             android:exported="false"

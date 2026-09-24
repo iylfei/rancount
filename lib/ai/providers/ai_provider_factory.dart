@@ -184,7 +184,28 @@ class AIProviderFactory {
         Uri.tryParse(config.baseUrl)?.hasScheme != true) {
       throw AIException('图片视觉服务配置不完整');
     }
-    return _visionOpenAI(config, image, prompt);
+    return _visionOpenAI(config, image, prompt,
+        requestOptions:
+            screenshotVisionOptions(config.baseUrl, config.visionModel));
+  }
+
+  /// Vendor-specific options are restricted to the documented official endpoint.
+  @visibleForTesting
+  static Map<String, dynamic> screenshotVisionOptions(
+      String baseUrl, String model) {
+    final uri = Uri.tryParse(baseUrl);
+    if (uri?.scheme == 'https' &&
+        uri?.host == 'api.deepseek.com' &&
+        const {
+          'deepseek-flash',
+          'deepseek-v4-flash',
+          'deepseek-v4-flash-vision-exp'
+        }.contains(model)) {
+      return {
+        'thinking': {'type': 'disabled'}
+      };
+    }
+    return {};
   }
 
   /// 语音转文字
@@ -617,8 +638,9 @@ class AIProviderFactory {
   static Future<String> _visionOpenAI(
     AIServiceProviderConfig config,
     File image,
-    String prompt,
-  ) async {
+    String prompt, {
+    Map<String, dynamic> requestOptions = const {},
+  }) async {
     final dio = Dio(BaseOptions(
       baseUrl: config.baseUrl,
       connectTimeout: const Duration(seconds: 60),
@@ -629,19 +651,24 @@ class AIProviderFactory {
       },
     ));
 
-    final imageBytes = await image.readAsBytes();
-    final base64Image = base64Encode(imageBytes);
-    final lowerPath = image.path.toLowerCase();
-    final mimeType = lowerPath.endsWith('.png')
-        ? 'image/png'
-        : lowerPath.endsWith('.webp')
-            ? 'image/webp'
-            : 'image/jpeg';
-
+    final timer = Stopwatch()..start();
     try {
+      final imageBytes = await image.readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+      final lowerPath = image.path.toLowerCase();
+      final mimeType = lowerPath.endsWith('.png')
+          ? 'image/png'
+          : lowerPath.endsWith('.webp')
+              ? 'image/webp'
+              : 'image/jpeg';
+
+      logger.info('ImageBillingTiming',
+          'imagePrepareMs=${timer.elapsedMilliseconds} imageBytes=${imageBytes.length}');
+      timer.reset();
       final response = await dio.post(
         '/chat/completions',
         data: {
+          ...requestOptions,
           'model': config.visionModel,
           'messages': [
             {
@@ -667,6 +694,8 @@ class AIProviderFactory {
     } on DioException catch (e) {
       throw AIException(_extractDioError(e));
     } finally {
+      logger.info(
+          'ImageBillingTiming', 'requestMs=${timer.elapsedMilliseconds}');
       dio.close(force: true);
     }
   }

@@ -6625,7 +6625,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get creditCardInitialBalanceHint => 'Current debt (negative number)';
+  String get creditCardInitialDebt => 'Initial debt';
+
+  @override
+  String get creditCardInitialBalanceHint => 'Positive for debt; negative for prepaid credit';
 
   @override
   String get selectDay => 'Select Day';

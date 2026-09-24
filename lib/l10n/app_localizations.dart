@@ -12626,10 +12626,16 @@ abstract class AppLocalizations {
   /// **'{days} days before'**
   String creditCardReminderDaysBefore(int days);
 
+  /// No description provided for @creditCardInitialDebt.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial debt'**
+  String get creditCardInitialDebt;
+
   /// No description provided for @creditCardInitialBalanceHint.
   ///
   /// In en, this message translates to:
-  /// **'Current debt (negative number)'**
+  /// **'Positive for debt; negative for prepaid credit'**
   String get creditCardInitialBalanceHint;
 
   /// No description provided for @selectDay.
