@@ -93,6 +93,14 @@ class ImageDraftSession {
 /// Drafts stay on this device; screenshots and model responses are never saved here.
 class ImageDraftStore {
   static const _key = 'rancount_image_drafts_v1';
+  static Future<void> _pendingWrite = Future.value();
+
+  Future<void> _serialized(Future<void> Function() operation) {
+    final result = _pendingWrite.then((_) => operation());
+    _pendingWrite = result.catchError((Object _) {});
+    return result;
+  }
+
   final Future<SharedPreferences> Function() _preferences;
 
   ImageDraftStore({Future<SharedPreferences> Function()? preferences})
@@ -109,26 +117,28 @@ class ImageDraftStore {
               Map<String, dynamic>.from(item as Map)))
           .toList();
     } catch (_) {
-      return [];
+      throw const FormatException('草稿数据无法读取，已保留原数据');
     }
   }
 
-  Future<void> put(ImageDraftSession session) async {
-    final sessions = await load();
-    sessions.removeWhere((item) => item.id == session.id);
-    sessions.insert(0, session);
-    final prefs = await _preferences();
-    await prefs.setString(
-        _key, jsonEncode(sessions.map((s) => s.toJson()).toList()));
-  }
+  Future<void> put(ImageDraftSession session) => _serialized(() async {
+        final sessions = await load();
+        sessions.removeWhere((item) => item.id == session.id);
+        sessions.insert(0, session);
+        final prefs = await _preferences();
+        final saved = await prefs.setString(
+            _key, jsonEncode(sessions.map((s) => s.toJson()).toList()));
+        if (!saved) throw StateError('草稿暂存失败');
+      });
 
-  Future<void> remove(String id) async {
-    final sessions = await load();
-    sessions.removeWhere((item) => item.id == id);
-    final prefs = await _preferences();
-    await prefs.setString(
-        _key, jsonEncode(sessions.map((s) => s.toJson()).toList()));
-  }
+  Future<void> remove(String id) => _serialized(() async {
+        final sessions = await load();
+        sessions.removeWhere((item) => item.id == id);
+        final prefs = await _preferences();
+        final saved = await prefs.setString(
+            _key, jsonEncode(sessions.map((s) => s.toJson()).toList()));
+        if (!saved) throw StateError('草稿暂存失败');
+      });
 }
 
 class ImageDraftService {

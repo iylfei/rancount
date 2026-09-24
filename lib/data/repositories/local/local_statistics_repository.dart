@@ -1,3 +1,4 @@
+import '../../../utils/beijing_time.dart';
 import 'package:drift/drift.dart' as d;
 
 import '../../db.dart';
@@ -207,14 +208,15 @@ class LocalStatisticsRepository implements StatisticsRepository {
         .get();
     final map = <DateTime, double>{};
     for (final t in rows) {
-      final dt = t.happenedAt.toLocal();
-      final day = DateTime(dt.year, dt.month, dt.day);
+      final dt = beijingTime(t.happenedAt);
+      final day = beijingDate(dt.year, dt.month, dt.day);
       map.update(day, (v) => v + (t.nativeAmount ?? t.amount),
           ifAbsent: () => t.nativeAmount ?? t.amount);
     }
     // ensure full range continuity
     final result = <({DateTime day, double total})>[];
-    for (DateTime d = DateTime(start.year, start.month, start.day);
+    final firstDay = beijingTime(start);
+    for (DateTime d = beijingDate(firstDay.year, firstDay.month, firstDay.day);
         d.isBefore(end);
         d = d.add(const Duration(days: 1))) {
       result.add((day: d, total: map[d] ?? 0));
@@ -241,7 +243,7 @@ class LocalStatisticsRepository implements StatisticsRepository {
     final map = <int, double>{};
     for (final t in rows) {
       // 年范围 [当年1月周期起点, 次年1月周期起点) 内的标签必属 year,直接取 month
-      final label = labelForDate(t.happenedAt.toLocal(), sd);
+      final label = labelForDate(beijingTime(t.happenedAt), sd);
       map.update(label.month, (v) => v + (t.nativeAmount ?? t.amount),
           ifAbsent: () => t.nativeAmount ?? t.amount);
     }
@@ -268,7 +270,7 @@ class LocalStatisticsRepository implements StatisticsRepository {
     final map = <int, double>{};
     int minYear = 9999, maxYear = 0;
     for (final t in rows) {
-      final y = labelForDate(t.happenedAt.toLocal(), sd).year;
+      final y = labelForDate(beijingTime(t.happenedAt), sd).year;
       if (y < minYear) minYear = y;
       if (y > maxYear) maxYear = y;
       map.update(y, (v) => v + (t.nativeAmount ?? t.amount),

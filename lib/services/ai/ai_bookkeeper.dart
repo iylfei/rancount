@@ -129,6 +129,7 @@ class AiBookkeeper {
         bill: bill.copyWith(ledgerId: ledgerId),
         ledgerId: ledgerId,
         syncId: syncId,
+        confirmedImage: true,
         billingTypes: billingTypes,
         customTagNames: customTagNames,
         l10n: l10n,

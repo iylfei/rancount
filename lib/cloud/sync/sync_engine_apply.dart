@@ -20,6 +20,8 @@ extension SyncEngineApplyExt on SyncEngine {
       return false;
     }
 
+    if (await _retainConflict(change)) return false;
+
     switch (change.entityType) {
       case 'transaction':
         await _applyTransactionChange(change);

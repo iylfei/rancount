@@ -212,14 +212,19 @@ class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage> {
           FutureBuilder<List<ImageDraftSession>>(
             future: _sessions,
             builder: (context, snapshot) {
-              final sessions = snapshot.data ?? const <ImageDraftSession>[];
+              if (snapshot.hasError) {
+                return const Text('草稿暂时无法读取，原数据已保留，请重启后重试。');
+              }
+              final sessions = (snapshot.data ?? const <ImageDraftSession>[])
+                  .where((session) => session.entries.any((entry) => !entry.saved))
+                  .toList();
               if (sessions.isEmpty) {
                 return Text(_label('暂无草稿', 'No drafts'));
               }
               return Column(children: [
                 for (final session in sessions)
                   ListTile(
-                    title: Text(_label('${session.entries.length} 笔待核对',
+                    title: Text(_label('${session.entries.where((entry) => !entry.saved).length} 笔待核对',
                         '${session.entries.length} drafts to review')),
                     subtitle: Text(session.createdAt.toLocal().toString()),
                     trailing: const Icon(Icons.chevron_right),

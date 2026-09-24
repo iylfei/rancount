@@ -318,12 +318,15 @@ extension SyncEngineSerializationExt on SyncEngine {
   }
 
   Future<void> _doFullPush({required int ledgerId}) async {
+    await _checkConflictsBeforePush();
     logger.info('SyncEngine', '开始全量推送 ledger=$ledgerId');
 
     final ledger = await (db.select(db.ledgers)
           ..where((l) => l.id.equals(ledgerId)))
         .getSingle();
     final pathForSnapshot = ledger.syncId ?? ledger.id.toString();
+    // Never acknowledge edits made while the snapshot is uploading.
+    final coveredChanges = await changeTracker.getUnpushedChangesForLedger(ledgerId);
 
     // 0. 先用专用的 writeCreateLedger API(POST /write/ledgers)显式带 currency
     //    创建 server 端账本。这是修复"app 选 JPY 创建账本,server 端却是 CNY"的
@@ -354,6 +357,7 @@ extension SyncEngineSerializationExt on SyncEngine {
     //    避免 server 出现两条 external_id 指向同一账本的分裂。
     try {
       final jsonData = await _exportLedgerJson(ledger);
+      await _assertNoConflicts();
       await provider.storage.upload(
         path: pathForSnapshot,
         data: jsonData,
@@ -392,10 +396,10 @@ extension SyncEngineSerializationExt on SyncEngine {
     //
     // 修复:把 delete change 留作未推送,sync() 在 fullPush 之后会再调一次
     // _push 把它们推上去 + markPushed。
-    final unpushed = await changeTracker.getUnpushedChangesForLedger(ledgerId);
+    final unpushed = coveredChanges;
     final nonDeletes = unpushed.where((c) => c.action != 'delete').toList();
     if (nonDeletes.isNotEmpty) {
-      await changeTracker.markPushed(nonDeletes.map((c) => c.id).toList());
+      await _markPushedUnlessConflicted(nonDeletes.map((c) => c.id).toList());
     }
 
     logger.info('SyncEngine',
@@ -589,6 +593,7 @@ extension SyncEngineSerializationExt on SyncEngine {
       try {
         logger.info('SyncEngine',
             '推送批次 ${i ~/ batchSize + 1}: ${batch.length}条 (${i + 1}-$end)');
+        await _assertNoConflicts();
         await provider.pushChanges(changes: batch);
         logger.info('SyncEngine', '批次 ${i ~/ batchSize + 1} 推送成功');
       } catch (e, st) {

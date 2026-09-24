@@ -11,6 +11,8 @@
 /// 把 DateTime(y, m, 1) 当日期喂给 containing 类逻辑会整体偏移一个周期。
 library;
 
+import 'beijing_time.dart';
+
 typedef DateRange = ({DateTime start, DateTime end});
 
 int _clampDay(int startDay) => startDay < 1 ? 1 : (startDay > 28 ? 28 : startDay);
@@ -19,22 +21,23 @@ int _clampDay(int startDay) => startDay < 1 ? 1 : (startDay > 28 ? 28 : startDay
 DateRange periodForLabel(int year, int month, int startDay) {
   final d = _clampDay(startDay);
   return (
-    start: DateTime(year, month, d),
-    end: DateTime(year, month + 1, d), // Dart 自动进位:13月 → 次年1月
+    start: beijingDate(year, month, d),
+    end: beijingDate(year, month + 1, d), // Dart 自动进位:13月 → 次年1月
   );
 }
 
 /// [date] 所属周期的「标签月」,返回 DateTime(y, m, 1)(仅作 key / 显示)。
 /// 规则:date.day >= startDay 归当月,否则归上月。
-/// [date] 必须是本地时间 DateTime;传 UTC 会在临近零点时错一天。
+/// [date] 按同一时刻的北京时间归属周期。
 DateTime labelForDate(DateTime date, int startDay) {
   final d = _clampDay(startDay);
+  date = beijingTime(date);
   if (date.day >= d) return DateTime(date.year, date.month, 1);
   return DateTime(date.year, date.month - 1, 1); // 0月 → 上年12月,Dart 自动借位
 }
 
 /// [date] 所在周期的范围,= periodForLabel(labelForDate(date))。预算「当前周期」用。
-/// [date] 必须是本地时间(同 labelForDate)。
+/// [date] 按北京时间处理(同 labelForDate)。
 DateRange periodContaining(DateTime date, int startDay) {
   final label = labelForDate(date, startDay);
   return periodForLabel(label.year, label.month, startDay);
@@ -43,7 +46,7 @@ DateRange periodContaining(DateTime date, int startDay) {
 /// 「year 年」= [当年1月周期起点, 次年1月周期起点),恰 12 个完整周期(D4)。
 DateRange yearRangeFor(int year, int startDay) {
   final d = _clampDay(startDay);
-  return (start: DateTime(year, 1, d), end: DateTime(year + 1, 1, d));
+  return (start: beijingDate(year, 1, d), end: beijingDate(year + 1, 1, d));
 }
 
 /// UI 周期范围短文案,如 "6.10-7.9"(含端展示);startDay=1 返回 null(自然月不标注)。

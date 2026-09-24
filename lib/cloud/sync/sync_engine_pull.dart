@@ -174,6 +174,7 @@ class SyncErrorStore {
   Future<void> markResolved(int changeId) async {
     await (_db.update(_db.syncPullErrors)
           ..where((t) => t.changeId.equals(changeId))
+          ..where((t) => t.errorClass.isNull() | t.errorClass.equals('SyncConflictException').not())
           ..where((t) => t.resolvedAt.isNull()))
         .write(SyncPullErrorsCompanion(
       resolvedAt: d.Value(DateTime.now().toUtc()),

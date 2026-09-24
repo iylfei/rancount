@@ -9,8 +9,9 @@ import '../../services/billing/refund_service.dart';
 
 class RefundPage extends ConsumerStatefulWidget {
   final Transaction original;
+  final Transaction? existing;
 
-  const RefundPage({super.key, required this.original});
+  const RefundPage({super.key, required this.original, this.existing});
 
   @override
   ConsumerState<RefundPage> createState() => _RefundPageState();
@@ -29,7 +30,15 @@ class _RefundPageState extends ConsumerState<RefundPage> {
   @override
   void initState() {
     super.initState();
-    _load();
+    final existing = widget.existing;
+    if (existing != null) {
+      _amount.text = existing.amount.abs().toStringAsFixed(2);
+      _note.text = existing.note ?? '';
+      _date = existing.happenedAt;
+    }
+    _load().catchError((Object _) {
+      if (mounted) setState(() => _error = '无法读取原支出，请返回后重试');
+    });
   }
 
   Future<void> _load() async {
@@ -39,7 +48,7 @@ class _RefundPageState extends ConsumerState<RefundPage> {
     final accounts = await repo.getAllAccounts();
     if (!mounted) return;
     setState(() {
-      _remaining = remaining;
+      _remaining = remaining + (widget.existing?.amount.abs() ?? 0);
       _accounts = accounts
           .where((a) =>
               a.ledgerId == widget.original.ledgerId &&
@@ -47,9 +56,10 @@ class _RefundPageState extends ConsumerState<RefundPage> {
               a.currency.toUpperCase() ==
                   (widget.original.currencyCode ?? a.currency).toUpperCase())
           .toList();
-      _accountId = _accounts.any((a) => a.id == widget.original.accountId)
+      final preferred = widget.existing == null
           ? widget.original.accountId
-          : null;
+          : widget.existing!.accountId;
+      _accountId = _accounts.any((a) => a.id == preferred) ? preferred : null;
     });
   }
 
@@ -89,13 +99,23 @@ class _RefundPageState extends ConsumerState<RefundPage> {
       if (repo is! LocalRepository) {
         throw StateError('Local ledger unavailable');
       }
-      await RefundService(repo).create(
-        originalId: widget.original.id,
-        amount: value,
-        happenedAt: _date,
-        accountId: _accountId,
-        note: _note.text.trim(),
-      );
+      final service = RefundService(repo);
+      final existing = widget.existing;
+      if (existing == null) {
+        await service.create(
+            originalId: widget.original.id,
+            amount: value,
+            happenedAt: _date,
+            accountId: _accountId,
+            note: _note.text.trim());
+      } else {
+        await service.update(
+            refundId: existing.id,
+            amount: value,
+            happenedAt: _date,
+            accountId: _accountId,
+            note: _note.text.trim());
+      }
       if (!mounted) return;
       await PostProcessor.run(ref, ledgerId: widget.original.ledgerId);
       if (mounted) Navigator.pop(context, true);
@@ -108,7 +128,7 @@ class _RefundPageState extends ConsumerState<RefundPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('关联退款')),
+        appBar: AppBar(title: Text(widget.existing == null ? '关联退款' : '编辑退款')),
         body: ListView(padding: const EdgeInsets.all(20), children: [
           Text('原支出：${widget.original.amount.toStringAsFixed(2)} '
               '${widget.original.currencyCode ?? 'CNY'}'),
@@ -155,7 +175,7 @@ class _RefundPageState extends ConsumerState<RefundPage> {
             onPressed: _saving || _remaining == null || _remaining! <= 0
                 ? null
                 : _save,
-            child: const Text('确认退款'),
+            child: Text(widget.existing == null ? '确认退款' : '保存退款'),
           ),
         ]),
       );

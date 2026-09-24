@@ -1,3 +1,4 @@
+import '../../utils/beijing_time.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/db.dart';
@@ -126,14 +127,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       if (_startDate != null || _endDate != null) {
         final happenedAt = transaction.happenedAt;
         if (_startDate != null) {
-          final startOfDay = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+          final startOfDay = beijingDate(_startDate!.year, _startDate!.month, _startDate!.day);
           if (happenedAt.isBefore(startOfDay)) {
             dateMatch = false;
           }
         }
         if (_endDate != null) {
-          final endOfDay = DateTime(_endDate!.year, _endDate!.month, _endDate!.day, 23, 59, 59);
-          if (happenedAt.isAfter(endOfDay)) {
+          final endOfDay = beijingDate(_endDate!.year, _endDate!.month, _endDate!.day + 1);
+          if (!happenedAt.isBefore(endOfDay)) {
             dateMatch = false;
           }
         }
@@ -146,10 +147,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       _searchResults = results;
       _totalExpense = results
           .where((e) => e.t.type == 'expense')
-          .fold(0.0, (sum, e) => sum + (e.t.nativeAmount ?? e.t.amount).abs());
+          .fold(0.0, (sum, e) => sum + (e.t.nativeAmount ?? e.t.amount));
       _totalIncome = results
           .where((e) => e.t.type == 'income')
-          .fold(0.0, (sum, e) => sum + (e.t.nativeAmount ?? e.t.amount).abs());
+          .fold(0.0, (sum, e) => sum + (e.t.nativeAmount ?? e.t.amount));
       _isSearching = false;
     });
   }

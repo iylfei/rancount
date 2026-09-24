@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:uuid/uuid.dart';
 
 import '../../data/repositories/local/local_repository.dart';
@@ -8,6 +9,49 @@ class RefundService {
   final LocalRepository repository;
 
   const RefundService(this.repository);
+
+  Future<void> update({
+    required int refundId,
+    required double amount,
+    required DateTime happenedAt,
+    int? accountId,
+    String? note,
+  }) async {
+    if (!amount.isFinite || amount <= 0) throw ArgumentError.value(amount);
+    await repository.db.transaction(() async {
+      final refund = await repository.getTransactionById(refundId);
+      final originalSyncId = refund?.refundOfSyncId;
+      if (refund == null || originalSyncId == null) {
+        throw StateError('Refund no longer exists');
+      }
+      final original = await repository.getTransactionBySyncId(originalSyncId);
+      if (original == null) {
+        throw StateError('Original expense no longer exists');
+      }
+      if (accountId != null) {
+        final account = await repository.getAccount(accountId);
+        if (account == null ||
+            account.ledgerId != original.ledgerId ||
+            account.currency.toUpperCase() !=
+                (original.currencyCode ?? account.currency).toUpperCase()) {
+          throw StateError('Refund account must use the expense currency');
+        }
+      }
+      await repository.updateTransaction(
+        id: refundId,
+        type: 'expense',
+        amount: -amount,
+        categoryId: original.categoryId,
+        happenedAt: happenedAt,
+        note: note,
+        accountId: Value<int?>(accountId),
+        currencyCode: original.currencyCode,
+        nativeAmount: original.nativeAmount == null
+            ? -amount
+            : -amount * original.nativeAmount! / original.amount,
+      );
+    });
+  }
 
   Future<double> remaining(int originalId) async {
     final db = repository.db;

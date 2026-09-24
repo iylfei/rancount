@@ -2,9 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import '../pages/automation/image_draft_page.dart';
+import '../services/billing/image_billing_cache.dart';
 
 import '../ai/core/prompt_builder.dart';
 import '../ai/providers/ai_provider_config.dart';
@@ -39,20 +38,19 @@ class ImageBillingHelper {
 
   static Future<void> _pickDraft(
       BuildContext context, ImageSource source) async {
-    final picked = await ImagePicker().pickImage(
-      source: source,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 85,
-    );
-    if (picked == null || !context.mounted) return;
-    final cache = await getTemporaryDirectory();
-    final ownsImage = p.isWithin(cache.path, p.normalize(picked.path));
-    if (!context.mounted) return;
+    File? picked;
+    try {
+      picked = await ImageBillingCache.pick(source);
+    } catch (_) {
+      if (context.mounted) showToast(context, '无法读取图片，请重新选择');
+      return;
+    }
+    if (picked == null) return;
+    if (!context.mounted) { await picked.delete(); return; }
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => ImageDraftPage(
-        image: File(picked.path),
-        ownsImage: ownsImage,
+        image: picked,
+        ownsImage: true,
       ),
     ));
   }

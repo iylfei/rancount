@@ -10,6 +10,13 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  test('concurrent store instances preserve independent drafts', () async {
+    await Future.wait(List.generate(8, (i) => ImageDraftStore().put(
+        ImageDraftSession(id: 'draft-$i', ledgerId: 1,
+            createdAt: DateTime(2026, 9, 1), entries: const []))));
+    expect(await ImageDraftStore().load(), hasLength(8));
+  });
+
   test('draft parser keeps missing values and all independent transactions',
       () {
     final bills = const JsonResponseParser().parseDraft('''[

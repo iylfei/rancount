@@ -1,10 +1,11 @@
+import '../utils/beijing_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/db.dart';
 import '../providers.dart';
 
 /// 当前选中的日历月份（默认当前月）
 final calendarSelectedMonthProvider = StateProvider<DateTime>((ref) {
-  final now = DateTime.now();
+  final now = beijingNow();
   return DateTime(now.year, now.month, 1);
 });
 

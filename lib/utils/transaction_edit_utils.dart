@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/db.dart';
+import '../pages/transaction/refund_page.dart';
 import '../pages/transaction/transaction_editor_page.dart';
 import '../data/repositories/local/local_repository.dart';
 import '../providers/database_providers.dart';
@@ -15,6 +16,18 @@ class TransactionEditUtils {
   ) async {
     // 获取交易关联的标签ID(主表 + §7 override 表)
     final repo = ref.read(repositoryProvider);
+    if (transaction.refundOfSyncId != null) {
+      final original = await repo.getTransactionBySyncId(transaction.refundOfSyncId!);
+      if (!context.mounted) return;
+      if (original == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('原支出不存在，无法编辑关联退款')));
+        return;
+      }
+      await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => RefundPage(original: original, existing: transaction)));
+      return;
+    }
     final tags = await repo.getTagsForTransaction(transaction.id);
     final tagIds = <int>[for (final t in tags) t.id];
 

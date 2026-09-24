@@ -1,3 +1,4 @@
+import '../../utils/beijing_time.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -286,7 +287,7 @@ class TransactionListState extends ConsumerState<TransactionList> {
     for (final entry in _dateIndexMap.entries) {
       final parts = entry.key.split('-');
       if (parts.length != 3) continue;
-      final d = DateTime(
+      final d = beijingDate(
           int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
       if (!d.isBefore(range.start) && d.isBefore(range.end)) {
         try {
@@ -317,7 +318,7 @@ class TransactionListState extends ConsumerState<TransactionList> {
               Account? toAccount
             })>>{};
     for (final item in transactions) {
-      final dt = item.t.happenedAt.toLocal();
+      final dt = beijingTime(item.t.happenedAt);
       final key = dateFmt.format(DateTime(dt.year, dt.month, dt.day));
       groups.putIfAbsent(key, () => []).add(item);
     }

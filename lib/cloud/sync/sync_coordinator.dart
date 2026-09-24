@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../../data/db.dart';
+import '../../services/billing/background_sync_retry.dart';
 import '../../services/system/logger_service.dart';
 import 'sync_engine.dart';
 
@@ -30,6 +31,7 @@ class SyncCoordinator {
 
   StreamSubscription<List<LocalChange>>? _subscription;
   Timer? _debounce;
+  final Map<int, int> _scheduledChanges = {};
 
   SyncCoordinator({required this.db, required this.engine});
 
@@ -47,13 +49,35 @@ class SyncCoordinator {
 
   void _onUnpushedChanged(List<LocalChange> rows) {
     // 没有未推送变更:大概率是 markPushed 之后的 echo,跳过即可。
-    if (rows.isEmpty) return;
+    if (rows.isEmpty) { _scheduledChanges.clear(); return; }
 
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 250), () {
+    _debounce = Timer(const Duration(milliseconds: 250), () async {
       logger.info('SyncCoordinator',
           '检测到 ${rows.length} 条未推送变更,触发自动同步');
       engine.triggerAutoSync(reason: 'local_change_detected');
+      final latest = <int, int>{};
+      for (final row in rows) {
+        final old = latest[row.ledgerId] ?? 0;
+        if (row.id > old) latest[row.ledgerId] = row.id;
+      }
+      if (latest.containsKey(0)) {
+        final ledgers = await db.select(db.ledgers).get();
+        if (ledgers.isNotEmpty) {
+          final id = ledgers.first.id;
+          final global = latest.remove(0)!;
+          if (global > (latest[id] ?? 0)) latest[id] = global;
+        }
+      }
+      for (final entry in latest.entries.where((e) => e.key > 0)) {
+        if ((_scheduledChanges[entry.key] ?? 0) >= entry.value) continue;
+        try {
+          await BackgroundSyncRetry.schedule(entry.key);
+          _scheduledChanges[entry.key] = entry.value;
+        } catch (_) {
+          // Foreground sync still retains and retries the local changes.
+        }
+      }
     });
   }
 

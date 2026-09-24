@@ -9,6 +9,8 @@ import '../../l10n/app_localizations.dart';
 import '../data/tag_seed_service.dart';
 import '../system/logger_service.dart';
 import 'category_matcher.dart';
+import 'confirmed_bill_references.dart';
+import '../../data/repositories/local/local_repository.dart';
 
 /// 账单交易创建服务。
 ///
@@ -44,6 +46,33 @@ class BillCreationService {
     AppLocalizations? l10n,
     bool autoAddTags = true,
     String? syncId,
+    bool confirmedImage = false,
+  }) async {
+    Future<int?> save() => _createFromBill(
+        bill: bill,
+        ledgerId: ledgerId,
+        billingTypes: billingTypes,
+        customTagNames: customTagNames,
+        l10n: l10n,
+        autoAddTags: autoAddTags,
+        syncId: syncId,
+        confirmedImage: confirmedImage);
+    final repository = repo;
+    if (confirmedImage && repository is LocalRepository) {
+      return repository.db.transaction(save);
+    }
+    return save();
+  }
+
+  Future<int?> _createFromBill({
+    required BillInfo bill,
+    required int ledgerId,
+    List<String>? billingTypes,
+    List<String>? customTagNames,
+    AppLocalizations? l10n,
+    bool autoAddTags = true,
+    String? syncId,
+    bool confirmedImage = false,
   }) async {
     if (syncId != null) {
       final existing = await repo.getTransactionBySyncId(syncId);
@@ -55,6 +84,10 @@ class BillCreationService {
       return null;
     }
 
+    final reviewed = confirmedImage
+        ? await ConfirmedBillReferences.resolve(repo, bill, ledgerId)
+        : null;
+
     // 1. 确定交易类型
     final transactionType = _resolveType(bill);
     logger.debug(_tag,
@@ -64,7 +97,7 @@ class BillCreationService {
     final categories = await _loadUsableCategories(transactionType);
 
     // 3. 匹配分类(AI 名称 → 完全匹配 → 模糊匹配 → 规则匹配 → 兜底"其他")
-    var categoryId =
+    var categoryId = reviewed?.categoryId ??
         await _matchCategory(bill.category, bill.note ?? '', categories);
     if (categoryId == null && categories.isNotEmpty) {
       categoryId = _fallbackCategoryId(categories);
@@ -79,7 +112,11 @@ class BillCreationService {
     //    里找;没给币种则全币种可选,由命中的账户反过来决定币种(L7)。
     int? accountId;
     int? toAccountId;
-    if (transactionType == 'transfer') {
+    if (reviewed != null) {
+      accountId = reviewed.account.id;
+      toAccountId = reviewed.destination?.id;
+      categoryId = reviewed.categoryId;
+    } else if (transactionType == 'transfer') {
       final source = bill.fromAccount ?? bill.account;
       if (source != null && source.trim().isNotEmpty) {
         accountId = await _matchAccountByName(source, requestedCurrency);
@@ -135,6 +172,9 @@ class BillCreationService {
     // 同样受害;先查本地也让同一批里的后续账单命中第一笔刚落库的汇率。
     if (txCurrency != ledgerBase &&
         !await _hasLocalRate(ledgerBase, txCurrency)) {
+      if (confirmedImage) {
+        throw StateError('缺少有效汇率，请先配置汇率再确认');
+      }
       await _ensureRateAvailable(txCurrency);
     }
 
@@ -473,5 +513,4 @@ class BillCreationService {
       logger.error(_tag, '[标签] 添加失败', e, st);
     }
   }
-
 }

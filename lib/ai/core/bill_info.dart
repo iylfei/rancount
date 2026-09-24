@@ -1,3 +1,4 @@
+import '../../utils/beijing_time.dart';
 import '../../utils/currency_aliases.dart';
 
 /// 账单类型
@@ -196,10 +197,16 @@ class BillInfo {
     final raw = value.trim();
     if (raw.isEmpty) return null;
     final direct = DateTime.tryParse(raw);
-    if (direct != null) return direct;
+    if (direct != null) {
+      return direct.isUtc ? direct :
+        beijingDate(direct.year, direct.month, direct.day, direct.hour, direct.minute, direct.second);
+    }
     // AI 偶发会在 ISO8601 里夹空格(如 `"2222 2-1-26T18:08:00"`),strip 重试
     final stripped = DateTime.tryParse(raw.replaceAll(RegExp(r'\s+'), ''));
-    if (stripped != null) return stripped;
+    if (stripped != null) {
+      return stripped.isUtc ? stripped :
+        beijingDate(stripped.year, stripped.month, stripped.day, stripped.hour, stripped.minute, stripped.second);
+    }
     // 本地化 / 中文格式(如 `"2026年5月29日 23:35:16"`):正则提取年月日时分秒。
     final m = RegExp(
       r'(\d{4})\s*[年./-]\s*(\d{1,2})\s*[月./-]\s*(\d{1,2})\s*日?'
@@ -210,7 +217,7 @@ class BillInfo {
     final month = g(2);
     final day = g(3);
     if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-    return DateTime(g(1), month, day, g(4), g(5), g(6));
+    return beijingDate(g(1), month, day, g(4), g(5), g(6));
   }
 
   /// 币种解析(.docs/multi-currency-ai A4):ISO 码直通 → 口语/符号别名兜底。

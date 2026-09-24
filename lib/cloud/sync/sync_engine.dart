@@ -40,6 +40,7 @@ part 'sync_engine_profile.dart';
 part 'sync_engine_apply.dart';
 part 'sync_engine_serialization.dart';
 part 'sync_engine_pull.dart';
+part 'sync_engine_conflicts.dart';
 
 const _uuid = Uuid();
 
@@ -736,6 +737,7 @@ class SyncEngine implements app.SyncService {
   }
 
   Future<int> _doPushUserGlobalEntities() async {
+    await _checkConflictsBeforePush();
     // Legacy backfill:v19 migration 给老 user-global 实体填了 syncId 但没登记
     // local_changes,这里一次性补登记。每 SyncEngine 实例只跑一次。
     if (!_userGlobalLegacyBackfilled) {
@@ -789,8 +791,9 @@ class SyncEngine implements app.SyncService {
 
     // 主批(account/category/tag):照原逻辑推送 + 标记已推。
     if (mainSyncChanges.isNotEmpty) {
+      await _assertNoConflicts();
       await provider.pushChanges(changes: mainSyncChanges);
-      await changeTracker.markPushed(mainChanges.map((c) => c.id).toList());
+      await _markPushedUnlessConflicted(mainChanges.map((c) => c.id).toList());
     }
 
     // exchange_rate_override 独立批:旧服务器白名单会拒绝该 entity_type,
@@ -798,9 +801,9 @@ class SyncEngine implements app.SyncService {
     // 失败只 warning、不标记已推 → 留在 local_changes 下次重试。
     if (overrideSyncChanges.isNotEmpty) {
       try {
+        await _assertNoConflicts();
         await provider.pushChanges(changes: overrideSyncChanges);
-        await changeTracker
-            .markPushed(overrideChanges.map((c) => c.id).toList());
+        await _markPushedUnlessConflicted(overrideChanges.map((c) => c.id).toList());
       } catch (e, st) {
         logger.warning(
             'SyncEngine', 'override 批推送失败(server 可能未升级),跳过本轮不阻塞: $e', st);
@@ -1035,10 +1038,11 @@ class SyncEngine implements app.SyncService {
     }
 
     // 使用 pushChanges 直接推送个体变更
+    await _assertNoConflicts();
     await provider.pushChanges(changes: syncChanges);
 
     // 标记已推送
-    await changeTracker.markPushed(changes.map((c) => c.id).toList());
+    await _markPushedUnlessConflicted(changes.map((c) => c.id).toList());
     logger.info('SyncEngine',
         'push: 推送 ${changes.length} 条 ledger-scope 变更 + 本会话 user-global $userGlobalPushed 条');
     return changes.length + userGlobalPushed;

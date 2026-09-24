@@ -34,6 +34,9 @@ class BackgroundSyncRetry {
 
   static Future<void> schedule(int ledgerId) async {
     if (!Platform.isAndroid || !_initialized) return;
+    for (var attempt = 1; attempt < _delays.length; attempt++) {
+      await Workmanager().cancelByUniqueName('rancount-sync-$ledgerId-$attempt');
+    }
     await _scheduleAttempt(ledgerId, 0);
   }
 
@@ -62,7 +65,10 @@ class BackgroundSyncRetry {
       }
       final db = container.read(databaseProvider);
       final tracker = ChangeTracker(db);
-      if (await tracker.getUnpushedCount() == 0) return true;
+      Future<bool> hasPending() async =>
+          (await tracker.getUnpushedChangesForLedger(ledgerId)).isNotEmpty ||
+          (await tracker.getUnpushedChangesForLedger(0)).isNotEmpty;
+      if (!await hasPending()) return true;
       final cloud = await container.read(beecountCloudProviderInstance.future);
       if (cloud != null) {
         final engine = SyncEngine(
@@ -73,7 +79,7 @@ class BackgroundSyncRetry {
         );
         try {
           final result = await engine.sync(ledgerId: ledgerId.toString());
-          complete = !result.hasError && await tracker.getUnpushedCount() == 0;
+          complete = !result.hasError && !await hasPending();
         } finally {
           engine.dispose();
         }

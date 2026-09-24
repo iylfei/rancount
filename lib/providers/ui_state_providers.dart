@@ -1,3 +1,4 @@
+import '../utils/beijing_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,7 +46,7 @@ final homeSwitchToStreamProvider = StateProvider<int>((ref) => 0);
 
 // Currently selected month (first day), default to now
 final selectedMonthProvider = StateProvider<DateTime>((ref) {
-  final now = DateTime.now();
+  final now = beijingNow();
   return DateTime(now.year, now.month, 1);
 });
 
@@ -226,7 +227,7 @@ final appSplashInitProvider = FutureProvider<void>((ref) async {
 
     // 预加载当前账本的关键数据
     final ledgerId = ref.read(currentLedgerIdProvider);
-    final now = DateTime.now();
+    final now = beijingNow();
     // 月份周期标签:startDay>1 时今天可能属于「上个标签月」(如 6月5日属 5月周期)
     final ledgerRow = await repo.getLedgerById(ledgerId);
     final startDay = (ledgerRow?.monthStartDay ?? 1).clamp(1, 28);

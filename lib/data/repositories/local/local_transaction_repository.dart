@@ -1,3 +1,4 @@
+import '../../../utils/beijing_time.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -1117,20 +1118,20 @@ class LocalTransactionRepository implements TransactionRepository {
     required int ledgerId,
     required DateTime month,
   }) async {
-    final startDate = DateTime(month.year, month.month, 1);
-    final endDate = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+    final startDate = beijingDate(month.year, month.month);
+    final endDate = beijingDate(month.year, month.month + 1);
 
     // SQL 聚合查询
     // Drift 存储 DateTime 为 Unix timestamp（秒），直接使用 strftime
     final query = '''
       SELECT
-        strftime('%Y-%m-%d', happened_at, 'unixepoch', 'localtime') as date,
+        strftime('%Y-%m-%d', happened_at, 'unixepoch', '+8 hours') as date,
         SUM(CASE WHEN type = 'income' AND exclude_from_stats = 0 THEN COALESCE(native_amount, amount) ELSE 0 END) as income,
         SUM(CASE WHEN type = 'expense' AND exclude_from_stats = 0 THEN COALESCE(native_amount, amount) ELSE 0 END) as expense
       FROM transactions
       WHERE ledger_id = ?
         AND happened_at >= ?
-        AND happened_at <= ?
+        AND happened_at < ?
       GROUP BY date
       ORDER BY date DESC
     ''';
@@ -1148,8 +1149,8 @@ class LocalTransactionRepository implements TransactionRepository {
     for (final row in results) {
       final date = row.read<String?>('date');
       if (date == null) continue; // 跳过null日期
-      final income = row.read<double>('income') ?? 0.0;
-      final expense = row.read<double>('expense') ?? 0.0;
+      final income = row.read<double>('income');
+      final expense = row.read<double>('expense');
       map[date] = (income, expense);
     }
 
@@ -1528,8 +1529,8 @@ class LocalTransactionRepository implements TransactionRepository {
     required int ledgerId,
     required DateTime month,
   }) async {
-    final startDate = DateTime(month.year, month.month, 1);
-    final endDate = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+    final startDate = beijingDate(month.year, month.month);
+    final endDate = beijingDate(month.year, month.month + 1);
 
     final query = '''
       SELECT DISTINCT DATE(happened_at) as date

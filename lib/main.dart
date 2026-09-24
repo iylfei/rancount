@@ -1,3 +1,4 @@
+import 'services/billing/image_billing_cache.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cloud_sync/flutter_cloud_sync.dart';
@@ -129,6 +130,11 @@ Future<void> main() async {
 
   // 旧版本的全局截图监听开关不再生效。普通系统截图不会触发识别。
   if (Platform.isAndroid) {
+    try {
+      await ImageBillingCache(await getTemporaryDirectory()).cleanStale();
+    } catch (_) {
+      logger.warning('App', '图片缓存清理未完成，将在下次启动时重试');
+    }
     await BackgroundSyncRetry.initialize();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('screenshot_monitor_enabled');

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'sync_conflict_card.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -207,6 +208,8 @@ class _BeeCountCloudSyncPageState extends ConsumerState<BeeCountCloudSyncPage> {
                           ),
                           const SizedBox(height: 8),
                         ],
+                        if (ref.watch(syncServiceProvider) case final SyncEngine engine)
+                          SyncConflictCard(engine: engine),
                         // Section 1: 账号
                         SectionCard(
                           child: _buildAccountSection(context, user),

@@ -1,3 +1,5 @@
+> RanCount 是基于 BeeCount 3.8.1 的个人定制分支。Android 图片记账通过快捷设置截图、主动分享或选图进入草稿，确认后才入账；已移除全局截图监听。配置与使用差异见 [RanCount 自托管说明](docs/rancount-self-host.md)。下方保留上游介绍和作者信息。
+
 # 蜜蜂记账(BeeCount) &nbsp; [English](README_EN.md)
 
 <div align="center">
@@ -64,7 +66,7 @@
 - **AI 小助手** — 自然语言对话记账,智能理解意图,基于智谱 GLM-4
 - **OCR 拍照记账** — 双引擎(本地 TFLite + GLM 云端),识别支付宝/微信/云闪付截图
 - **语音记账** — 按住说话,GLM 模型理解口语化表达("今天买菜花了 50 块")
-- **截图自动记账** — Android 无障碍服务监听 / iOS 快捷指令双击背部触发
+- **截图记账** — RanCount Android 使用快捷设置单次截图并确认草稿；iOS 保留上游快捷指令入口
 
 </details>
 
