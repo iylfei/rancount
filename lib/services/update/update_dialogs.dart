@@ -146,7 +146,7 @@ class UpdateDialogs {
   ) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (context) => _DownloadConfirmDialog(
+      builder: (context) => _CloudDownloadConfirmDialog(
         version: version,
         releaseNotes: releaseNotes,
       ),
@@ -637,6 +637,37 @@ class _DownloadConfirmDialogState extends State<_DownloadConfirmDialog> {
               borderRadius: BorderRadius.circular(10),
             ),
           ),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(l10n.updateDownloadButton),
+        ),
+      ],
+    );
+  }
+}
+
+class _CloudDownloadConfirmDialog extends StatelessWidget {
+  final String version;
+  final String releaseNotes;
+
+  const _CloudDownloadConfirmDialog({
+    required this.version,
+    required this.releaseNotes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.updateNewVersionTitle(version)),
+      content: SingleChildScrollView(
+        child: Text(releaseNotes.isEmpty ? l10n.updateConfirmDownload : releaseNotes),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(l10n.updateLaterButton),
+        ),
+        FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
           child: Text(l10n.updateDownloadButton),
         ),
