@@ -1878,6 +1878,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryClearUnusedFailed => 'Clear failed';
 
   @override
+  String get categoryCollapseSubcategories => 'Remove all subcategories';
+
+  @override
+  String categoryCollapseConfirm(int count) {
+    return 'Remove $count subcategories? Their transactions, recurring entries, and budgets will be moved to their parent categories. This cannot be undone.';
+  }
+
+  @override
+  String categoryCollapseSuccess(int categories, int transactions) {
+    return 'Removed $categories subcategories and moved $transactions transactions to their parent categories.';
+  }
+
+  @override
+  String get categoryCollapseEmpty => 'No subcategories to remove';
+
+  @override
+  String get categoryCollapseFailed => 'Could not remove subcategories';
+
+  @override
   String get categoryShareScopeTitle => 'Select Scope';
 
   @override

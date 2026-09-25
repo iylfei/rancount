@@ -1878,6 +1878,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get categoryClearUnusedFailed => '清空失败';
 
   @override
+  String get categoryCollapseSubcategories => '删除全部二级分类';
+
+  @override
+  String categoryCollapseConfirm(int count) {
+    return '确定删除全部 $count 个二级分类吗？其中的交易、周期账单和分类预算会转到所属一级分类。此操作无法撤销。';
+  }
+
+  @override
+  String categoryCollapseSuccess(int categories, int transactions) {
+    return '已删除 $categories 个二级分类，$transactions 笔交易已转到所属一级分类。';
+  }
+
+  @override
+  String get categoryCollapseEmpty => '没有二级分类';
+
+  @override
+  String get categoryCollapseFailed => '删除二级分类失败';
+
+  @override
   String get categoryShareScopeTitle => '选择分享范围';
 
   @override
@@ -9766,6 +9785,25 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get categoryClearUnusedFailed => '清空失敗';
+
+  @override
+  String get categoryCollapseSubcategories => '刪除全部二級分類';
+
+  @override
+  String categoryCollapseConfirm(int count) {
+    return '確定刪除全部 $count 個二級分類嗎？其中的交易、週期帳單和分類預算會轉到所屬一級分類。此操作無法復原。';
+  }
+
+  @override
+  String categoryCollapseSuccess(int categories, int transactions) {
+    return '已刪除 $categories 個二級分類，$transactions 筆交易已轉到所屬一級分類。';
+  }
+
+  @override
+  String get categoryCollapseEmpty => '沒有二級分類';
+
+  @override
+  String get categoryCollapseFailed => '刪除二級分類失敗';
 
   @override
   String get categoryShareScopeTitle => '選擇分享範圍';

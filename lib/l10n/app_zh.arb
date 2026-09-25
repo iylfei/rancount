@@ -743,6 +743,13 @@
     }
   },
   "categoryClearUnusedFailed": "清空失败",
+  "categoryCollapseSubcategories": "删除全部二级分类",
+  "categoryCollapseConfirm": "确定删除全部 {count} 个二级分类吗？其中的交易、周期账单和分类预算会转到所属一级分类。此操作无法撤销。",
+  "@categoryCollapseConfirm": {"placeholders": {"count": {"type": "int"}}},
+  "categoryCollapseSuccess": "已删除 {categories} 个二级分类，{transactions} 笔交易已转到所属一级分类。",
+  "@categoryCollapseSuccess": {"placeholders": {"categories": {"type": "int"}, "transactions": {"type": "int"}}},
+  "categoryCollapseEmpty": "没有二级分类",
+  "categoryCollapseFailed": "删除二级分类失败",
   "categoryShareScopeTitle": "选择分享范围",
   "categoryShareScopeExpense": "仅支出分类",
   "categoryShareScopeIncome": "仅收入分类",

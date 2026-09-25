@@ -3572,6 +3572,36 @@ abstract class AppLocalizations {
   /// **'Clear failed'**
   String get categoryClearUnusedFailed;
 
+  /// No description provided for @categoryCollapseSubcategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all subcategories'**
+  String get categoryCollapseSubcategories;
+
+  /// No description provided for @categoryCollapseConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {count} subcategories? Their transactions, recurring entries, and budgets will be moved to their parent categories. This cannot be undone.'**
+  String categoryCollapseConfirm(int count);
+
+  /// No description provided for @categoryCollapseSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed {categories} subcategories and moved {transactions} transactions to their parent categories.'**
+  String categoryCollapseSuccess(int categories, int transactions);
+
+  /// No description provided for @categoryCollapseEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No subcategories to remove'**
+  String get categoryCollapseEmpty;
+
+  /// No description provided for @categoryCollapseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove subcategories'**
+  String get categoryCollapseFailed;
+
   /// No description provided for @categoryShareScopeTitle.
   ///
   /// In en, this message translates to:

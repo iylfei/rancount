@@ -31,6 +31,11 @@ abstract class BaseRepository
         BudgetRepository,
         AttachmentRepository,
         ExchangeRateRepository {
+  /// 将所有二级分类的关联数据归入其一级分类，然后删除二级分类。
+  /// 整个数据库修改在同一事务中完成。
+  Future<({int categories, int transactions, int recurring, int budgets})>
+      collapseSubcategories();
+
   // -------------------------------------------------------------------
   // v30 交易级多币种(.docs/multi-currency-ledger):重算 / 检测。
   // 声明在聚合层而非 TransactionRepository:这些方法要同时访问交易表与

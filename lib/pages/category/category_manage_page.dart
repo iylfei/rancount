@@ -32,6 +32,7 @@ class CategoryManagePage extends ConsumerStatefulWidget {
 
 class _CategoryManagePageState extends ConsumerState<CategoryManagePage> with TickerProviderStateMixin {
   late TabController _tabController;
+  bool _collapsingSubcategories = false;
 
   @override
   void initState() {
@@ -144,6 +145,12 @@ class _CategoryManagePageState extends ConsumerState<CategoryManagePage> with Ti
           label: l10n.categoryClearUnused,
           isDanger: true,
         ),
+        BeeMenuItem.action(
+          value: 'collapse_subcategories',
+          icon: Icons.account_tree_outlined,
+          label: l10n.categoryCollapseSubcategories,
+          isDanger: true,
+        ),
       ],
       onSelected: (value) {
         switch (value) {
@@ -156,9 +163,67 @@ class _CategoryManagePageState extends ConsumerState<CategoryManagePage> with Ti
           case 'clear_unused':
             _clearUnusedCategories();
             break;
+          case 'collapse_subcategories':
+            _collapseSubcategories();
+            break;
         }
       },
     );
+  }
+
+  Future<void> _collapseSubcategories() async {
+    if (_collapsingSubcategories) return;
+    final l10n = AppLocalizations.of(context);
+    final repo = ref.read(repositoryProvider);
+    final categories = await repo.getAllCategories();
+    final count = categories
+        .where((c) => c.level == 2 || c.parentId != null)
+        .length;
+    if (!mounted) return;
+    if (count == 0) {
+      showToast(context, l10n.categoryCollapseEmpty);
+      return;
+    }
+    final confirmed = await AppDialog.confirm<bool>(
+          context,
+          title: l10n.categoryCollapseSubcategories,
+          message: l10n.categoryCollapseConfirm(count),
+          okLabel: l10n.commonDelete,
+          cancelLabel: l10n.commonCancel,
+        ) ?? false;
+    if (!confirmed || !mounted) return;
+
+    setState(() => _collapsingSubcategories = true);
+    try {
+      final result = await repo.collapseSubcategories();
+      ref.invalidate(categoriesProvider);
+      ref.invalidate(categoriesWithCountProvider);
+      final ledgers = await repo.getAllLedgers();
+      unawaited(() async {
+        for (final ledger in ledgers) {
+          await PostProcessor.sync(ref, ledgerId: ledger.id);
+        }
+      }());
+      if (!mounted) return;
+      await AppDialog.info(
+        context,
+        title: l10n.categoryCollapseSubcategories,
+        message: l10n.categoryCollapseSuccess(
+          result.categories,
+          result.transactions,
+        ),
+      );
+    } catch (e) {
+      logger.error('CategoryManage', '删除二级分类失败: $e');
+      if (!mounted) return;
+      await AppDialog.error(
+        context,
+        title: l10n.categoryCollapseFailed,
+        message: e.toString(),
+      );
+    } finally {
+      if (mounted) setState(() => _collapsingSubcategories = false);
+    }
   }
 
   /// 分享分类

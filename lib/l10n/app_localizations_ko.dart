@@ -1878,6 +1878,25 @@ class AppLocalizationsKo extends AppLocalizations {
   String get categoryClearUnusedFailed => '정리 실패';
 
   @override
+  String get categoryCollapseSubcategories => '모든 하위 카테고리 삭제';
+
+  @override
+  String categoryCollapseConfirm(int count) {
+    return '하위 카테고리 $count개를 삭제하시겠습니까? 거래, 반복 거래 및 예산은 상위 카테고리로 이동합니다. 되돌릴 수 없습니다.';
+  }
+
+  @override
+  String categoryCollapseSuccess(int categories, int transactions) {
+    return '하위 카테고리 $categories개를 삭제하고 거래 $transactions건을 상위 카테고리로 이동했습니다.';
+  }
+
+  @override
+  String get categoryCollapseEmpty => '삭제할 하위 카테고리가 없습니다';
+
+  @override
+  String get categoryCollapseFailed => '하위 카테고리를 삭제하지 못했습니다';
+
+  @override
   String get categoryShareScopeTitle => '범위 선택';
 
   @override

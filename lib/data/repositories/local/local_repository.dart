@@ -1414,6 +1414,95 @@ class LocalRepository extends BaseRepository {
   }
 
   @override
+  Future<({int categories, int transactions, int recurring, int budgets})>
+      collapseSubcategories() => db.transaction(() async {
+        final children = await (db.select(db.categories)
+              ..where((c) => c.level.equals(2) | c.parentId.isNotNull()))
+            .get();
+        if (children.isEmpty) {
+          return (categories: 0, transactions: 0, recurring: 0, budgets: 0);
+        }
+
+        final parents = {
+          for (final category in await db.select(db.categories).get())
+            category.id: category,
+        };
+        for (final child in children) {
+          final parent = parents[child.parentId];
+          if (parent == null || parent.level != 1 || parent.parentId != null ||
+              parent.kind != child.kind) {
+            throw StateError('分类 ${child.name} 没有有效的一级分类，已取消批量删除');
+          }
+        }
+
+        var transactionCount = 0;
+        var recurringCount = 0;
+        var budgetCount = 0;
+        for (final child in children) {
+          final parentId = child.parentId!;
+          final transactions = await (db.select(db.transactions)
+                ..where((t) => t.categoryId.equals(child.id)))
+              .get();
+          if (transactions.isNotEmpty) {
+            await (db.update(db.transactions)
+                  ..where((t) => t.categoryId.equals(child.id)))
+                .write(TransactionsCompanion(
+              categoryId: d.Value(parentId),
+              categorySyncIdOverride: const d.Value(null),
+            ));
+            transactionCount += transactions.length;
+            if (changeTracker != null) {
+              for (final transaction in transactions) {
+                if (transaction.syncId == null) continue;
+                await changeTracker!.recordLedgerChange(
+                  entityType: 'transaction',
+                  entityId: transaction.id,
+                  entitySyncId: transaction.syncId!,
+                  ledgerId: transaction.ledgerId,
+                  action: 'update',
+                );
+              }
+            }
+          }
+
+          recurringCount += await (db.update(db.recurringTransactions)
+                ..where((r) => r.categoryId.equals(child.id)))
+              .write(RecurringTransactionsCompanion(
+            categoryId: d.Value(parentId),
+          ));
+
+          final budgets = await (db.select(db.budgets)
+                ..where((b) => b.categoryId.equals(child.id)))
+              .get();
+          for (final budget in budgets) {
+            await (db.update(db.budgets)..where((b) => b.id.equals(budget.id)))
+                .write(BudgetsCompanion(
+              categoryId: d.Value(parentId),
+              updatedAt: d.Value(DateTime.now()),
+            ));
+            budgetCount++;
+            if (changeTracker != null && budget.syncId != null) {
+              await changeTracker!.recordLedgerChange(
+                entityType: 'budget',
+                entityId: budget.id,
+                entitySyncId: budget.syncId!,
+                ledgerId: budget.ledgerId,
+                action: 'update',
+              );
+            }
+          }
+        }
+
+        await deleteCategoriesByIds(children.map((c) => c.id).toList());
+        return (
+          categories: children.length,
+          transactions: transactionCount,
+          recurring: recurringCount,
+          budgets: budgetCount,
+        );
+      });
+
+  @override
   Future<int> upsertCategory({
     required String name,
     required String kind,
