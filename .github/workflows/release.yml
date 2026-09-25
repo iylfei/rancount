@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "*"
+      - "!rancount-preview-*"
   workflow_dispatch:
     inputs:
       tag_name:
