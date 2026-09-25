@@ -568,6 +568,9 @@ class LocalTransactionRepository implements TransactionRepository {
     required double amount,
     int? categoryId,
     String? note,
+    String? merchant,
+    String? itemDescription,
+    String? paymentChannel,
     DateTime? happenedAt,
     dynamic accountId,
     String? categorySyncIdOverride,
@@ -630,6 +633,13 @@ class LocalTransactionRepository implements TransactionRepository {
         amount: d.Value(amount),
         categoryId: d.Value(categoryId),
         note: d.Value(note),
+        merchant: merchant == null ? const d.Value.absent() : d.Value(merchant),
+        itemDescription: itemDescription == null
+            ? const d.Value.absent()
+            : d.Value(itemDescription),
+        paymentChannel: paymentChannel == null
+            ? const d.Value.absent()
+            : d.Value(paymentChannel),
         happenedAt:
             happenedAt != null ? d.Value(happenedAt) : const d.Value.absent(),
         accountId: accountIdValue,

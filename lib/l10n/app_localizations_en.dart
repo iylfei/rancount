@@ -1897,6 +1897,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryCollapseFailed => 'Could not remove subcategories';
 
   @override
+  String get transactionEditTitle => 'Edit transaction';
+
+  @override
+  String get transactionEditInvalidAmount => 'Enter a valid amount';
+
+  @override
+  String get transactionEditAccountUnavailable => 'The selected account is unavailable. Choose another account.';
+
+  @override
+  String get transactionEditInvalidTransfer => 'Choose different source and destination accounts';
+
+  @override
+  String get transactionDetailTitle => 'Transaction details';
+
+  @override
+  String get transactionDetailProduct => 'Item';
+
+  @override
+  String get transactionDetailCategory => 'Category';
+
+  @override
+  String get transactionDetailMerchant => 'Merchant';
+
+  @override
+  String get transactionDetailPaymentChannel => 'Payment channel';
+
+  @override
+  String get transactionDetailAccount => 'Account';
+
+  @override
+  String get transactionDetailTime => 'Time';
+
+  @override
+  String get transactionDetailNote => 'Note';
+
+  @override
+  String get transactionDetailTags => 'Tags';
+
+  @override
+  String get transactionDetailAttachments => 'Attachments';
+
+  @override
+  String get transactionDetailFlags => 'Flags';
+
+  @override
   String get categoryShareScopeTitle => 'Select Scope';
 
   @override

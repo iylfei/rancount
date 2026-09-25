@@ -134,11 +134,23 @@ class _AttachmentPreviewPageState extends ConsumerState<AttachmentPreviewPage> {
     if (_totalCount == 0) {
       return Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: Text(
-            l10n.commonEmpty,
-            style: const TextStyle(color: Colors.white),
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _handleClose,
           ),
+        ),
+        body: Center(
+          child: widget.allowAdd
+              ? TextButton.icon(
+                  onPressed: () => _showAddOptions(l10n),
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: Text(l10n.attachmentChooseFromGallery),
+                )
+              : Text(l10n.commonEmpty,
+                  style: const TextStyle(color: Colors.white)),
         ),
       );
     }
@@ -356,7 +368,9 @@ class _AttachmentPreviewPageState extends ConsumerState<AttachmentPreviewPage> {
           decoration: BoxDecoration(
             color: isActive
                 ? Colors.white
-                : (isPending ? Colors.orange.withValues(alpha: 0.7) : Colors.white54),
+                : (isPending
+                    ? Colors.orange.withValues(alpha: 0.7)
+                    : Colors.white54),
             shape: BoxShape.circle,
           ),
         );
@@ -425,7 +439,9 @@ class _AttachmentPreviewPageState extends ConsumerState<AttachmentPreviewPage> {
           _savedAttachments.add(attachment);
           _currentIndex = _savedAttachments.length - 1;
         });
-        _pageController.jumpToPage(_currentIndex);
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(_currentIndex);
+        }
         // 触发刷新
         ref.read(attachmentListRefreshProvider.notifier).state++;
       }
@@ -435,7 +451,7 @@ class _AttachmentPreviewPageState extends ConsumerState<AttachmentPreviewPage> {
         _pendingFiles.add(file);
         _currentIndex = _totalCount - 1;
       });
-      _pageController.jumpToPage(_currentIndex);
+      if (_pageController.hasClients) _pageController.jumpToPage(_currentIndex);
     }
   }
 

@@ -3602,6 +3602,96 @@ abstract class AppLocalizations {
   /// **'Could not remove subcategories'**
   String get categoryCollapseFailed;
 
+  /// No description provided for @transactionEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit transaction'**
+  String get transactionEditTitle;
+
+  /// No description provided for @transactionEditInvalidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid amount'**
+  String get transactionEditInvalidAmount;
+
+  /// No description provided for @transactionEditAccountUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected account is unavailable. Choose another account.'**
+  String get transactionEditAccountUnavailable;
+
+  /// No description provided for @transactionEditInvalidTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose different source and destination accounts'**
+  String get transactionEditInvalidTransfer;
+
+  /// No description provided for @transactionDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction details'**
+  String get transactionDetailTitle;
+
+  /// No description provided for @transactionDetailProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get transactionDetailProduct;
+
+  /// No description provided for @transactionDetailCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get transactionDetailCategory;
+
+  /// No description provided for @transactionDetailMerchant.
+  ///
+  /// In en, this message translates to:
+  /// **'Merchant'**
+  String get transactionDetailMerchant;
+
+  /// No description provided for @transactionDetailPaymentChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment channel'**
+  String get transactionDetailPaymentChannel;
+
+  /// No description provided for @transactionDetailAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get transactionDetailAccount;
+
+  /// No description provided for @transactionDetailTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get transactionDetailTime;
+
+  /// No description provided for @transactionDetailNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get transactionDetailNote;
+
+  /// No description provided for @transactionDetailTags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get transactionDetailTags;
+
+  /// No description provided for @transactionDetailAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get transactionDetailAttachments;
+
+  /// No description provided for @transactionDetailFlags.
+  ///
+  /// In en, this message translates to:
+  /// **'Flags'**
+  String get transactionDetailFlags;
+
   /// No description provided for @categoryShareScopeTitle.
   ///
   /// In en, this message translates to:

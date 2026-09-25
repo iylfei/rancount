@@ -1897,6 +1897,51 @@ class AppLocalizationsZh extends AppLocalizations {
   String get categoryCollapseFailed => '删除二级分类失败';
 
   @override
+  String get transactionEditTitle => '编辑账目';
+
+  @override
+  String get transactionEditInvalidAmount => '请输入有效金额';
+
+  @override
+  String get transactionEditAccountUnavailable => '所选账户已不可用，请重新选择';
+
+  @override
+  String get transactionEditInvalidTransfer => '请选择不同的转出和转入账户';
+
+  @override
+  String get transactionDetailTitle => '账目详情';
+
+  @override
+  String get transactionDetailProduct => '商品信息';
+
+  @override
+  String get transactionDetailCategory => '分类';
+
+  @override
+  String get transactionDetailMerchant => '商家';
+
+  @override
+  String get transactionDetailPaymentChannel => '支付渠道';
+
+  @override
+  String get transactionDetailAccount => '支付账户';
+
+  @override
+  String get transactionDetailTime => '交易时间';
+
+  @override
+  String get transactionDetailNote => '备注';
+
+  @override
+  String get transactionDetailTags => '标签';
+
+  @override
+  String get transactionDetailAttachments => '附件';
+
+  @override
+  String get transactionDetailFlags => '账单标记';
+
+  @override
   String get categoryShareScopeTitle => '选择分享范围';
 
   @override
@@ -9804,6 +9849,51 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get categoryCollapseFailed => '刪除二級分類失敗';
+
+  @override
+  String get transactionEditTitle => '編輯帳目';
+
+  @override
+  String get transactionEditInvalidAmount => '請輸入有效金額';
+
+  @override
+  String get transactionEditAccountUnavailable => '所選帳戶已不可用，請重新選擇';
+
+  @override
+  String get transactionEditInvalidTransfer => '請選擇不同的轉出和轉入帳戶';
+
+  @override
+  String get transactionDetailTitle => '帳目詳情';
+
+  @override
+  String get transactionDetailProduct => '商品資訊';
+
+  @override
+  String get transactionDetailCategory => '分類';
+
+  @override
+  String get transactionDetailMerchant => '商家';
+
+  @override
+  String get transactionDetailPaymentChannel => '支付渠道';
+
+  @override
+  String get transactionDetailAccount => '支付帳戶';
+
+  @override
+  String get transactionDetailTime => '交易時間';
+
+  @override
+  String get transactionDetailNote => '備註';
+
+  @override
+  String get transactionDetailTags => '標籤';
+
+  @override
+  String get transactionDetailAttachments => '附件';
+
+  @override
+  String get transactionDetailFlags => '帳單標記';
 
   @override
   String get categoryShareScopeTitle => '選擇分享範圍';

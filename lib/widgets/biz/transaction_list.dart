@@ -13,7 +13,7 @@ import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/biz.dart';
 import '../../styles/tokens.dart';
 import '../../services/billing/post_processor.dart';
-import '../../utils/transaction_edit_utils.dart';
+import '../../pages/transaction/transaction_detail_edit_page.dart';
 import '../../utils/category_utils.dart';
 import '../category_icon.dart';
 import '../../pages/transaction/category_detail_page.dart';
@@ -24,6 +24,7 @@ import '../../l10n/app_localizations.dart';
 import '../../services/data/tag_seed_service.dart';
 import '../../services/attachment_service.dart';
 import '../../utils/month_range.dart';
+import 'transaction_detail_sheet.dart';
 
 /// 可复用的交易列表组件
 /// 支持显示分组的交易列表，包含日期头部和交易项
@@ -482,6 +483,19 @@ class TransactionListState extends ConsumerState<TransactionList> {
                 .where((part) => part.isNotEmpty)
                 .toSet()
                 .join(' · ');
+            final primaryTitle = [
+              it.t.itemDescription,
+              it.t.merchant,
+              it.t.note,
+            ]
+                .whereType<String>()
+                .map((part) => part.trim())
+                .firstWhere(
+                  (part) => part.isNotEmpty,
+                  orElse: () => isExpense
+                      ? AppLocalizations.of(context).categoryExpense
+                      : AppLocalizations.of(context).categoryIncome,
+                );
 
             // 检查是否是当天最后一项
             final isLastInGroup = allItemsInDay.last.t.id == it.t.id;
@@ -592,9 +606,13 @@ class TransactionListState extends ConsumerState<TransactionList> {
                                 : AppLocalizations.of(context).transferTitle)
                             : isAdjustment
                                 ? categoryName
-                                : subtitle,
+                                : primaryTitle,
                         categoryName:
                             (isTransfer || isAdjustment) ? null : categoryName,
+                        productFirst: !isTransfer && !isAdjustment,
+                        paymentMethod: !isTransfer && !isAdjustment
+                            ? accountName
+                            : null,
                         amount: it.t.amount,
                         currencyCode: it.t.currencyCode,
                         nativeAmount: it.t.nativeAmount,
@@ -636,12 +654,46 @@ class TransactionListState extends ConsumerState<TransactionList> {
                         },
                         onTap: () async {
                           switchToStreamMode(); // 用户交互，切换到 Stream 模式
-                          await TransactionEditUtils.editTransaction(
-                            context,
-                            ref,
-                            it.t,
-                            it.category,
+                          final editRequested = await showModalBottomSheet<bool>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: BeeTokens.surfaceSheet(context),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(16),
+                              ),
+                            ),
+                            builder: (sheetContext) => TransactionDetailSheet(
+                              transaction: it.t,
+                              title: isTransfer
+                                  ? (subtitle.isNotEmpty
+                                      ? subtitle
+                                      : AppLocalizations.of(context).transferTitle)
+                                  : isAdjustment
+                                      ? categoryName
+                                      : primaryTitle,
+                              categoryName:
+                                  isTransfer ? null : categoryName,
+                              accountName: accountName,
+                              toAccountName: toAccountName,
+                              tags: tagsList.map((tag) => tag.name).toList(),
+                              attachmentCount: attachmentCount,
+                              hideAmounts: widget.hideAmounts,
+                              onEdit: () => Navigator.of(sheetContext).pop(true),
+                            ),
                           );
+                          if (editRequested == true && context.mounted) {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => TransactionDetailEditPage(
+                                  transaction: it.t,
+                                  category: it.category,
+                                  account: it.account,
+                                  toAccount: it.toAccount,
+                                ),
+                              ),
+                            );
+                          }
                         },
                         onLongPress: isExpense && it.t.amount > 0
                             ? () async {

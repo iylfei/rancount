@@ -1897,6 +1897,51 @@ class AppLocalizationsKo extends AppLocalizations {
   String get categoryCollapseFailed => '하위 카테고리를 삭제하지 못했습니다';
 
   @override
+  String get transactionEditTitle => '거래 수정';
+
+  @override
+  String get transactionEditInvalidAmount => '올바른 금액을 입력하세요';
+
+  @override
+  String get transactionEditAccountUnavailable => '선택한 계좌를 사용할 수 없습니다. 다시 선택하세요.';
+
+  @override
+  String get transactionEditInvalidTransfer => '서로 다른 출금 및 입금 계좌를 선택하세요';
+
+  @override
+  String get transactionDetailTitle => '거래 상세';
+
+  @override
+  String get transactionDetailProduct => '상품 정보';
+
+  @override
+  String get transactionDetailCategory => '카테고리';
+
+  @override
+  String get transactionDetailMerchant => '판매자';
+
+  @override
+  String get transactionDetailPaymentChannel => '결제 채널';
+
+  @override
+  String get transactionDetailAccount => '결제 계정';
+
+  @override
+  String get transactionDetailTime => '거래 시간';
+
+  @override
+  String get transactionDetailNote => '메모';
+
+  @override
+  String get transactionDetailTags => '태그';
+
+  @override
+  String get transactionDetailAttachments => '첨부 파일';
+
+  @override
+  String get transactionDetailFlags => '거래 표시';
+
+  @override
   String get categoryShareScopeTitle => '범위 선택';
 
   @override

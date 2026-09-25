@@ -34,6 +34,8 @@ class TransactionListItem extends ConsumerWidget {
   final String? ledgerName; // 账本名称（仅"全部账本"模式下显示标签）
   final VoidCallback? onDelete; // 删除回调
   final String? accountName; // 账户名称，用于显示
+  final String? paymentMethod; // 明细首页第二行显示的支付方式
+  final bool productFirst; // 明细首页优先显示商品名称，分类放到第二行
   final DateTime? happenedAt; // 交易时间，用于显示时分
 
   // 批量选择模式相关
@@ -72,6 +74,8 @@ class TransactionListItem extends ConsumerWidget {
     this.ledgerName,
     this.onDelete,
     this.accountName,
+    this.paymentMethod,
+    this.productFirst = false,
     this.happenedAt,
     this.isSelectionMode = false,
     this.isSelected = false,
@@ -87,6 +91,11 @@ class TransactionListItem extends ConsumerWidget {
 
   /// 检查是否有次要信息需要显示（时间、账户或附件）
   bool _hasSecondaryInfo(WidgetRef ref) {
+    if (productFirst &&
+        ((categoryName?.trim().isNotEmpty ?? false) ||
+            (paymentMethod?.trim().isNotEmpty ?? false))) {
+      return true;
+    }
     // 显示完整日期模式
     if (showFullDate && happenedAt != null) return true;
 
@@ -125,6 +134,27 @@ class TransactionListItem extends ConsumerWidget {
     );
   }
 
+  Widget _outlinedInfoChip(BuildContext context, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 11,
+          color: BeeTokens.textSecondary(context),
+        ),
+      ),
+    );
+  }
+
   /// 构建次要信息小部件（时间 · 账户 + 附件图标）
   Widget _buildSecondaryInfo(BuildContext context, WidgetRef ref) {
     final parts = <String>[];
@@ -149,7 +179,8 @@ class TransactionListItem extends ConsumerWidget {
     }
 
     // 账户部分
-    if (accountName != null) {
+    if (accountName != null &&
+        (!productFirst || (paymentMethod?.trim().isEmpty ?? true))) {
       parts.add(accountName!);
     }
 
@@ -194,6 +225,23 @@ class TransactionListItem extends ConsumerWidget {
         _flagChip(
             context, AppLocalizations.of(context).txFlagBudgetExcludedTag),
     ];
+
+    if (productFirst) {
+      return Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          if (categoryName?.trim().isNotEmpty ?? false)
+            _outlinedInfoChip(context, categoryName!.trim()),
+          if (paymentMethod?.trim().isNotEmpty ?? false)
+            _outlinedInfoChip(context, paymentMethod!.trim()),
+          if (parts.isNotEmpty) Text(parts.join(' · '), style: textStyle),
+          if (attachmentCount > 0) buildAttachmentWidget(),
+          ...flagTags,
+        ],
+      );
+    }
 
     // 如果只有附件 / 标签，没有时间·账户文字
     if (parts.isEmpty) {
@@ -291,11 +339,13 @@ class TransactionListItem extends ConsumerWidget {
                       children: [
                         Flexible(
                           child: Consumer(builder: (context, ref, _) {
-                            final composed = composeTransactionRowTitle(
-                              mode: ref.watch(noteDisplayModeProvider),
-                              categoryName: categoryName,
-                              title: title,
-                            );
+                            final composed = productFirst
+                                ? TransactionRowTitle(title, null)
+                                : composeTransactionRowTitle(
+                                    mode: ref.watch(noteDisplayModeProvider),
+                                    categoryName: categoryName,
+                                    title: title,
+                                  );
                             return Text.rich(
                               TextSpan(
                                 text: composed.primary,
