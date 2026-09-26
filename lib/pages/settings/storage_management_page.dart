@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../providers.dart';
 import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/biz.dart';
 import '../../styles/tokens.dart';
@@ -224,7 +223,7 @@ class _StorageManagementPageState extends ConsumerState<StorageManagementPage> {
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: _aiModelsSize > 0
-                                  ? ref.watch(primaryColorProvider)
+                                  ? Theme.of(context).colorScheme.primary
                                   : BeeTokens.textSecondary(context),
                             ),
                           ),
@@ -249,7 +248,7 @@ class _StorageManagementPageState extends ConsumerState<StorageManagementPage> {
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: _apkFilesSize > 0
-                                    ? ref.watch(primaryColorProvider)
+                                    ? Theme.of(context).colorScheme.primary
                                     : BeeTokens.textSecondary(context),
                               ),
                             ),

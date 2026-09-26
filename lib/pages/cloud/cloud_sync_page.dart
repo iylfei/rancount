@@ -542,7 +542,7 @@ class _CloudSyncPageState extends ConsumerState<CloudSyncPage> {
                                             title: AppLocalizations.of(context).mineDownloadComplete,
                                             message: AppLocalizations.of(context).syncPreviewEmpty);
                                       } else {
-                                        final primaryColor = ref.read(primaryColorProvider);
+                                        final primaryColor = Theme.of(context).colorScheme.primary;
                                         final selected = await showSyncPreviewDialog(
                                           context,
                                           preview: preview,

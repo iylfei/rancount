@@ -8,6 +8,8 @@ import '../../widgets/biz/section_card.dart';
 import '../../widgets/biz/transaction_list_item.dart';
 import '../../widgets/category_icon.dart';
 import '../../styles/tokens.dart';
+import '../../styles/liquid_theme.dart';
+import '../../widgets/biz/transaction_glass.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../../utils/transaction_edit_utils.dart';
 import '../../providers.dart';
@@ -57,6 +59,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    if (LiquidTheme.isActive(context)) GlassFeedback.selection(context);
     setState(() {
       _selectedDay = selectedDay;
     });
@@ -64,6 +67,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   }
 
   void _onPageChanged(DateTime focusedMonth) {
+    if (LiquidTheme.isActive(context)) GlassFeedback.selection(context);
     setState(() {
       _focusedMonth = focusedMonth;
       // 切换月份时，清空选中日期
@@ -151,7 +155,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ledgerId = ref.watch(currentLedgerIdProvider);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     // 监听数据刷新
     ref.watch(calendarRefreshProvider);
@@ -161,7 +165,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       dailyTotalsByMonthProvider((ledgerId: ledgerId, month: _focusedMonth)),
     );
 
-    return Scaffold(
+    return TransactionScaffold(
       backgroundColor: BeeTokens.scaffoldBackground(context),
       body: Column(
         children: [
@@ -335,10 +339,16 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           // SectionCard 是纯 Container,不提供 Material —— 水波纹会画到
           // Scaffold 那层 Material 上、被卡片背景挡住。补一层透明 Material,
           // 与本文件下方「在该日记账」按钮同一处理。
-          return Material(
+          return GlassPressEffect(
+              child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: _showMonthJumpPicker,
+              onTap: () {
+                if (LiquidTheme.isActive(context)) {
+                  GlassFeedback.selection(context);
+                }
+                _showMonthJumpPicker();
+              },
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
@@ -367,7 +377,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 ),
               ),
             ),
-          );
+          ));
         },
         // 自定义默认日期单元格
         defaultBuilder: (context, day, focusedDay) {
@@ -426,32 +436,82 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // 日期数字（带圆形背景）
-          Container(
-            width: 32,
-            height: 32,
-            decoration: isSelected
-                ? BoxDecoration(
-                    color: primaryColor,
-                    shape: BoxShape.circle,
-                  )
-                : isToday
-                    ? BoxDecoration(
-                        color: primaryColor.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      )
-                    : null,
-            alignment: Alignment.center,
-            child: Text(
-              '${day.day}',
-              style: TextStyle(
-                color: textColor,
-                fontSize: 14,
-                fontWeight:
-                    isToday || isSelected ? FontWeight.bold : FontWeight.normal,
-                height: 1.0,
+          if (LiquidTheme.isActive(context))
+            GlassPressEffect(
+              child: AnimatedContainer(
+                duration: LiquidTheme.motionOf(context)
+                    ? const Duration(milliseconds: 180)
+                    : Duration.zero,
+                curve: Curves.easeOutCubic,
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: isSelected
+                      ? primaryColor
+                      : isToday
+                          ? primaryColor.withValues(alpha: .10)
+                          : null,
+                  gradient: isSelected
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color.lerp(primaryColor, Colors.white, .16)!,
+                            primaryColor,
+                          ],
+                        )
+                      : null,
+                  border: isToday && !isSelected
+                      ? Border.all(color: primaryColor.withValues(alpha: .2))
+                      : null,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                              color: primaryColor.withValues(alpha: .2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3))
+                        ]
+                      : null,
+                ),
+                child: Text('${day.day}',
+                    style: TextStyle(
+                        color: textColor,
+                        fontSize: 14,
+                        fontWeight: isToday || isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500)),
+              ),
+            )
+          else
+            Container(
+              width: 32,
+              height: 32,
+              decoration: isSelected
+                  ? BoxDecoration(
+                      color: primaryColor,
+                      shape: BoxShape.circle,
+                    )
+                  : isToday
+                      ? BoxDecoration(
+                          color: primaryColor.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        )
+                      : null,
+              alignment: Alignment.center,
+              child: Text(
+                '${day.day}',
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 14,
+                  fontWeight: isToday || isSelected
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  height: 1.0,
+                ),
               ),
             ),
-          ),
           // 收入和支出（在圆形外面）
           if (!isOutside && hasTransaction) ...[
             const SizedBox(height: 2),
@@ -496,9 +556,10 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   }
 
   // 构建选中日期的交易列表（上方含"日期 + 在该日记账"紧凑头）
-  Widget _buildDateTransactionsList(BuildContext context, int ledgerId, DateTime date) {
+  Widget _buildDateTransactionsList(
+      BuildContext context, int ledgerId, DateTime date) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final localeName = Localizations.localeOf(context).toString();
     final dateLabel = DateFormat.MMMMd(localeName).format(date);
     final weekdayLabel = DateFormat.E(localeName).format(date);
@@ -533,11 +594,17 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
               ],
             ),
           ),
-          Material(
+          GlassPressEffect(
+              child: Material(
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
-              onTap: _addTransactionForSelectedDate,
+              onTap: () {
+                if (LiquidTheme.isActive(context)) {
+                  GlassFeedback.impact(context);
+                }
+                _addTransactionForSelectedDate();
+              },
               child: Ink(
                 decoration: BoxDecoration(
                   color: primaryColor,
@@ -551,8 +618,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -572,7 +639,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 ),
               ),
             ),
-          ),
+          )),
         ],
       ),
     );
@@ -621,7 +688,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                   .toList();
 
               return TransactionListItem(
-                icon: getCategoryIconData(category: category, categoryName: categoryName),
+                icon: getCategoryIconData(
+                    category: category, categoryName: categoryName),
                 category: category,
                 title: isTransfer
                     ? (subtitle.isNotEmpty ? subtitle : l10n.transferTitle)
@@ -660,7 +728,17 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [header, card],
+      children: [
+        if (LiquidTheme.isActive(context)) ...[
+          GlassSurface(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 2),
+            child: header,
+          ),
+          const SizedBox(height: 12),
+        ] else
+          header,
+        card,
+      ],
     );
   }
 
@@ -688,8 +766,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                       7,
                       (_) => const Expanded(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 4),
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                           child: SkeletonBar(height: 56),
                         ),
                       ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/platform_info.dart';
 import '../../widgets/ui/ui.dart';
@@ -20,7 +19,7 @@ class _IOSAutoBillingPageState extends ConsumerState<IOSAutoBillingPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final l10n = AppLocalizations.of(context);
     final supportsAppIntents = PlatformInfo.supportsAppIntents;
 

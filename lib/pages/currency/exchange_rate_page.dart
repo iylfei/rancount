@@ -58,7 +58,7 @@ class _ExchangeRatePageState extends ConsumerState<ExchangeRatePage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
     final base = ref.watch(baseCurrencyProvider).toUpperCase();
     final usedAsync = ref.watch(usedCurrenciesProvider);
     final ratesAsync = ref.watch(effectiveRatesProvider);
@@ -225,7 +225,7 @@ class _ExchangeRatePageState extends ConsumerState<ExchangeRatePage> {
   /// 主币种选择底部弹窗(全币种列表 + 搜索)。复用公用 sheet + 应用逻辑。
   Future<void> _pickBaseCurrency(BuildContext context) async {
     final current = ref.read(baseCurrencyProvider).toUpperCase();
-    final primary = ref.read(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
     final picked = await showCurrencyPickerSheet(
       context,
       selected: current,
@@ -313,14 +313,14 @@ class _RateEditDialogState extends ConsumerState<_RateEditDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
     // 实时反向参考:1 base ≈ (1/rate) quote
     final parsed = double.tryParse(_controller.text.trim());
     final inverseText = (parsed != null && parsed > 0)
         ? (1 / parsed).toStringAsPrecision(6)
         : '—';
 
-    return AlertDialog(
+    return BeeAlertDialog(
       backgroundColor: BeeTokens.surfaceElevated(context),
       title: Text(
         l10n.rateEditTitle,

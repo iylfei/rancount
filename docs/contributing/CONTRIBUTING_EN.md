@@ -254,7 +254,7 @@ git push origin feature/your-feature-name
 
 ### System Requirements
 
-- **Flutter SDK**: 3.27.0 or higher
+- **Flutter SDK**: 3.32.8 (pinned in `.fvmrc`)
 - **Dart SDK**: 3.6.0 or higher
 - **IDE**: VS Code or Android Studio (Flutter plugin recommended)
 - **OS**: macOS, Linux, or Windows

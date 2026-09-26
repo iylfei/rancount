@@ -1,3 +1,4 @@
+import 'liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/theme_providers.dart';
@@ -33,49 +34,65 @@ class BeeTokens {
   /// - 亮色模式：#FAFAFA (灰50)
   /// - 暗黑模式：#000000 (纯黑)
   static Color scaffoldBackground(BuildContext context) =>
-      isDark(context) ? Colors.black : Colors.grey.shade50;
+      LiquidTheme.isActive(context)
+      ? Colors.transparent
+      : (isDark(context) ? Colors.black : Colors.grey.shade50);
 
   /// 卡片背景色（贴在页面上的卡片）
   /// - 亮色模式：#FFFFFF (白色)
   /// - 暗黑模式：#1C1C1E (深灰，与纯黑背景形成对比)
-  static Color surface(BuildContext context) =>
-      isDark(context) ? const Color(0xFF1C1C1E) : Colors.white;
+  static Color surface(BuildContext context) => LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.surface
+      : (isDark(context) ? const Color(0xFF1C1C1E) : Colors.white);
 
   /// 次级背景色（嵌套卡片、输入框背景）
   /// - 亮色模式：#F5F5F5 (灰100)
   /// - 暗黑模式：#2C2C2E (更深的灰)
   static Color surfaceSecondary(BuildContext context) =>
-      isDark(context) ? const Color(0xFF2C2C2E) : Colors.grey.shade100;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.surfaceContainerHigh
+      : (isDark(context) ? const Color(0xFF2C2C2E) : Colors.grey.shade100);
 
   /// 悬浮卡片背景色（Dialog、BottomSheet、Dropdown 等）
   /// - 亮色模式：#FFFFFF (白色)
   /// - 暗黑模式：#2C2C2E (略亮于普通卡片)
   static Color surfaceElevated(BuildContext context) =>
-      isDark(context) ? const Color(0xFF2C2C2E) : Colors.white;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.surface
+      : (isDark(context) ? const Color(0xFF2C2C2E) : Colors.white);
 
   /// PrimaryHeader 背景色
   /// - 亮色模式：用户选择的主题色
   /// - 暗黑模式：#000000 (纯黑)
   static Color surfaceHeader(BuildContext context) =>
-      isDark(context) ? Colors.black : Theme.of(context).colorScheme.primary;
+      LiquidTheme.isActive(context)
+      ? Colors.transparent
+      : (isDark(context)
+            ? Colors.black
+            : Theme.of(context).colorScheme.primary);
 
   /// BottomSheet 背景色（金额输入等弹窗）
   /// - 亮色模式：#FFFFFF (白色)
   /// - 暗黑模式：#000000 (纯黑)
   static Color surfaceSheet(BuildContext context) =>
-      isDark(context) ? Colors.black : Colors.white;
+      LiquidTheme.isActive(context)
+      ? Colors.transparent
+      : (isDark(context) ? Colors.black : Colors.white);
 
   /// 键盘按钮背景色
   /// - 亮色模式：#FFFFFF (白色)
   /// - 暗黑模式：#000000 (纯黑)
-  static Color surfaceKey(BuildContext context) =>
-      isDark(context) ? Colors.black : Colors.white;
+  static Color surfaceKey(BuildContext context) => LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.surface
+      : (isDark(context) ? Colors.black : Colors.white);
 
   /// 键盘次级按钮背景色（日期、+/-等）
   /// - 亮色模式：#F5F5F5 (灰100)
   /// - 暗黑模式：#2C2C2E (深灰)
   static Color surfaceKeySecondary(BuildContext context) =>
-      isDark(context) ? const Color(0xFF2C2C2E) : Colors.grey.shade100;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.primary.withValues(alpha: .10)
+      : (isDark(context) ? const Color(0xFF2C2C2E) : Colors.grey.shade100);
 
   /// 禁用按钮背景色
   /// - 亮色模式：#E0E0E0 (灰300)
@@ -87,59 +104,73 @@ class BeeTokens {
   /// - 亮色模式：#F3F4F6 (浅灰)
   /// - 暗黑模式：#2C2C2E (深灰)
   static Color surfaceInput(BuildContext context) =>
-      isDark(context) ? const Color(0xFF2C2C2E) : const Color(0xFFF3F4F6);
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.surface
+      : (isDark(context) ? const Color(0xFF2C2C2E) : const Color(0xFFF3F4F6));
 
   /// 标签/Chip 背景色（未选中状态）
   /// - 亮色模式：#EEEEEE (灰200)
   /// - 暗黑模式：#2C2C2E (深灰)
   static Color surfaceChip(BuildContext context) =>
-      isDark(context) ? const Color(0xFF2C2C2E) : Colors.grey.shade200;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.primary.withValues(alpha: .08)
+      : (isDark(context) ? const Color(0xFF2C2C2E) : Colors.grey.shade200);
 
   /// 胶囊切换器背景色
   /// - 亮色模式：rgba(0,0,0,0.06) (浅灰透明)
   /// - 暗黑模式：#2C2C2E (深灰)
   static Color surfaceCapsule(BuildContext context) =>
-      isDark(context) ? const Color(0xFF2C2C2E) : Colors.black.withValues(alpha: 0.06);
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.surface.withValues(alpha: .55)
+      : (isDark(context)
+            ? const Color(0xFF2C2C2E)
+            : Colors.black.withValues(alpha: 0.06));
 
   /// 弹出层/浮层内卡片背景色（如二级分类选择）
   /// - 亮色模式：#FFFFFF (白色)
   /// - 暗黑模式：#3A3A3C (中灰)
   static Color surfacePopoverCard(BuildContext context) =>
-      isDark(context) ? const Color(0xFF3A3A3C) : Colors.white;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.surface
+      : (isDark(context) ? const Color(0xFF3A3A3C) : Colors.white);
 
   /// 分类图标背景色（未选中状态）
   /// - 亮色模式：#EEEEEE (灰200)
   /// - 暗黑模式：#48484A (中灰)
   static Color surfaceCategoryIcon(BuildContext context) =>
-      isDark(context) ? const Color(0xFF48484A) : Colors.grey.shade200;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.primary.withValues(alpha: .09)
+      : (isDark(context) ? const Color(0xFF48484A) : Colors.grey.shade200);
 
   /// 分类图标背景色 - 浅色版（二级分类用）
   /// - 亮色模式：#F5F5F5 (灰100)
   /// - 暗黑模式：#3A3A3C (深灰)
   static Color surfaceCategoryIconLight(BuildContext context) =>
-      isDark(context) ? const Color(0xFF3A3A3C) : Colors.grey.shade100;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.primary.withValues(alpha: .06)
+      : (isDark(context) ? const Color(0xFF3A3A3C) : Colors.grey.shade100);
 
   /// 分类图标颜色（未选中状态）
   /// - 亮色模式：#616161 (灰700)
   /// - 暗黑模式：#AEAEB2 (浅灰)
   static Color iconCategory(BuildContext context) =>
-      isDark(context) ? const Color(0xFFAEAEB2) : Colors.grey.shade700;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.onSurfaceVariant
+      : (isDark(context) ? const Color(0xFFAEAEB2) : Colors.grey.shade700);
 
   /// 选中状态背景色（列表项选中、高亮）
   /// - 亮色模式：主题色 8% 透明度
   /// - 暗黑模式：主题色 15% 透明度
-  static Color surfaceSelected(BuildContext context) =>
-      isDark(context)
-          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
-          : Theme.of(context).colorScheme.primary.withValues(alpha: 0.08);
+  static Color surfaceSelected(BuildContext context) => isDark(context)
+      ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
+      : Theme.of(context).colorScheme.primary.withValues(alpha: 0.08);
 
   /// 悬停/按压状态背景色
   /// - 亮色模式：rgba(0,0,0,0.04)
   /// - 暗黑模式：rgba(255,255,255,0.08)
-  static Color surfaceHover(BuildContext context) =>
-      isDark(context)
-          ? Colors.white.withValues(alpha: 0.08)
-          : Colors.black.withValues(alpha: 0.04);
+  static Color surfaceHover(BuildContext context) => isDark(context)
+      ? Colors.white.withValues(alpha: 0.08)
+      : Colors.black.withValues(alpha: 0.04);
 
   // ========== 文字颜色 Token (Text) ==========
 
@@ -147,31 +178,36 @@ class BeeTokens {
   /// - 亮色模式：#111827 (灰900)
   /// - 暗黑模式：#FFFFFF (白色)
   static Color textPrimary(BuildContext context) =>
-      isDark(context) ? Colors.white : const Color(0xFF111827);
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.onSurface
+      : (isDark(context) ? Colors.white : const Color(0xFF111827));
 
   /// 次要文字颜色（副标题、说明文字）
   /// - 亮色模式：rgba(0,0,0,0.54) 即 Colors.black54
   /// - 暗黑模式：rgba(255,255,255,0.7)
   static Color textSecondary(BuildContext context) =>
-      isDark(context)
-          ? Colors.white.withValues(alpha: 0.7)
-          : const Color(0x8A000000);
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.onSurfaceVariant
+      : (isDark(context)
+            ? Colors.white.withValues(alpha: 0.7)
+            : const Color(0x8A000000));
 
   /// 提示文字颜色（placeholder、hint、辅助说明）
   /// - 亮色模式：#9CA3AF (灰400)
   /// - 暗黑模式：rgba(255,255,255,0.54)
   static Color textTertiary(BuildContext context) =>
-      isDark(context)
-          ? Colors.white.withValues(alpha: 0.54)
-          : const Color(0xFF9CA3AF);
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: .75)
+      : (isDark(context)
+            ? Colors.white.withValues(alpha: 0.54)
+            : const Color(0xFF9CA3AF));
 
   /// 禁用文字颜色
   /// - 亮色模式：rgba(0,0,0,0.26)
   /// - 暗黑模式：rgba(255,255,255,0.38)
-  static Color textDisabled(BuildContext context) =>
-      isDark(context)
-          ? Colors.white.withValues(alpha: 0.38)
-          : Colors.black.withValues(alpha: 0.26);
+  static Color textDisabled(BuildContext context) => isDark(context)
+      ? Colors.white.withValues(alpha: 0.38)
+      : Colors.black.withValues(alpha: 0.26);
 
   /// 反色文字（用于深色背景上的白色文字）
   /// - 亮色模式：#FFFFFF
@@ -187,15 +223,18 @@ class BeeTokens {
   /// Header 内主要文字颜色（用于 PrimaryHeader 内的内容）
   /// - 亮色模式：#FFFFFF（在主题色背景上）
   /// - 暗黑模式：#FFFFFF（在黑色背景上）
-  static Color textOnHeader(BuildContext context) => Colors.white;
+  static Color textOnHeader(BuildContext context) =>
+      LiquidTheme.isActive(context) ? textPrimary(context) : Colors.white;
 
   /// Header 内次要文字颜色（用于 PrimaryHeader 内的副标题）
   /// - 亮色模式：rgba(255,255,255,0.8)（在主题色背景上）
   /// - 暗黑模式：rgba(255,255,255,0.7)（在黑色背景上）
   static Color textOnHeaderSecondary(BuildContext context) =>
-      isDark(context)
-          ? Colors.white.withValues(alpha: 0.7)
-          : Colors.white.withValues(alpha: 0.8);
+      LiquidTheme.isActive(context)
+      ? textSecondary(context)
+      : isDark(context)
+      ? Colors.white.withValues(alpha: 0.7)
+      : Colors.white.withValues(alpha: 0.8);
 
   // ========== 图标颜色 Token (Icon) ==========
 
@@ -203,57 +242,69 @@ class BeeTokens {
   /// - 亮色模式：#000000 (87% opacity)
   /// - 暗黑模式：#FFFFFF (白色)
   static Color iconPrimary(BuildContext context) =>
-      isDark(context) ? Colors.white : Colors.black87;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.onSurface
+      : (isDark(context) ? Colors.white : Colors.black87);
 
   /// 次要图标颜色
   /// - 亮色模式：rgba(0,0,0,0.54)
   /// - 暗黑模式：rgba(255,255,255,0.7)
   static Color iconSecondary(BuildContext context) =>
-      isDark(context)
-          ? Colors.white.withValues(alpha: 0.7)
-          : Colors.black.withValues(alpha: 0.54);
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.onSurfaceVariant
+      : (isDark(context)
+            ? Colors.white.withValues(alpha: 0.7)
+            : Colors.black.withValues(alpha: 0.54));
 
   /// 提示图标颜色
   /// - 亮色模式：rgba(0,0,0,0.38)
   /// - 暗黑模式：rgba(255,255,255,0.54)
   static Color iconTertiary(BuildContext context) =>
-      isDark(context)
-          ? Colors.white.withValues(alpha: 0.54)
-          : Colors.black.withValues(alpha: 0.38);
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: .7)
+      : (isDark(context)
+            ? Colors.white.withValues(alpha: 0.54)
+            : Colors.black.withValues(alpha: 0.38));
 
   // ========== 边框/分割线 Token (Border) ==========
 
   /// 分割线颜色
   /// - 亮色模式：rgba(0,0,0,0.06)
   /// - 暗黑模式：主题色 30% 透明度
-  static Color divider(BuildContext context) =>
-      isDark(context)
-          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-          : Colors.black.withValues(alpha: 0.06);
+  static Color divider(BuildContext context) => LiquidTheme.isActive(context)
+      ? Theme.of(context).dividerColor
+      : (isDark(context)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+            : Colors.black.withValues(alpha: 0.06));
 
   /// 边框颜色（卡片边框）
   /// - 亮色模式：transparent（使用阴影）
   /// - 暗黑模式：主题色 30% 透明度
-  static Color border(BuildContext context) =>
-      isDark(context)
-          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-          : Colors.transparent;
+  static Color border(BuildContext context) => LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.outlineVariant
+      : (isDark(context)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+            : Colors.transparent);
 
   /// 强调边框颜色
   /// - 亮色模式：rgba(0,0,0,0.12)
   /// - 暗黑模式：主题色 30% 透明度
   static Color borderStrong(BuildContext context) =>
-      isDark(context)
-          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-          : Colors.black.withValues(alpha: 0.12);
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.outline
+      : (isDark(context)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+            : Colors.black.withValues(alpha: 0.12));
 
   /// 主题色边框（用于卡片等）
   /// - 亮色模式：transparent
   /// - 暗黑模式：主题色 30% 透明度
   static Color borderThemed(BuildContext context) =>
-      isDark(context)
-          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
-          : Colors.transparent;
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).colorScheme.outlineVariant
+      : (isDark(context)
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+            : Colors.transparent);
 
   // ========== 卡片边框 Token (Card Border) ==========
 
@@ -261,33 +312,45 @@ class BeeTokens {
   /// - 亮色模式：transparent（使用阴影）
   /// - 暗黑模式：transparent（去掉边框）
   static Color cardOuterBorderColor(BuildContext context) =>
-      Colors.transparent;
+      LiquidTheme.isActive(context)
+      ? Colors.white.withValues(alpha: isDark(context) ? .10 : .65)
+      : (Colors.transparent);
 
   /// 卡片外边框宽度
   /// - 亮色模式：0
   /// - 暗黑模式：0
-  static double cardOuterBorderWidth(BuildContext context) => 0;
+  static double cardOuterBorderWidth(BuildContext context) =>
+      LiquidTheme.isActive(context) ? .8 : 0;
 
   /// 卡片内部分割线颜色
   /// - 亮色模式：rgba(0,0,0,0.06)
   /// - 暗黑模式：transparent（去掉分割线）
   static Color cardInnerDividerColor(BuildContext context) =>
-      isDark(context)
-          ? Colors.transparent
-          : Colors.black.withValues(alpha: 0.06);
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).dividerColor
+      : (isDark(context)
+            ? Colors.transparent
+            : Colors.black.withValues(alpha: 0.06));
 
   /// 卡片内部分割线高度
   /// - 亮色模式：1
   /// - 暗黑模式：0（去掉分割线）
   static double cardInnerDividerHeight(BuildContext context) =>
-      isDark(context) ? 0 : 1;
+      LiquidTheme.isActive(context)
+      ? .6
+      : isDark(context)
+      ? 0
+      : 1;
 
   /// 明细列表「天」之间的分隔线。区别于卡片内 item 分隔(cardInnerDivider
   /// 暗黑不显示):明细 day 分隔亮暗都显示细线(暗黑 white 8% / 亮 black 6%)。
   static double listDayDividerHeight(BuildContext context) => 1;
-  static Color listDayDividerColor(BuildContext context) => isDark(context)
-      ? Colors.white.withValues(alpha: 0.08)
-      : Colors.black.withValues(alpha: 0.06);
+  static Color listDayDividerColor(BuildContext context) =>
+      LiquidTheme.isActive(context)
+      ? Theme.of(context).dividerColor
+      : (isDark(context)
+            ? Colors.white.withValues(alpha: 0.08)
+            : Colors.black.withValues(alpha: 0.06));
 
   /// 卡片内部分割线组件
   /// 封装了 height、thickness、color 三个属性
@@ -412,8 +475,9 @@ class BeeTokens {
   /// 离线/断开连接指示色
   /// - 亮色模式：#9CA3AF
   /// - 暗黑模式：rgba(255,255,255,0.38)
-  static Color statusOffline(BuildContext context) =>
-      isDark(context) ? Colors.white.withValues(alpha: 0.38) : const Color(0xFF9CA3AF);
+  static Color statusOffline(BuildContext context) => isDark(context)
+      ? Colors.white.withValues(alpha: 0.38)
+      : const Color(0xFF9CA3AF);
 
   /// 待处理/等待中指示色
   /// - 亮色模式：#F59E0B
@@ -458,37 +522,34 @@ class BeeTokens {
   /// 模态遮罩层颜色
   /// - 亮色模式：rgba(0,0,0,0.5)
   /// - 暗黑模式：rgba(0,0,0,0.7)
-  static Color overlay(BuildContext context) =>
-      isDark(context)
-          ? Colors.black.withValues(alpha: 0.7)
-          : Colors.black.withValues(alpha: 0.5);
+  static Color overlay(BuildContext context) => isDark(context)
+      ? Colors.black.withValues(alpha: 0.7)
+      : Colors.black.withValues(alpha: 0.5);
 
   /// 轻量遮罩层颜色（用于下拉刷新等）
   /// - 亮色模式：rgba(0,0,0,0.05)
   /// - 暗黑模式：rgba(255,255,255,0.05)
-  static Color overlayLight(BuildContext context) =>
-      isDark(context)
-          ? Colors.white.withValues(alpha: 0.05)
-          : Colors.black.withValues(alpha: 0.05);
+  static Color overlayLight(BuildContext context) => isDark(context)
+      ? Colors.white.withValues(alpha: 0.05)
+      : Colors.black.withValues(alpha: 0.05);
 
   // ========== 悬浮 Tab 栏 Token (Floating Tab Bar) ==========
 
   /// 悬浮 Tab 栏背景色
   /// - 亮色模式：白色 95% 不透明
   /// - 暗黑模式：深灰 95% 不透明
-  static Color tabBarBackground(BuildContext context) =>
-      isDark(context)
-          ? const Color(0xFF1C1C1E).withValues(alpha: 0.95)
-          : Colors.white.withValues(alpha: 0.95);
+  static Color tabBarBackground(BuildContext context) => isDark(context)
+      ? const Color(0xFF1C1C1E).withValues(alpha: 0.95)
+      : Colors.white.withValues(alpha: 0.95);
 
   /// 悬浮 Tab 栏阴影
   static List<BoxShadow> get tabBarShadow => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.08),
-          blurRadius: 20,
-          offset: const Offset(0, 4),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.08),
+      blurRadius: 20,
+      offset: const Offset(0, 4),
+    ),
+  ];
 
   // ========== 辅助方法 ==========
 
@@ -554,25 +615,22 @@ class BeeShadows {
       color: Colors.black.withValues(alpha: 0.04),
       blurRadius: 8,
       offset: const Offset(0, 2),
-    )
+    ),
   ];
 }
 
 /// 分割线组件令牌
 class BeeDivider {
-  static Divider thin({EdgeInsetsGeometry? padding}) => Divider(
-        height: 1,
-        thickness: 1,
-        color: BeeTokens.dividerStatic,
-      );
+  static Divider thin({EdgeInsetsGeometry? padding}) =>
+      Divider(height: 1, thickness: 1, color: BeeTokens.dividerStatic);
 
   static Divider short({double indent = 0, double endIndent = 0}) => Divider(
-        height: 1,
-        thickness: 1,
-        indent: indent,
-        endIndent: endIndent,
-        color: BeeTokens.dividerStatic,
-      );
+    height: 1,
+    thickness: 1,
+    indent: indent,
+    endIndent: endIndent,
+    color: BeeTokens.dividerStatic,
+  );
 }
 
 /// 图表令牌：统一折线图的视觉参数
@@ -588,46 +646,55 @@ class BeeChartTokens {
 class BeeTextTokens {
   // 标题：用于列表主标题、条目标题
   static TextStyle title(BuildContext ctx) =>
-      Theme.of(ctx).textTheme.bodyLarge?.copyWith(
-            color: BeeTokens.textPrimary(ctx),
-          ) ??
+      Theme.of(
+        ctx,
+      ).textTheme.bodyLarge?.copyWith(color: BeeTokens.textPrimary(ctx)) ??
       TextStyle(
-          fontSize: 15, color: BeeTokens.textPrimary(ctx), fontWeight: FontWeight.w400);
+        fontSize: 15,
+        color: BeeTokens.textPrimary(ctx),
+        fontWeight: FontWeight.w400,
+      );
 
   // 强调标题：用于统计数字等需要比普通列表标题更醒目的场景
   static TextStyle strongTitle(BuildContext ctx) =>
       Theme.of(ctx).textTheme.bodyLarge?.copyWith(
-            fontSize: 15,
-            color: BeeTokens.textPrimary(ctx),
-            fontWeight: FontWeight.w600,
-          ) ??
+        fontSize: 15,
+        color: BeeTokens.textPrimary(ctx),
+        fontWeight: FontWeight.w600,
+      ) ??
       TextStyle(
-          fontSize: 15, color: BeeTokens.textPrimary(ctx), fontWeight: FontWeight.w600);
+        fontSize: 15,
+        color: BeeTokens.textPrimary(ctx),
+        fontWeight: FontWeight.w600,
+      );
 
   // 加粗标题：用于极强强调（如大额数字/主标题）
   static TextStyle boldTitle(BuildContext ctx) =>
       Theme.of(ctx).textTheme.bodyLarge?.copyWith(
-            fontSize: 18,
-            color: BeeTokens.textPrimary(ctx),
-            fontWeight: FontWeight.w700,
-          ) ??
+        fontSize: 18,
+        color: BeeTokens.textPrimary(ctx),
+        fontWeight: FontWeight.w700,
+      ) ??
       TextStyle(
-          fontSize: 18, color: BeeTokens.textPrimary(ctx), fontWeight: FontWeight.w700);
+        fontSize: 18,
+        color: BeeTokens.textPrimary(ctx),
+        fontWeight: FontWeight.w700,
+      );
 
   // 正文：用于一般性文字
   static TextStyle body(BuildContext ctx) =>
       Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-            fontSize: 14,
-            color: BeeTokens.textPrimary(ctx),
-          ) ??
+        fontSize: 14,
+        color: BeeTokens.textPrimary(ctx),
+      ) ??
       TextStyle(fontSize: 14, color: BeeTokens.textPrimary(ctx));
 
   // 标签/说明：用于次要说明、辅助信息
   static TextStyle label(BuildContext ctx) =>
       Theme.of(ctx).textTheme.labelMedium?.copyWith(
-            fontSize: 12,
-            color: BeeTokens.textSecondary(ctx),
-          ) ??
+        fontSize: 12,
+        color: BeeTokens.textSecondary(ctx),
+      ) ??
       TextStyle(fontSize: 12, color: BeeTokens.textSecondary(ctx));
 }
 
@@ -651,21 +718,27 @@ class BeeTypography {
     final bodyW = FontWeight.w400;
     final titleW = FontWeight.w600;
     final useBundledHere = useBundledFonts && !isIOS;
-    final latin =
-        useBundledHere ? bundledLatin : (isIOS ? 'Helvetica Neue' : 'Roboto');
-    final cjk =
-        useBundledHere ? bundledCJK : (isIOS ? systemCJKiOS : 'NotoSans');
+    final latin = useBundledHere
+        ? bundledLatin
+        : (isIOS ? 'Helvetica Neue' : 'Roboto');
+    final cjk = useBundledHere
+        ? bundledCJK
+        : (isIOS ? systemCJKiOS : 'NotoSans');
     final familyFallback = <String>{
       latin,
       cjk,
       'PingFang SC',
       'Helvetica Neue',
       'Roboto',
-      'Arial'
+      'Arial',
     };
 
-    TextStyle merge(TextStyle? src, double size, FontWeight w,
-        {double? height}) {
+    TextStyle merge(
+      TextStyle? src,
+      double size,
+      FontWeight w, {
+      double? height,
+    }) {
       return (src ?? const TextStyle()).copyWith(
         fontSize: size,
         fontWeight: w,
@@ -686,4 +759,3 @@ class BeeTypography {
     );
   }
 }
-

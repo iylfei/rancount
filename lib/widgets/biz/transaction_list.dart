@@ -654,7 +654,7 @@ class TransactionListState extends ConsumerState<TransactionList> {
                         },
                         onTap: () async {
                           switchToStreamMode(); // 用户交互，切换到 Stream 模式
-                          final editRequested = await showModalBottomSheet<bool>(
+                          final editRequested = await showBeeBottomSheet<bool>(
                             context: context,
                             isScrollControlled: true,
                             backgroundColor: BeeTokens.surfaceSheet(context),

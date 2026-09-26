@@ -1,3 +1,4 @@
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -44,9 +45,7 @@ class BillCardWidget extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-        vertical: 8.0.scaled(context, ref),
-      ),
+      padding: EdgeInsets.symmetric(vertical: 8.0.scaled(context, ref)),
       child: SectionCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -114,12 +113,7 @@ class BillCardWidget extends ConsumerWidget {
             _buildInfoRow(context, ref, l10n.billCardCurrency, currency),
             if (billInfo.note != null && billInfo.note!.isNotEmpty) ...[
               SizedBox(height: 8.0.scaled(context, ref)),
-              _buildInfoRow(
-                context,
-                ref,
-                l10n.billCardNote,
-                billInfo.note!,
-              ),
+              _buildInfoRow(context, ref, l10n.billCardNote, billInfo.note!),
             ],
             if (_accountSummary != null) ...[
               SizedBox(height: 8.0.scaled(context, ref)),
@@ -162,7 +156,9 @@ class BillCardWidget extends ConsumerWidget {
                       child: Text(
                         AppLocalizations.of(context).billCardEdit,
                         style: TextStyle(
-                          color: ref.watch(primaryColorProvider),
+                          color: (LiquidTheme.isActive(context)
+                              ? Theme.of(context).colorScheme.primary
+                              : ref.watch(primaryColorProvider)),
                         ),
                       ),
                     ),
@@ -236,7 +232,9 @@ class BillCardWidget extends ConsumerWidget {
     String label,
     List<String> tags,
   ) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -263,8 +261,9 @@ class BillCardWidget extends ConsumerWidget {
                   ),
                   decoration: BoxDecoration(
                     color: primaryColor.withValues(alpha: 0.1),
-                    borderRadius:
-                        BorderRadius.circular(10.0.scaled(context, ref)),
+                    borderRadius: BorderRadius.circular(
+                      10.0.scaled(context, ref),
+                    ),
                   ),
                   child: Text(
                     tag,
@@ -307,12 +306,19 @@ class BillCardWidget extends ConsumerWidget {
         ),
         decoration: BoxDecoration(
           color: canChange
-              ? ref.watch(primaryColorProvider).withOpacity(0.1)
+              ? (LiquidTheme.isActive(context)
+                        ? Theme.of(context).colorScheme.primary
+                        : ref.watch(primaryColorProvider))
+                    .withOpacity(0.1)
               : BeeTokens.textSecondary(context).withOpacity(0.1),
           borderRadius: BorderRadius.circular(12.0.scaled(context, ref)),
           border: canChange
               ? Border.all(
-                  color: ref.watch(primaryColorProvider).withOpacity(0.3),
+                  color:
+                      (LiquidTheme.isActive(context)
+                              ? Theme.of(context).colorScheme.primary
+                              : ref.watch(primaryColorProvider))
+                          .withOpacity(0.3),
                   width: 1,
                 )
               : null,
@@ -324,7 +330,9 @@ class BillCardWidget extends ConsumerWidget {
               Icons.book,
               size: 12.0.scaled(context, ref),
               color: canChange
-                  ? ref.watch(primaryColorProvider)
+                  ? (LiquidTheme.isActive(context)
+                        ? Theme.of(context).colorScheme.primary
+                        : ref.watch(primaryColorProvider))
                   : BeeTokens.textSecondary(context),
             ),
             SizedBox(width: 4.0.scaled(context, ref)),
@@ -333,7 +341,9 @@ class BillCardWidget extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 12.0.scaled(context, ref),
                 color: canChange
-                    ? ref.watch(primaryColorProvider)
+                    ? (LiquidTheme.isActive(context)
+                          ? Theme.of(context).colorScheme.primary
+                          : ref.watch(primaryColorProvider))
                     : BeeTokens.textSecondary(context),
                 fontWeight: FontWeight.w500,
               ),
@@ -343,7 +353,9 @@ class BillCardWidget extends ConsumerWidget {
               Icon(
                 Icons.edit,
                 size: 10.0.scaled(context, ref),
-                color: ref.watch(primaryColorProvider),
+                color: (LiquidTheme.isActive(context)
+                    ? Theme.of(context).colorScheme.primary
+                    : ref.watch(primaryColorProvider)),
               ),
             ],
           ],

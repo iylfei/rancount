@@ -773,7 +773,7 @@ class _CategoryEditPageState extends ConsumerState<CategoryEditPage> {
 
       // 在异步调用前提取需要的值
       final l10n = AppLocalizations.of(context);
-      final primaryColor = ref.read(primaryColorProvider);
+      final primaryColor = Theme.of(context).colorScheme.primary;
 
       // 裁剪图片为 1:1 比例
       final croppedFile = await ImageCropper().cropImage(

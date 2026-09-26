@@ -379,7 +379,7 @@ class _CategorySelectorDialogState extends ConsumerState<CategorySelectorDialog>
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(
-                          color: ref.watch(primaryColorProvider),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
@@ -439,7 +439,7 @@ class _CategorySelectorDialogState extends ConsumerState<CategorySelectorDialog>
                       currentCategoryId: widget.currentCategoryId,
                       showTransactionCount: widget.showTransactionCount,
                       transactionCounts: _transactionCounts,
-                      primaryColor: ref.watch(primaryColorProvider),
+                      primaryColor: Theme.of(context).colorScheme.primary,
                       onCategorySelected: (category) {
                         Navigator.pop(context, category);
                       },

@@ -24,6 +24,10 @@ app_links · decimal · image_picker · table_calendar
 **BSD-2-Clause（1）**
 timezone
 
+2026-09 新增：**liquid_glass_renderer 0.2.0-dev.4** — MIT。用于 Android 液态玻璃材质，由 pub 获取，许可证随 Flutter 应用依赖一并打包。
+
+`lib/widgets/ui/compatible_glass_layer.dart` 改编自该版本的渲染层，加入 Flutter 3.32 shader filter 比较兼容修复；版权及完整许可见 [third_party/liquid_glass_renderer-LICENSE](third_party/liquid_glass_renderer-LICENSE)。
+
 ---
 
 如发现本清单与上游实际协议不符，欢迎提 Issue 指正。

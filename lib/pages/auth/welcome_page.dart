@@ -1,3 +1,6 @@
+import '../../styles/liquid_theme.dart';
+import '../../styles/tokens.dart';
+import '../../providers/appearance_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -39,6 +42,14 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
   bool _isExistingUserFlow = false; // 老用户流程
   bool _isImportingAttachment = false; // 附件导入状态
 
+  Color get _welcomeInk => LiquidTheme.isActive(context)
+      ? BeeTokens.textPrimary(context)
+      : Colors.white;
+
+  Color _welcomePanel(double classicAlpha) => LiquidTheme.isActive(context)
+      ? BeeTokens.surface(context).withValues(alpha: 0.72 + classicAlpha * 0.6)
+      : Colors.white.withValues(alpha: classicAlpha);
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -67,100 +78,130 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
     final pages = _isExistingUserFlow ? existingUserPages : newUserPages;
     final pageCount = pages.length;
 
-    return Scaffold(
-      backgroundColor: theme.primaryColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 页面指示器
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  pageCount,
-                  (index) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: _currentPage == index ? 24 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: _currentPage == index
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(4),
+    return LiquidBackdrop(
+      child: Scaffold(
+        backgroundColor: LiquidTheme.isActive(context)
+            ? Colors.transparent
+            : theme.primaryColor,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // 页面指示器
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    pageCount,
+                    (index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentPage == index ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _currentPage == index
+                            ? _welcomeInk
+                            : _welcomeInk.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
 
-            // 页面内容
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: _isExistingUserFlow ? const NeverScrollableScrollPhysics() : null,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                children: pages,
+              // 页面内容
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: _isExistingUserFlow
+                      ? const NeverScrollableScrollPhysics()
+                      : null,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  children: pages,
+                ),
               ),
-            ),
 
-            // 底部按钮（老用户流程不显示，由页面内自带按钮处理）
-            if (!_isExistingUserFlow)
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  children: [
-                    if (_currentPage > 0)
-                      TextButton(
-                        onPressed: () {
-                          _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                        ),
-                        child: Text(l10n.commonPrevious),
-                      ),
-                    const Spacer(),
-                    if (_currentPage < 4)
-                      FilledButton(
-                        onPressed: () {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: theme.primaryColor,
-                        ),
-                        child: Text(l10n.commonNext),
-                      )
-                    else
-                      FilledButton(
-                        onPressed: _isInitializing ? null : () => _finishWelcome(context),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: theme.primaryColor,
-                        ),
-                        child: _isInitializing
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : Text(l10n.commonFinish),
-                      ),
-                ],
-              ),
-            ),
-          ],
+              // 底部按钮（老用户流程不显示，由页面内自带按钮处理）
+              if (!_isExistingUserFlow)
+                GlassSurface(
+                  child: Padding(
+                    padding: EdgeInsets.all(
+                      LiquidTheme.isActive(context) ? 16 : 24,
+                    ),
+                    child: Row(
+                      children: [
+                        if (_currentPage > 0)
+                          TextButton(
+                            onPressed: () {
+                              _pageController.previousPage(
+                                duration:
+                                    LiquidTheme.isActive(context) &&
+                                        !LiquidTheme.motionOf(context)
+                                    ? Duration.zero
+                                    : const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: _welcomeInk,
+                            ),
+                            child: Text(l10n.commonPrevious),
+                          ),
+                        const Spacer(),
+                        if (_currentPage < 4)
+                          FilledButton(
+                            onPressed: () {
+                              _pageController.nextPage(
+                                duration:
+                                    LiquidTheme.isActive(context) &&
+                                        !LiquidTheme.motionOf(context)
+                                    ? Duration.zero
+                                    : const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: LiquidTheme.isActive(context)
+                                  ? theme.colorScheme.primary
+                                  : Colors.white,
+                              foregroundColor: LiquidTheme.isActive(context)
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.primaryColor,
+                            ),
+                            child: Text(l10n.commonNext),
+                          )
+                        else
+                          FilledButton(
+                            onPressed: _isInitializing
+                                ? null
+                                : () => _finishWelcome(context),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: LiquidTheme.isActive(context)
+                                  ? theme.colorScheme.primary
+                                  : Colors.white,
+                              foregroundColor: LiquidTheme.isActive(context)
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.primaryColor,
+                            ),
+                            child: _isInitializing
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(l10n.commonFinish),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -168,7 +209,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
   /// 第1页：欢迎
   Widget _buildWelcomePage(
-      BuildContext context, ThemeData theme, AppLocalizations l10n) {
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     final languageNotifier = ref.read(languageProvider.notifier);
     final currentLocale = ref.watch(languageProvider);
 
@@ -187,19 +231,21 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // 应用图标
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              // 用主题色填充 SVG 的 currentColor(肚子/翅膀等),传 Colors.white
-              // 会让整个蜜蜂变成纯白与背景圆几乎融为一体。
-              child: BeeIcon(
-                color: theme.colorScheme.primary,
-                size: 72,
+          GlassSurface(
+            borderRadius: 60,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: LiquidTheme.isActive(context)
+                  ? null
+                  : BoxDecoration(
+                      color: _welcomePanel(0.2),
+                      shape: BoxShape.circle,
+                    ),
+              child: Center(
+                // 用主题色填充 SVG 的 currentColor(肚子/翅膀等),传 _welcomeInk
+                // 会让整个蜜蜂变成纯白与背景圆几乎融为一体。
+                child: BeeIcon(color: theme.colorScheme.primary, size: 72),
               ),
             ),
           ),
@@ -210,7 +256,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             l10n.welcomeTitle,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _welcomeInk,
             ),
             textAlign: TextAlign.center,
           ),
@@ -220,7 +266,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
           Text(
             l10n.welcomeDescription,
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: _welcomeInk.withValues(alpha: 0.9),
             ),
             textAlign: TextAlign.center,
           ),
@@ -232,7 +278,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             l10n.commonLanguage,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _welcomeInk,
             ),
           ),
           const SizedBox(height: 16),
@@ -241,45 +287,52 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
           Container(
             constraints: const BoxConstraints(maxHeight: 200),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: _welcomePanel(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: ListView.separated(
               shrinkWrap: true,
               itemCount: availableLocales.length,
-              separatorBuilder: (context, index) => Divider(
-                height: 1,
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
+              separatorBuilder: (context, index) =>
+                  Divider(height: 1, color: _welcomePanel(0.2)),
               itemBuilder: (context, index) {
                 final locale = availableLocales[index];
                 final isSelected = currentLocale == locale;
-                final displayName = languageNotifier.getLanguageDisplayName(context, locale);
+                final displayName = languageNotifier.getLanguageDisplayName(
+                  context,
+                  locale,
+                );
 
-                return InkWell(
-                  onTap: () {
-                    languageNotifier.setLanguage(locale);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            displayName,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                return GlassPressEffect(
+                  child: InkWell(
+                    onTap: () {
+                      if (LiquidTheme.isActive(context)) {
+                        GlassFeedback.selection(context);
+                      }
+                      languageNotifier.setLanguage(locale);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              displayName,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: _welcomeInk,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
                             ),
                           ),
-                        ),
-                        if (isSelected)
-                          const Icon(
-                            Icons.check,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                      ],
+                          if (isSelected)
+                            Icon(Icons.check, color: _welcomeInk, size: 20),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -295,19 +348,19 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (_isImporting)
-                  const SizedBox(
+                  SizedBox(
                     width: 14,
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white70,
+                      color: _welcomeInk.withValues(alpha: 0.7),
                     ),
                   )
                 else
                   Icon(
                     Icons.file_upload_outlined,
                     size: 16,
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: _welcomeInk.withValues(alpha: 0.7),
                   ),
                 const SizedBox(width: 6),
                 Text(
@@ -315,9 +368,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                       ? l10n.welcomeImportingConfig
                       : '${l10n.welcomeExistingUserTitle} ${l10n.welcomeExistingUserButton}',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: _welcomeInk.withValues(alpha: 0.7),
                     decoration: TextDecoration.underline,
-                    decorationColor: Colors.white.withValues(alpha: 0.5),
+                    decorationColor: _welcomeInk.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -330,7 +383,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
   /// 第2页：货币选择
   Widget _buildCurrencyPage(
-      BuildContext context, ThemeData theme, AppLocalizations l10n) {
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     // 从工具类获取货币列表
     final currencies = getCurrencies(context);
 
@@ -343,14 +399,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: _welcomePanel(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.attach_money,
-              size: 64,
-              color: Colors.white,
-            ),
+            child: Icon(Icons.attach_money, size: 64, color: _welcomeInk),
           ),
           const SizedBox(height: 32),
 
@@ -359,7 +411,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             l10n.ledgersCurrency,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _welcomeInk,
             ),
             textAlign: TextAlign.center,
           ),
@@ -369,7 +421,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
           Text(
             l10n.welcomeCurrencyDescription,
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: _welcomeInk.withValues(alpha: 0.9),
             ),
             textAlign: TextAlign.center,
           ),
@@ -381,71 +433,74 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: _welcomePanel(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ListView.separated(
                 itemCount: currencies.length,
-                separatorBuilder: (context, index) => Divider(
-                  height: 1,
-                  color: Colors.white.withValues(alpha: 0.2),
-                ),
+                separatorBuilder: (context, index) =>
+                    Divider(height: 1, color: _welcomePanel(0.2)),
                 itemBuilder: (context, index) {
                   final currency = currencies[index];
                   final isSelected = _selectedCurrency == currency.code;
                   final symbol = getCurrencySymbol(currency.code);
 
-                  return InkWell(
-                    onTap: () {
-                      setState(() {
-                        _selectedCurrency = currency.code;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          // 选中标记
-                          Icon(
-                            isSelected
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_unchecked,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
+                  return GlassPressEffect(
+                    child: InkWell(
+                      onTap: () {
+                        if (LiquidTheme.isActive(context)) {
+                          GlassFeedback.selection(context);
+                        }
+                        setState(() {
+                          _selectedCurrency = currency.code;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            // 选中标记
+                            Icon(
+                              isSelected
+                                  ? Icons.radio_button_checked
+                                  : Icons.radio_button_unchecked,
+                              color: _welcomeInk,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
 
-                          // 货币符号
-                          SizedBox(
-                            width: 40,
-                            child: Text(
-                              symbol,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                            // 货币符号
+                            SizedBox(
+                              width: 40,
+                              child: Text(
+                                symbol,
+                                style: TextStyle(
+                                  color: _welcomeInk,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
+                            const SizedBox(width: 8),
 
-                          // 货币名称
-                          Expanded(
-                            child: Text(
-                              '${currency.name} (${currency.code})',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
+                            // 货币名称
+                            Expanded(
+                              child: Text(
+                                '${currency.name} (${currency.code})',
+                                style: TextStyle(
+                                  color: _welcomeInk,
+                                  fontSize: 16,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -459,40 +514,47 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
           // 创建默认账本复选框
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: _welcomePanel(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                setState(() {
-                  _createDefaultLedger = !_createDefaultLedger;
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Icon(
-                      _createDefaultLedger
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        l10n.welcomeCreateDefaultLedger,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+            child: GlassPressEffect(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  if (LiquidTheme.isActive(context)) {
+                    GlassFeedback.selection(context);
+                  }
+                  setState(() {
+                    _createDefaultLedger = !_createDefaultLedger;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _createDefaultLedger
+                            ? Icons.check_box
+                            : Icons.check_box_outline_blank,
+                        color: _welcomeInk,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          l10n.welcomeCreateDefaultLedger,
+                          style: TextStyle(
+                            color: _welcomeInk,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -504,7 +566,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
   /// 第5页：开源透明与社群驱动
   Widget _buildPrivacyAndOpenSourcePage(
-      BuildContext context, ThemeData theme, AppLocalizations l10n) {
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -515,14 +580,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: _welcomePanel(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.favorite_outline,
-              size: 64,
-              color: Colors.white,
-            ),
+            child: Icon(Icons.favorite_outline, size: 64, color: _welcomeInk),
           ),
           const SizedBox(height: 32),
 
@@ -531,7 +592,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             l10n.welcomePrivacyTitle,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _welcomeInk,
             ),
             textAlign: TextAlign.center,
           ),
@@ -547,7 +608,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   _buildFeatureItem(
                     context,
                     Icons.code_outlined,
-                    Colors.white,
+                    _welcomeInk,
                     l10n.welcomePrivacyFeature1,
                   ),
                   const SizedBox(height: 12),
@@ -555,7 +616,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   _buildFeatureItem(
                     context,
                     Icons.shield_outlined,
-                    Colors.white,
+                    _welcomeInk,
                     l10n.welcomePrivacyFeature2,
                   ),
                   const SizedBox(height: 12),
@@ -563,7 +624,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   _buildFeatureItem(
                     context,
                     Icons.groups_outlined,
-                    Colors.white,
+                    _welcomeInk,
                     l10n.welcomeOpenSourceFeature1,
                   ),
                 ],
@@ -575,15 +636,14 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
           // GitHub链接按钮
           OutlinedButton.icon(
             onPressed: () => _launchGitHub(context),
-            icon: const Icon(Icons.open_in_new, size: 18, color: Colors.white),
-            label: Text(l10n.welcomeViewGitHub,
-                style: const TextStyle(color: Colors.white)),
+            icon: Icon(Icons.open_in_new, size: 18, color: _welcomeInk),
+            label: Text(
+              l10n.welcomeViewGitHub,
+              style: TextStyle(color: _welcomeInk),
+            ),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.white),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
+              side: BorderSide(color: _welcomeInk),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
         ],
@@ -593,7 +653,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
   /// 第4页：云同步说明
   Widget _buildCloudSyncPage(
-      BuildContext context, ThemeData theme, AppLocalizations l10n) {
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -604,14 +667,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: _welcomePanel(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.cloud_outlined,
-              size: 64,
-              color: Colors.white,
-            ),
+            child: Icon(Icons.cloud_outlined, size: 64, color: _welcomeInk),
           ),
           const SizedBox(height: 32),
 
@@ -620,7 +679,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             l10n.welcomeCloudSyncTitle,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _welcomeInk,
             ),
             textAlign: TextAlign.center,
           ),
@@ -630,7 +689,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
           Text(
             l10n.welcomeCloudSyncDescription,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: _welcomeInk.withValues(alpha: 0.9),
             ),
             textAlign: TextAlign.center,
           ),
@@ -645,21 +704,21 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
                   _buildFeatureItem(
                     context,
                     Icons.offline_bolt_outlined,
-                    Colors.white,
+                    _welcomeInk,
                     l10n.welcomeCloudSyncFeature1,
                   ),
                   const SizedBox(height: 12),
                   _buildFeatureItem(
                     context,
                     Icons.dns_outlined,
-                    Colors.white,
+                    _welcomeInk,
                     l10n.welcomeCloudSyncFeature2,
                   ),
                   const SizedBox(height: 12),
                   _buildFeatureItem(
                     context,
                     Icons.cloud_upload_outlined,
-                    Colors.white,
+                    _welcomeInk,
                     l10n.welcomeCloudSyncFeature3,
                   ),
                 ],
@@ -686,9 +745,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
         Flexible(
           child: Text(
             text,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: color,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: color),
           ),
         ),
       ],
@@ -703,12 +762,18 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
-          showToast(context, AppLocalizations.of(context).privacyOpenSourceUrlError);
+          showToast(
+            context,
+            AppLocalizations.of(context).privacyOpenSourceUrlError,
+          );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        showToast(context, AppLocalizations.of(context).privacyOpenSourceUrlError);
+        showToast(
+          context,
+          AppLocalizations.of(context).privacyOpenSourceUrlError,
+        );
       }
     }
   }
@@ -722,6 +787,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
+      restoreAppearanceSettings(ref.read, prefs);
       await prefs.setBool('welcome_shown', true);
       // 保存用户选择的分类模式
       await prefs.setString('category_mode', _categoryMode);
@@ -730,7 +796,8 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       // 多币种 MVP:主币种随初始化选币一并落定,新装用户开箱即正确
       await prefs.setString('baseCurrency', _selectedCurrency);
       // 同步 provider:splash init 已先行兜底 CNY,这里用用户所选币种即时纠正(首会话即正确)
-      ref.read(baseCurrencyProvider.notifier).state = _selectedCurrency.toUpperCase();
+      ref.read(baseCurrencyProvider.notifier).state = _selectedCurrency
+          .toUpperCase();
 
       // 初始化数据库（使用用户选择的语言和设置）
       if (context.mounted) {
@@ -739,8 +806,8 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
         final categoryModeText = _categoryMode == 'hierarchical'
             ? '二级分类'
             : _categoryMode == 'flat'
-                ? '一级分类'
-                : '不创建分类';
+            ? '一级分类'
+            : '不创建分类';
         logger.info('welcome', '分类模式: $categoryModeText');
 
         final l10n = AppLocalizations.of(context);
@@ -819,10 +886,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       final repo = ref.read(repositoryProvider);
 
       // 导入配置
-      await ConfigExportService.importFromYaml(
-        yamlContent,
-        repository: repo,
-      );
+      await ConfigExportService.importFromYaml(yamlContent, repository: repo);
 
       logger.info('welcome', '配置文件导入成功');
 
@@ -833,6 +897,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
       // 标记欢迎页面已完成
       final prefs = await SharedPreferences.getInstance();
+      restoreAppearanceSettings(ref.read, prefs);
       await prefs.setBool('welcome_shown', true);
 
       // 刷新所有配置相关的 providers，使导入的配置立即生效
@@ -869,7 +934,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
   /// 附件导入页面（老用户流程）
   Widget _buildAttachmentImportPage(
-      BuildContext context, ThemeData theme, AppLocalizations l10n) {
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -880,14 +948,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: _welcomePanel(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.image_outlined,
-              size: 64,
-              color: Colors.white,
-            ),
+            child: Icon(Icons.image_outlined, size: 64, color: _welcomeInk),
           ),
           const SizedBox(height: 32),
 
@@ -896,7 +960,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             l10n.welcomeImportAttachmentTitle,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _welcomeInk,
             ),
             textAlign: TextAlign.center,
           ),
@@ -906,7 +970,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
           Text(
             l10n.welcomeImportAttachmentDesc,
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: _welcomeInk.withValues(alpha: 0.9),
             ),
             textAlign: TextAlign.center,
           ),
@@ -914,25 +978,31 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
           // 导入按钮
           FilledButton.icon(
-            onPressed: _isImportingAttachment ? null : () => _importAttachments(context),
+            onPressed: _isImportingAttachment
+                ? null
+                : () => _importAttachments(context),
             icon: _isImportingAttachment
-                ? const SizedBox(
+                ? SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: _welcomeInk,
                     ),
                   )
-                : const Icon(Icons.file_upload_outlined),
+                : Icon(Icons.file_upload_outlined),
             label: Text(
               _isImportingAttachment
                   ? l10n.welcomeImportingAttachment
                   : l10n.welcomeImportAttachmentButton,
             ),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: theme.primaryColor,
+              backgroundColor: LiquidTheme.isActive(context)
+                  ? theme.colorScheme.primary
+                  : Colors.white,
+              foregroundColor: LiquidTheme.isActive(context)
+                  ? theme.colorScheme.onPrimary
+                  : theme.primaryColor,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
@@ -944,9 +1014,9 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             child: Text(
               l10n.welcomeImportAttachmentSkip,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
+                color: _welcomeInk.withValues(alpha: 0.8),
                 decoration: TextDecoration.underline,
-                decorationColor: Colors.white.withValues(alpha: 0.5),
+                decorationColor: _welcomeInk.withValues(alpha: 0.5),
               ),
             ),
           ),
@@ -994,11 +1064,17 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
       if (!context.mounted) return;
 
       if (importResult.success) {
-        showToast(context, l10n.welcomeImportAttachmentSuccess(importResult.imported));
+        showToast(
+          context,
+          l10n.welcomeImportAttachmentSuccess(importResult.imported),
+        );
         // 导入成功，完成流程
         _finishExistingUserFlow();
       } else {
-        showToast(context, l10n.welcomeImportAttachmentFailed(importResult.message ?? ''));
+        showToast(
+          context,
+          l10n.welcomeImportAttachmentFailed(importResult.message ?? ''),
+        );
       }
     } catch (e, st) {
       logger.error('welcome', '导入附件失败', e, st);
@@ -1016,7 +1092,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
 
   /// 第5页：分类模式选择
   Widget _buildCategoryModePage(
-      BuildContext context, ThemeData theme, AppLocalizations l10n) {
+    BuildContext context,
+    ThemeData theme,
+    AppLocalizations l10n,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -1027,14 +1106,10 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: _welcomePanel(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.category_outlined,
-              size: 64,
-              color: Colors.white,
-            ),
+            child: Icon(Icons.category_outlined, size: 64, color: _welcomeInk),
           ),
           const SizedBox(height: 32),
 
@@ -1043,7 +1118,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
             l10n.welcomeCategoryModeTitle,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _welcomeInk,
             ),
             textAlign: TextAlign.center,
           ),
@@ -1053,7 +1128,7 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
           Text(
             l10n.welcomeCategoryModeDescription,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: _welcomeInk.withValues(alpha: 0.9),
             ),
             textAlign: TextAlign.center,
           ),
@@ -1123,83 +1198,90 @@ class _WelcomePageState extends ConsumerState<WelcomePage> {
   }) {
     final isSelected = _categoryMode == mode;
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _categoryMode = mode;
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.white.withValues(alpha: 0.3)
-              : Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
-            width: 2,
+    return GlassPressEffect(
+      child: InkWell(
+        onTap: () {
+          if (LiquidTheme.isActive(context)) {
+            GlassFeedback.selection(context);
+          }
+          setState(() {
+            _categoryMode = mode;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected ? _welcomePanel(0.3) : _welcomePanel(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? _welcomeInk : _welcomePanel(0.3),
+              width: 2,
+            ),
           ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    isSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: _welcomeInk,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: _welcomeInk,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          description,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: _welcomeInk.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ...features.map(
+                (feature) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      Icon(
+                        Icons.check_circle_outline,
+                        color: _welcomeInk.withValues(alpha: 0.8),
+                        size: 16,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        description,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.8),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          feature,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: _welcomeInk.withValues(alpha: 0.8),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ...features.map((feature) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.white.withValues(alpha: 0.8),
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      feature,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ),
-                ],
               ),
-            )),
-          ],
+            ],
+          ),
         ),
       ),
     );

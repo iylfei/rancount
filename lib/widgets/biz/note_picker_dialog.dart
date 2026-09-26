@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
@@ -65,7 +66,7 @@ class _NotePickerDialogState extends ConsumerState<NotePickerDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return AlertDialog(
+    return BeeAlertDialog(
       backgroundColor: BeeTokens.surfaceElevated(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),

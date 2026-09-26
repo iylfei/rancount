@@ -18,7 +18,7 @@ class LedgerPickerDialog extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final ledgersAsync = ref.watch(localLedgersProvider);
     final currentId = ref.watch(currentLedgerIdProvider);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Dialog(
       shape: RoundedRectangleBorder(

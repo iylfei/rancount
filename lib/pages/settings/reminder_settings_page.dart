@@ -165,7 +165,7 @@ class ReminderSettingsPage extends ConsumerWidget {
                   if (context.mounted) {
                     showDialog(
                       context: context,
-                      builder: (context) => AlertDialog(
+                      builder: (context) => BeeAlertDialog(
                         title: Text(AppLocalizations.of(context)!.reminderBatteryStatus),
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -241,7 +241,7 @@ class ReminderSettingsPage extends ConsumerWidget {
                   if (context.mounted) {
                     showDialog(
                       context: context,
-                      builder: (context) => AlertDialog(
+                      builder: (context) => BeeAlertDialog(
                         title: Text(AppLocalizations.of(context)!.reminderChannelStatus),
                         content: Column(
                           mainAxisSize: MainAxisSize.min,

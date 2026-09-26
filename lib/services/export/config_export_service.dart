@@ -5,6 +5,7 @@ import 'package:flutter_cloud_sync/flutter_cloud_sync.dart';
 import 'package:drift/drift.dart' as d;
 import '../../data/db.dart';
 import '../../data/repositories/base_repository.dart';
+import '../../models/app_appearance.dart';
 import '../system/logger_service.dart';
 import '../../ai/providers/ai_constants.dart';
 import '../../ai/providers/ai_provider_config.dart';
@@ -511,6 +512,10 @@ class AppSettingsConfig {
 
   // 外观设置
   final String? themeMode;
+  final String? visualStyle;
+  final String? glassQuality;
+  final bool? interfaceAnimations;
+  final bool? hapticsEnabled;
   final String? darkModePatternStyle;
   final String? headerSkin; // 头部皮肤
   final bool? compactAmount;
@@ -542,6 +547,10 @@ class AppSettingsConfig {
     this.fontScaleLevel,
     this.customFontScale,
     this.themeMode,
+    this.visualStyle,
+    this.glassQuality,
+    this.interfaceAnimations,
+    this.hapticsEnabled,
     this.darkModePatternStyle,
     this.headerSkin,
     this.compactAmount,
@@ -595,6 +604,18 @@ class AppSettingsConfig {
     }
     if (themeMode != null && themeMode!.isNotEmpty) {
       map['theme_mode'] = themeMode;
+    }
+    if (AppVisualStyle.parse(visualStyle) != null) {
+      map['visual_style'] = visualStyle;
+    }
+    if (GlassQuality.parse(glassQuality) != null) {
+      map['glass_quality'] = glassQuality;
+    }
+    if (interfaceAnimations != null) {
+      map['interface_animations'] = interfaceAnimations;
+    }
+    if (hapticsEnabled != null) {
+      map['haptics_enabled'] = hapticsEnabled;
     }
     if (darkModePatternStyle != null && darkModePatternStyle!.isNotEmpty) {
       map['dark_mode_pattern_style'] = darkModePatternStyle;
@@ -655,6 +676,14 @@ class AppSettingsConfig {
             ? (map['custom_font_scale'] as num).toDouble()
             : null,
         themeMode: map['theme_mode'] as String?,
+        visualStyle: AppVisualStyle.parse(map['visual_style'])?.name,
+        glassQuality: GlassQuality.parse(map['glass_quality'])?.name,
+        interfaceAnimations: map['interface_animations'] is bool
+            ? map['interface_animations'] as bool
+            : null,
+        hapticsEnabled: map['haptics_enabled'] is bool
+            ? map['haptics_enabled'] as bool
+            : null,
         darkModePatternStyle: map['dark_mode_pattern_style'] as String?,
         headerSkin: map['header_skin'] as String?,
         compactAmount: map['compact_amount'] as bool?,
@@ -1414,6 +1443,7 @@ class ConfigExportService {
     final fontScaleLevel = prefs.getInt('fontScaleLevel');
     final customFontScale = prefs.getDouble('customFontScale');
     final themeMode = prefs.getString('themeMode');
+    final appearance = AppAppearanceSettings.fromPreferences(prefs);
     final darkModePatternStyle = prefs.getString('darkModePatternStyle');
     final headerSkin = prefs.getString('headerSkin');
     final compactAmount = prefs.getBool('compactAmount');
@@ -1487,6 +1517,10 @@ class ConfigExportService {
         fontScaleLevel: fontScaleLevel,
         customFontScale: customFontScale,
         themeMode: themeMode,
+        visualStyle: appearance.visualStyle.name,
+        glassQuality: appearance.glassQuality.name,
+        interfaceAnimations: appearance.interfaceAnimations,
+        hapticsEnabled: appearance.hapticsEnabled,
         darkModePatternStyle: darkModePatternStyle,
         headerSkin: headerSkin,
         compactAmount: compactAmount,
@@ -1947,6 +1981,10 @@ class ConfigExportService {
       }
 
       if (settings.containsKey('theme_mode') ||
+          settings.containsKey('visual_style') ||
+          settings.containsKey('glass_quality') ||
+          settings.containsKey('interface_animations') ||
+          settings.containsKey('haptics_enabled') ||
           settings.containsKey('dark_mode_pattern_style') ||
           settings.containsKey('compact_amount') ||
           settings.containsKey('show_transaction_time') ||
@@ -1957,6 +1995,18 @@ class ConfigExportService {
         buffer.writeln('  # 外观设置');
         if (settings.containsKey('theme_mode')) {
           buffer.writeln('  theme_mode: "${settings['theme_mode']}"');
+        }
+        if (settings.containsKey('visual_style')) {
+          buffer.writeln('  visual_style: "${settings['visual_style']}"');
+        }
+        if (settings.containsKey('glass_quality')) {
+          buffer.writeln('  glass_quality: "${settings['glass_quality']}"');
+        }
+        if (settings.containsKey('interface_animations')) {
+          buffer.writeln('  interface_animations: ${settings['interface_animations']}');
+        }
+        if (settings.containsKey('haptics_enabled')) {
+          buffer.writeln('  haptics_enabled: ${settings['haptics_enabled']}');
         }
         if (settings.containsKey('dark_mode_pattern_style')) {
           buffer.writeln('  dark_mode_pattern_style: "${settings['dark_mode_pattern_style']}"');
@@ -2413,6 +2463,18 @@ class ConfigExportService {
       // 外观设置
       if (settings.themeMode != null) {
         await prefs.setString('themeMode', settings.themeMode!);
+      }
+      if (settings.visualStyle != null) {
+        await prefs.setString('visualStyle', settings.visualStyle!);
+      }
+      if (settings.glassQuality != null) {
+        await prefs.setString('glassQuality', settings.glassQuality!);
+      }
+      if (settings.interfaceAnimations != null) {
+        await prefs.setBool('interfaceAnimations', settings.interfaceAnimations!);
+      }
+      if (settings.hapticsEnabled != null) {
+        await prefs.setBool('hapticsEnabled', settings.hapticsEnabled!);
       }
       if (settings.darkModePatternStyle != null) {
         await prefs.setString('darkModePatternStyle', settings.darkModePatternStyle!);

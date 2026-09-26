@@ -1,3 +1,5 @@
+import '../../styles/liquid_theme.dart';
+import 'package:beecount/widgets/ui/bee_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +43,7 @@ class AccountPicker extends ConsumerStatefulWidget {
     int? selectedAccountId,
     bool allowNull = true,
   }) async {
-    return showModalBottomSheet<int?>(
+    return showBeeBottomSheet<int?>(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -69,22 +71,26 @@ class _AccountPickerState extends ConsumerState<AccountPicker> {
 
     // 添加"不选择账户"选项
     if (widget.allowNull) {
-      _options.add(AccountOption(
-        id: null,
-        name: AppLocalizations.of(context).accountNone,
-        type: 'none',
-        icon: Icons.remove,
-      ));
+      _options.add(
+        AccountOption(
+          id: null,
+          name: AppLocalizations.of(context).accountNone,
+          type: 'none',
+          icon: Icons.remove,
+        ),
+      );
     }
 
     // 添加账户列表
     for (final account in accounts) {
-      _options.add(AccountOption(
-        id: account.id,
-        name: account.name,
-        type: account.type,
-        icon: getIconForAccountType(account.type),
-      ));
+      _options.add(
+        AccountOption(
+          id: account.id,
+          name: account.name,
+          type: account.type,
+          icon: getIconForAccountType(account.type),
+        ),
+      );
     }
 
     // 查找选中项的索引
@@ -118,9 +124,13 @@ class _AccountPickerState extends ConsumerState<AccountPicker> {
     return allAccountsAsync.when(
       data: (allAccounts) {
         // 只显示与当前账本同币种的可交易账户
-        final accounts = allAccounts.where((account) =>
-          account.currency == currentCurrency && isTradableType(account.type)
-        ).toList();
+        final accounts = allAccounts
+            .where(
+              (account) =>
+                  account.currency == currentCurrency &&
+                  isTradableType(account.type),
+            )
+            .toList();
 
         _buildOptions(accounts);
 
@@ -134,12 +144,11 @@ class _AccountPickerState extends ConsumerState<AccountPicker> {
                 height: 52,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: LiquidTheme.isActive(context)
+                      ? Colors.transparent
+                      : Colors.white,
                   border: Border(
-                    bottom: BorderSide(
-                      color: Colors.grey[200]!,
-                      width: 1,
-                    ),
+                    bottom: BorderSide(color: Colors.grey[200]!, width: 1),
                   ),
                 ),
                 child: Row(
@@ -219,9 +228,7 @@ class _AccountPickerState extends ConsumerState<AccountPicker> {
       ),
       error: (err, stack) => SizedBox(
         height: 200,
-        child: Center(
-          child: Text('${l10n.commonError}: $err'),
-        ),
+        child: Center(child: Text('${l10n.commonError}: $err')),
       ),
     );
   }
@@ -245,10 +252,7 @@ class _AccountPickerState extends ConsumerState<AccountPicker> {
             ),
             child: isNone
                 ? Icon(option.icon, color: Colors.grey[600], size: 24)
-                : AccountTypeIcon(
-                    type: option.type,
-                    size: 24,
-                  ),
+                : AccountTypeIcon(type: option.type, size: 24),
           ),
           const SizedBox(width: 16),
 
@@ -271,10 +275,7 @@ class _AccountPickerState extends ConsumerState<AccountPicker> {
                   const SizedBox(height: 4),
                   Text(
                     getAccountTypeLabel(context, option.type),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ],
               ],

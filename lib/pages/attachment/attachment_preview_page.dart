@@ -386,7 +386,7 @@ class _AttachmentPreviewPageState extends ConsumerState<AttachmentPreviewPage> {
   Future<void> _showAddOptions(AppLocalizations l10n) async {
     final service = ref.read(attachmentServiceProvider);
 
-    await showModalBottomSheet(
+    await showBeeBottomSheet(
       context: context,
       builder: (_) => SafeArea(
         child: Column(

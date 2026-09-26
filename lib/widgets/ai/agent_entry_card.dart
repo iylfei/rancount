@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../styles/liquid_theme.dart';
+import '../ui/liquid_glass.dart';
 
 import 'agent_ai_mark.dart';
 
@@ -18,6 +20,18 @@ final class AgentEntryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final iconColor =
         IconTheme.of(context).color ?? Theme.of(context).colorScheme.primary;
+    if (LiquidTheme.isActive(context)) {
+      return Semantics(
+        label: tooltip,
+        child: Tooltip(
+          message: tooltip,
+          child: GlassPressable(
+            onTap: onTap,
+            child: Center(child: AgentAiMark(size: 22, color: iconColor)),
+          ),
+        ),
+      );
+    }
     return Semantics(
       button: true,
       label: tooltip,
@@ -30,9 +44,7 @@ final class AgentEntryButton extends StatelessWidget {
             padding: const EdgeInsets.all(4),
             child: SizedBox.square(
               dimension: 24,
-              child: Center(
-                child: AgentAiMark(size: 22, color: iconColor),
-              ),
+              child: Center(child: AgentAiMark(size: 22, color: iconColor)),
             ),
           ),
         ),

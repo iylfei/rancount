@@ -1,3 +1,8 @@
+import 'package:beecount/widgets/ui/bee_sheet.dart';
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
+import '../../widgets/biz/transaction_glass.dart';
+import '../../styles/liquid_theme.dart';
+import '../../widgets/ui/liquid_glass.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -28,13 +33,14 @@ class ImageDraftPage extends ConsumerStatefulWidget {
   final Future<void> Function()? onClose;
   final Future<void> Function(int ledgerId)? onSaved;
 
-  const ImageDraftPage(
-      {super.key,
-      this.image,
-      this.ownsImage = false,
-      this.existing,
-      this.onClose,
-      this.onSaved});
+  const ImageDraftPage({
+    super.key,
+    this.image,
+    this.ownsImage = false,
+    this.existing,
+    this.onClose,
+    this.onSaved,
+  });
 
   @override
   ConsumerState<ImageDraftPage> createState() => _ImageDraftPageState();
@@ -113,9 +119,12 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
       final result = await service.recognize(image, ledger.id);
       if (!mounted) return;
       if (result.entries.isEmpty) {
-        setState(() => _error = _label(
+        setState(
+          () => _error = _label(
             '模型返回了空账单列表。请先查看本次截图：如果画面正确，可重试识别或检查视觉模型；如果截到了授权框或空白画面，请关闭后重新截图。',
-            'The model returned no bills. Check the captured image first. Retry recognition for a correct image, or capture again if it shows the permission dialog or a blank screen.'));
+            'The model returned no bills. Check the captured image first. Retry recognition for a correct image, or capture again if it shows the permission dialog or a blank screen.',
+          ),
+        );
       } else {
         setState(() => _session = result);
         // The draft contains only text; the captured or shared temp image is done.
@@ -123,14 +132,21 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
       }
     } on FormatException {
       if (mounted) {
-        setState(() => _error = _label(
+        setState(
+          () => _error = _label(
             '视觉接口已返回，但账单格式无法解析。可重试识别，或检查视觉模型是否支持按要求返回 JSON。',
-            'The vision response could not be parsed as bills. Retry or check whether the model supports the requested JSON format.'));
+            'The vision response could not be parsed as bills. Retry or check whether the model supports the requested JSON format.',
+          ),
+        );
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _error = _label('识别失败。请到截图记账设置检查视觉接口后重试',
-            'Recognition failed. Check the vision API in Screenshot billing settings.'));
+        setState(
+          () => _error = _label(
+            '识别失败。请到截图记账设置检查视觉接口后重试',
+            'Recognition failed. Check the vision API in Screenshot billing settings.',
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _recognizing = false);
@@ -141,22 +157,26 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
   Future<void> _previewImage() async {
     final image = _image;
     if (image == null) return;
-    await Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (context) => Scaffold(
-        appBar: AppBar(
-            title: Text(_label('本次识别使用的图片', 'Image used for recognition'))),
-        body: InteractiveViewer(
-          minScale: 0.5,
-          maxScale: 5,
-          child: Center(
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => TransactionScaffold(
+          appBar: AppBar(
+            title: Text(_label('本次识别使用的图片', 'Image used for recognition')),
+          ),
+          body: InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 5,
+            child: Center(
               child: Image.file(
-            image,
-            fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Text('图片已失效，请重新截图'),
-          )),
+                image,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Text('图片已失效，请重新截图'),
+              ),
+            ),
+          ),
         ),
       ),
-    ));
+    );
   }
 
   void _update(int index, ImageDraftEntry Function(ImageDraftEntry) change) {
@@ -234,9 +254,11 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
               start: time.subtract(const Duration(minutes: 2)),
               end: time.add(const Duration(minutes: 2)),
             );
-    return rows.any((Transaction tx) =>
-        tx.type == bill.type!.name &&
-        (tx.amount - bill.amount!.abs()).abs() < 0.01);
+    return rows.any(
+      (Transaction tx) =>
+          tx.type == bill.type!.name &&
+          (tx.amount - bill.amount!.abs()).abs() < 0.01,
+    );
   }
 
   Future<void> _confirm() async {
@@ -249,17 +271,21 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
           .where((entry) => entry.selected && !entry.saved)
           .toList();
       if (selected.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_label('请先勾选账单', 'Select at least one transaction')),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_label('请先勾选账单', 'Select at least one transaction')),
+          ),
+        );
         return;
       }
       for (final entry in selected) {
         final missing = _missing(entry.bill);
         if (missing != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(_label('请补全：$missing', 'Please fill in: $missing')),
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_label('请补全：$missing', 'Please fill in: $missing')),
+            ),
+          );
           return;
         }
       }
@@ -270,29 +296,44 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
         final names = bill.type == BillType.transfer
             ? [bill.fromAccount!, bill.toAccount!]
             : [bill.account!];
-        final valid = names.every((name) => accounts.any((account) =>
-            account.ledgerId == session.ledgerId &&
-            !account.hidden &&
-            account.name.trim() == name.trim()));
+        final valid = names.every(
+          (name) => accounts.any(
+            (account) =>
+                account.ledgerId == session.ledgerId &&
+                !account.hidden &&
+                account.name.trim() == name.trim(),
+          ),
+        );
         if (!valid ||
             (bill.type == BillType.transfer &&
                 bill.fromAccount!.trim() == bill.toAccount!.trim())) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(_label(
-                '请填写账本中已有的不同资金账户', 'Choose existing, distinct accounts')),
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _label('请填写账本中已有的不同资金账户', 'Choose existing, distinct accounts'),
+              ),
+            ),
+          );
           return;
         }
         if (bill.type != BillType.transfer &&
-            !categories.any((category) =>
-                category.kind == bill.type!.name &&
-                category.name.trim() == bill.category!.trim())) {
+            !categories.any(
+              (category) =>
+                  category.kind == bill.type!.name &&
+                  category.name.trim() == bill.category!.trim(),
+            )) {
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(_label(
-                '请选择已有的同类型分类', 'Choose an existing category of this type')),
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _label(
+                  '请选择已有的同类型分类',
+                  'Choose an existing category of this type',
+                ),
+              ),
+            ),
+          );
           return;
         }
       }
@@ -313,17 +354,23 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
             if (!mounted) return;
             final proceed = await showDialog<bool>(
               context: context,
-              builder: (context) => AlertDialog(
+              builder: (context) => BeeAlertDialog(
                 title: Text(_label('疑似重复账单', 'Possible duplicate')),
-                content: Text(_label('相同时间和金额附近已有一笔账单，仍要保存吗？',
-                    'A transaction with a similar time and amount exists. Save anyway?')),
+                content: Text(
+                  _label(
+                    '相同时间和金额附近已有一笔账单，仍要保存吗？',
+                    'A transaction with a similar time and amount exists. Save anyway?',
+                  ),
+                ),
                 actions: [
                   TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: Text(_label('跳过', 'Skip'))),
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text(_label('跳过', 'Skip')),
+                  ),
                   FilledButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: Text(_label('仍然保存', 'Save anyway'))),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text(_label('仍然保存', 'Save anyway')),
+                  ),
                 ],
               ),
             );
@@ -337,14 +384,15 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
             syncId: entry.id,
             billingTypes: [
               TagSeedService.billingTypeImage,
-              TagSeedService.billingTypeAi
+              TagSeedService.billingTypeAi,
             ],
             l10n: AppLocalizations.of(context),
           );
           if (id == null) throw StateError('save-failed');
           savedCount++;
-          final index =
-              _session!.entries.indexWhere((item) => item.id == entry.id);
+          final index = _session!.entries.indexWhere(
+            (item) => item.id == entry.id,
+          );
           _update(index, (item) => item.copyWith(saved: true));
           await _writes;
           if (_writeFailed) throw StateError('账单已入账，但草稿状态暂存失败，请重试暂存');
@@ -356,17 +404,25 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
           if (widget.onSaved != null) {
             await widget.onSaved!(session.ledgerId);
           } else {
-            await PostProcessor.run(ref,
-                ledgerId: session.ledgerId, tags: true, attachments: false);
+            await PostProcessor.run(
+              ref,
+              ledgerId: session.ledgerId,
+              tags: true,
+              attachments: false,
+            );
           }
         }
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              _label('已保存 $savedCount 笔', 'Saved $savedCount transactions')),
-        ));
-        if (_session!.entries
-            .every((entry) => entry.saved || !entry.selected)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _label('已保存 $savedCount 笔', 'Saved $savedCount transactions'),
+            ),
+          ),
+        );
+        if (_session!.entries.every(
+          (entry) => entry.saved || !entry.selected,
+        )) {
           setState(() {
             _saving = false;
             _confirmPending = false;
@@ -375,11 +431,15 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
         }
       } catch (error) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(error is StateError
-                ? error.message.toString()
-                : _label('保存失败，草稿已保留', 'Save failed; the draft is kept')),
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                error is StateError
+                    ? error.message.toString()
+                    : _label('保存失败，草稿已保留', 'Save failed; the draft is kept'),
+              ),
+            ),
+          );
         }
       } finally {
         if (mounted) setState(() => _saving = false);
@@ -406,9 +466,11 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
   }
 
   void _manual() {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => const TransactionEditorPage(initialKind: 'expense'),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const TransactionEditorPage(initialKind: 'expense'),
+      ),
+    );
   }
 
   Future<void> _pickNewImage() async {
@@ -447,54 +509,74 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
           .where((c) => c.kind == bill.type?.name)
           .toList();
       if (!mounted || _saving || _confirmPending) return;
-      final selected = await showModalBottomSheet<Category>(
+      final selected = await showBeeBottomSheet<Category>(
         context: context,
+        backgroundColor:
+            LiquidTheme.isActive(context) ? Colors.transparent : null,
         isScrollControlled: true,
-        builder: (context) => SafeArea(
-          child: SizedBox(
-            height: MediaQuery.sizeOf(context).height * 0.72,
-            child: categories.isEmpty
-                ? const Center(child: Text('暂无可选分类，请先创建分类'))
-                : LayoutBuilder(builder: (context, constraints) {
-                    final columns = (constraints.maxWidth / 82).floor().clamp(4, 6);
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(12),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        mainAxisSpacing: 8,
-                        crossAxisSpacing: 4,
-                        childAspectRatio: 0.82,
+        builder: (context) => TransactionGlass(
+            prominent: true,
+            borderRadius: 30,
+            child: SafeArea(
+              child: SizedBox(
+                height: MediaQuery.sizeOf(context).height * 0.72,
+                child: categories.isEmpty
+                    ? const Center(child: Text('暂无可选分类，请先创建分类'))
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final columns =
+                              (constraints.maxWidth / 82).floor().clamp(
+                                    4,
+                                    6,
+                                  );
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(12),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: columns,
+                              mainAxisSpacing: 8,
+                              crossAxisSpacing: 4,
+                              childAspectRatio: 0.82,
+                            ),
+                            itemCount: categories.length,
+                            itemBuilder: (context, categoryIndex) {
+                              final category = categories[categoryIndex];
+                              return GlassPressEffect(
+                                enabled: LiquidTheme.isActive(context),
+                                child: InkWell(
+                                  onTap: () => Navigator.pop(context, category),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      CategoryIconWidget(
+                                        category: category,
+                                        size: 38,
+                                        circular: true,
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        CategoryUtils.getDisplayName(
+                                          category.name,
+                                          context,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
-                      itemCount: categories.length,
-                      itemBuilder: (context, categoryIndex) {
-                        final category = categories[categoryIndex];
-                        return InkWell(
-                          onTap: () => Navigator.pop(context, category),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              CategoryIconWidget(
-                                category: category,
-                                size: 38,
-                                circular: true,
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                CategoryUtils.getDisplayName(category.name, context),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  }),
-          ),
-        ),
+              ),
+            )),
       );
       if (selected != null && mounted && !_saving && !_confirmPending) {
         _edit(index, field, selected.name);
@@ -506,18 +588,31 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
         .map((a) => (name: a.name, label: '${a.name} (${a.currency})'))
         .toList();
     if (!mounted || _saving || _confirmPending) return;
-    final selected = await showModalBottomSheet<String>(
-        context: context,
-        builder: (context) => SafeArea(
+    final selected = await showBeeBottomSheet<String>(
+      context: context,
+      backgroundColor:
+          LiquidTheme.isActive(context) ? Colors.transparent : null,
+      builder: (context) => TransactionGlass(
+          prominent: true,
+          borderRadius: 30,
+          child: SafeArea(
             child: options.isEmpty
                 ? const Padding(
-                    padding: EdgeInsets.all(24), child: Text('暂无可选项，请先创建分类或账户'))
-                : ListView(shrinkWrap: true, children: [
-                    for (final option in options)
-                      ListTile(
+                    padding: EdgeInsets.all(24),
+                    child: Text('暂无可选项，请先创建分类或账户'),
+                  )
+                : ListView(
+                    shrinkWrap: true,
+                    children: [
+                      for (final option in options)
+                        ListTile(
                           title: Text(option.label),
-                          onTap: () => Navigator.pop(context, option.name)),
-                  ])));
+                          onTap: () => Navigator.pop(context, option.name),
+                        ),
+                    ],
+                  ),
+          )),
+    );
     if (selected != null && mounted && !_saving && !_confirmPending) {
       _edit(index, field, selected);
     }
@@ -525,47 +620,69 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
 
   Future<void> _pickDate(int index) async {
     if (_saving || _confirmPending) return;
-    final value =
-        beijingTime(_session!.entries[index].bill.time ?? DateTime.now());
+    final value = beijingTime(
+      _session!.entries[index].bill.time ?? DateTime.now(),
+    );
     final initial =
         value.year < 1900 || value.year > 2199 ? beijingNow() : value;
     final date = await showDatePicker(
-        context: context,
-        initialDate: initial,
-        firstDate: DateTime(1900),
-        lastDate: DateTime(2200));
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2200),
+    );
     if (date == null || !mounted) return;
     final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay(hour: initial.hour, minute: initial.minute));
+      context: context,
+      initialTime: TimeOfDay(hour: initial.hour, minute: initial.minute),
+    );
     if (time == null || !mounted || _saving || _confirmPending) return;
     _edit(
-        index,
-        'time',
-        beijingDate(date.year, date.month, date.day, time.hour, time.minute)
-            .toIso8601String());
+      index,
+      'time',
+      beijingDate(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      ).toIso8601String(),
+    );
   }
 
   Widget _choice(int index, String field, String title, String? value) =>
       Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.only(bottom: 10),
+        child: GlassPressEffect(
+          enabled:
+              LiquidTheme.isActive(context) && !_session!.entries[index].saved,
           child: InkWell(
-              onTap: _session!.entries[index].saved
-                  ? null
-                  : () => field == 'time'
-                      ? _pickDate(index)
-                      : _pickReference(index, field),
-              child: InputDecorator(
-                  decoration: InputDecoration(
-                      labelText: title,
-                      border: const OutlineInputBorder(),
-                      suffixIcon: const Icon(Icons.expand_more)),
-                  child: Text(value?.isNotEmpty == true
-                      ? value!
-                      : _label('请选择', 'Select')))));
+            onTap: _session!.entries[index].saved
+                ? null
+                : () => field == 'time'
+                    ? _pickDate(index)
+                    : _pickReference(index, field),
+            child: InputDecorator(
+              decoration: InputDecoration(
+                labelText: title,
+                border: transactionInputBorder(context),
+                suffixIcon: const Icon(Icons.expand_more),
+              ),
+              child: Text(
+                value?.isNotEmpty == true ? value! : _label('请选择', 'Select'),
+              ),
+            ),
+          ),
+        ),
+      );
 
-  Widget _field(int index, String key, String title, String? value,
-          {TextInputType? keyboardType}) =>
+  Widget _field(
+    int index,
+    String key,
+    String title,
+    String? value, {
+    TextInputType? keyboardType,
+  }) =>
       Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: TextFormField(
@@ -574,84 +691,138 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
           enabled: !_session!.entries[index].saved,
           keyboardType: keyboardType,
           decoration: InputDecoration(
-              labelText: title, border: const OutlineInputBorder()),
+            labelText: title,
+            border: const OutlineInputBorder(),
+          ),
           onChanged: (text) => _edit(index, key, text),
         ),
       );
 
   Widget _entry(int index, ImageDraftEntry entry) {
     final bill = entry.bill;
-    return Card(
+    return TransactionCard(
       key: ValueKey(entry.id),
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-                '${_label('第', 'Transaction ')}${index + 1}${_label('笔', '')}'),
-            subtitle: entry.saved ? Text(_label('已保存', 'Saved')) : null,
-            value: entry.selected,
-            onChanged: entry.saved
-                ? null
-                : (value) => _update(
-                    index, (item) => item.copyWith(selected: value ?? false)),
-          ),
-          DropdownButtonFormField<String>(
-            value: bill.type?.name,
-            decoration: InputDecoration(labelText: _label('交易类型', 'Type')),
-            items: [
-              DropdownMenuItem(
-                  value: 'expense', child: Text(_label('支出', 'Expense'))),
-              DropdownMenuItem(
-                  value: 'income', child: Text(_label('收入', 'Income'))),
-              DropdownMenuItem(
-                  value: 'transfer', child: Text(_label('转账', 'Transfer'))),
-            ],
-            onChanged: entry.saved
-                ? null
-                : (value) {
-                    if (value != null) _edit(index, 'type', value);
-                  },
-          ),
-          const SizedBox(height: 10),
-          _field(index, 'amount', _label('金额', 'Amount'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CheckboxListTile(
+              secondary: LiquidTheme.isActive(context)
+                  ? Icon(
+                      Icons.receipt_long_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
+                  : null,
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                '${_label('第', 'Transaction ')}${index + 1}${_label('笔', '')}',
+              ),
+              subtitle: entry.saved ? Text(_label('已保存', 'Saved')) : null,
+              value: entry.selected,
+              onChanged: entry.saved
+                  ? null
+                  : (value) => _update(
+                        index,
+                        (item) => item.copyWith(selected: value ?? false),
+                      ),
+            ),
+            DropdownButtonFormField<String>(
+              value: bill.type?.name,
+              decoration: InputDecoration(labelText: _label('交易类型', 'Type')),
+              items: [
+                DropdownMenuItem(
+                  value: 'expense',
+                  child: Text(_label('支出', 'Expense')),
+                ),
+                DropdownMenuItem(
+                  value: 'income',
+                  child: Text(_label('收入', 'Income')),
+                ),
+                DropdownMenuItem(
+                  value: 'transfer',
+                  child: Text(_label('转账', 'Transfer')),
+                ),
+              ],
+              onChanged: entry.saved
+                  ? null
+                  : (value) {
+                      if (value != null) _edit(index, 'type', value);
+                    },
+            ),
+            const SizedBox(height: 10),
+            _field(
+              index,
+              'amount',
+              _label('金额', 'Amount'),
               bill.amount?.abs().toString(),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true)),
-          _choice(
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+            ),
+            _choice(
               index,
               'time',
               _label('日期时间（北京时间）', 'Date and time (UTC+08)'),
               bill.time == null
                   ? null
-                  : beijingTime(bill.time!).toString().split('.').first),
-          _field(
+                  : beijingTime(bill.time!).toString().split('.').first,
+            ),
+            _field(
               index,
               'currency',
               _label('币种（留空使用账户币种）', 'Currency (blank uses account currency)'),
-              bill.currency),
-          if (bill.type != BillType.transfer)
-            _choice(index, 'category', _label('分类', 'Category'), bill.category),
-          _field(index, 'merchant', _label('商家', 'Merchant'), bill.merchant),
-          _field(index, 'item_description', _label('商品描述', 'Description'),
-              bill.itemDescription),
-          _field(index, 'payment_channel', _label('支付渠道', 'Payment channel'),
-              bill.paymentChannel),
-          if (bill.type != BillType.transfer)
-            _choice(index, 'account', _label('资金账户', 'Account'), bill.account),
-          if (bill.type == BillType.transfer) ...[
-            _choice(index, 'from_account', _label('转出账户', 'From account'),
-                bill.fromAccount),
-            _choice(index, 'to_account', _label('转入账户', 'To account'),
-                bill.toAccount),
+              bill.currency,
+            ),
+            if (bill.type != BillType.transfer)
+              _choice(
+                index,
+                'category',
+                _label('分类', 'Category'),
+                bill.category,
+              ),
+            _field(index, 'merchant', _label('商家', 'Merchant'), bill.merchant),
+            _field(
+              index,
+              'item_description',
+              _label('商品描述', 'Description'),
+              bill.itemDescription,
+            ),
+            _field(
+              index,
+              'payment_channel',
+              _label('支付渠道', 'Payment channel'),
+              bill.paymentChannel,
+            ),
+            if (bill.type != BillType.transfer)
+              _choice(
+                index,
+                'account',
+                _label('资金账户', 'Account'),
+                bill.account,
+              ),
+            if (bill.type == BillType.transfer) ...[
+              _choice(
+                index,
+                'from_account',
+                _label('转出账户', 'From account'),
+                bill.fromAccount,
+              ),
+              _choice(
+                index,
+                'to_account',
+                _label('转入账户', 'To account'),
+                bill.toAccount,
+              ),
+            ],
+            if (_missing(bill) != null)
+              Text(
+                _label('待补全：${_missing(bill)}', 'Missing: ${_missing(bill)}'),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
           ],
-          if (_missing(bill) != null)
-            Text(_label('待补全：${_missing(bill)}', 'Missing: ${_missing(bill)}'),
-                style: TextStyle(color: Theme.of(context).colorScheme.error)),
-        ]),
+        ),
       ),
     );
   }
@@ -660,50 +831,56 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
   Widget build(BuildContext context) {
     final session = _session;
     return PopScope(
-        canPop: widget.onClose == null &&
-            !_saving &&
-            !_confirmPending &&
-            !_writeFailed,
-        onPopInvokedWithResult: (didPop, result) {
-          if (!didPop && widget.onClose != null) unawaited(_close());
-        },
-        child: Scaffold(
-          appBar: AppBar(
-              leading: widget.onClose == null
-                  ? null
-                  : IconButton(
-                      tooltip: _label('关闭', 'Close'),
-                      icon: const Icon(Icons.close),
-                      onPressed: _saving || _confirmPending || _writeFailed
-                          ? null
-                          : _close,
-                    ),
-              title: Text(_label('图片记账草稿', 'Image billing drafts')),
-              actions: [
-                if (_writeFailed)
-                  TextButton(
-                      onPressed: _saving || _confirmPending
-                          ? null
-                          : () => _queueWrite(_session!),
-                      child: const Text('重试暂存'))
-              ]),
-          body: AbsorbPointer(
-            absorbing: _saving || _confirmPending,
-            child: _recognizing
-                ? Center(
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(_label('正在识别图片', 'Recognizing image')),
-                  ]))
-                : session == null || session.entries.isEmpty
-                    ? Center(
-                        child: Padding(
+      canPop: widget.onClose == null &&
+          !_saving &&
+          !_confirmPending &&
+          !_writeFailed,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && widget.onClose != null) unawaited(_close());
+      },
+      child: TransactionScaffold(
+        appBar: AppBar(
+          leading: widget.onClose == null
+              ? null
+              : IconButton(
+                  tooltip: _label('关闭', 'Close'),
+                  icon: const Icon(Icons.close),
+                  onPressed: _saving || _confirmPending || _writeFailed
+                      ? null
+                      : _close,
+                ),
+          title: Text(_label('图片记账草稿', 'Image billing drafts')),
+          actions: [
+            if (_writeFailed)
+              TextButton(
+                onPressed: _saving || _confirmPending
+                    ? null
+                    : () => _queueWrite(_session!),
+                child: const Text('重试暂存'),
+              ),
+          ],
+        ),
+        body: AbsorbPointer(
+          absorbing: _saving || _confirmPending,
+          child: _recognizing
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
+                      Text(_label('正在识别图片', 'Recognizing image')),
+                    ],
+                  ),
+                )
+              : session == null || session.entries.isEmpty
+                  ? Center(
+                      child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: SingleChildScrollView(
-                            child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                               Text(_error ?? _label('暂无草稿', 'No drafts yet')),
                               const SizedBox(height: 16),
                               if (_image != null)
@@ -711,51 +888,71 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
                                   onPressed: _previewImage,
                                   icon: const Icon(Icons.image_outlined),
                                   label: Text(
-                                      _label('查看本次截图', 'View captured image')),
+                                    _label('查看本次截图', 'View captured image'),
+                                  ),
                                 ),
                               if (_image != null)
                                 FilledButton(
-                                    onPressed: _recognize,
-                                    child: Text(
-                                        _label('重试识别', 'Retry recognition'))),
-                              TextButton(
-                                  onPressed: _pickNewImage,
-                                  child: Text(
-                                      _label('换张图片', 'Choose another image'))),
-                              TextButton(
-                                  onPressed: _manual,
+                                  onPressed: _recognize,
                                   child:
-                                      Text(_label('手动填写', 'Enter manually'))),
-                            ])),
-                      ))
-                    : ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          if (_writeFailed) const Text('草稿暂存失败，请重试暂存后再离开。'),
-                          Text(_label('逐笔检查并修改，只有勾选后确认的账单才会入账。',
-                              'Review each draft. Only selected and confirmed items will be saved.')),
-                          const SizedBox(height: 16),
-                          for (var i = 0; i < session.entries.length; i++)
-                            _entry(i, session.entries[i]),
-                        ],
+                                      Text(_label('重试识别', 'Retry recognition')),
+                                ),
+                              TextButton(
+                                onPressed: _pickNewImage,
+                                child: Text(
+                                    _label('换张图片', 'Choose another image')),
+                              ),
+                              TextButton(
+                                onPressed: _manual,
+                                child: Text(_label('手动填写', 'Enter manually')),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        if (_writeFailed) const Text('草稿暂存失败，请重试暂存后再离开。'),
+                        Text(
+                          _label(
+                            '逐笔检查并修改，只有勾选后确认的账单才会入账。',
+                            'Review each draft. Only selected and confirmed items will be saved.',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        for (var i = 0; i < session.entries.length; i++)
+                          _entry(i, session.entries[i]),
+                      ],
+                    ),
+        ),
+        bottomNavigationBar: TransactionGlass(
+          prominent: true,
+          borderRadius: 28,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  TextButton(
+                    onPressed: _saving || _confirmPending || _recognizing
+                        ? null
+                        : _discard,
+                    child: Text(_label('丢弃', 'Discard')),
+                  ),
+                  const Spacer(),
+                  if (session != null && session.entries.isNotEmpty)
+                    FilledButton(
+                      onPressed: _saving || _confirmPending ? null : _confirm,
+                      child: Text(_label('确认入账', 'Confirm and save')),
+                    ),
+                ],
+              ),
+            ),
           ),
-          bottomNavigationBar: SafeArea(
-              child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(children: [
-              TextButton(
-                  onPressed: _saving || _confirmPending || _recognizing
-                      ? null
-                      : _discard,
-                  child: Text(_label('丢弃', 'Discard'))),
-              const Spacer(),
-              if (session != null && session.entries.isNotEmpty)
-                FilledButton(
-                    onPressed: _saving || _confirmPending ? null : _confirm,
-                    child: Text(_label('确认入账', 'Confirm and save'))),
-            ]),
-          )),
-        ));
+        ),
+      ),
+    );
   }
 }

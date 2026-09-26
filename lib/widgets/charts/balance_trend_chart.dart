@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../styles/tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/ui_scale_extensions.dart';
-import '../../providers/theme_providers.dart';
 import '../biz/section_card.dart';
 import 'line_chart.dart';
 
@@ -28,7 +27,7 @@ class _BalanceTrendChartState extends ConsumerState<BalanceTrendChart> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     if (widget.data.isEmpty) return const SizedBox.shrink();
 

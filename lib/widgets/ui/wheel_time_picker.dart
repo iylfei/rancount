@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
@@ -19,7 +20,7 @@ Future<TimeOfDay?> showWheelTimePicker(
   BuildContext context, {
   required TimeOfDay initial,
 }) {
-  return showModalBottomSheet<TimeOfDay>(
+  return showBeeBottomSheet<TimeOfDay>(
     context: context,
     backgroundColor: BeeTokens.surfaceElevated(context),
     shape: const RoundedRectangleBorder(

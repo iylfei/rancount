@@ -14,6 +14,8 @@ import '../../utils/format_utils.dart';
 import '../../utils/currencies.dart';
 import '../../l10n/app_localizations.dart';
 import '../../styles/tokens.dart';
+import '../../styles/liquid_theme.dart';
+import '../ui/liquid_glass.dart';
 
 /// 账本卡片
 class LedgerCard extends ConsumerWidget {
@@ -38,7 +40,7 @@ class LedgerCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final l10n = AppLocalizations.of(context);
 
     // 获取同步状态
@@ -47,7 +49,8 @@ class LedgerCard extends ConsumerWidget {
 
     // 检查是否正在上传
     final uploadingIds = ref.watch(uploadingLedgerIdsProvider);
-    final isUploading = !ledger.isRemoteOnly && uploadingIds.contains(ledger.id);
+    final isUploading =
+        !ledger.isRemoteOnly && uploadingIds.contains(ledger.id);
 
     // 判断同步状态
     final isRemote = ledger.isRemoteOnly;
@@ -58,6 +61,17 @@ class LedgerCard extends ConsumerWidget {
         syncStatus.diff != SyncDiff.inSync &&
         syncStatus.diff != SyncDiff.noRemote &&
         syncStatus.diff != SyncDiff.notConfigured;
+
+    if (LiquidTheme.isActive(context)) {
+      return _buildLiquidCard(
+        context,
+        ref,
+        primaryColor,
+        isRemote,
+        _buildStatusIcon(context, ref, primaryColor, isSynced, isNotSynced,
+            isRemote, isUploading),
+      );
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -120,7 +134,8 @@ class LedgerCard extends ConsumerWidget {
                             text: TextSpan(
                               children: [
                                 TextSpan(
-                                  text: translateLedgerName(context, ledger.name),
+                                  text:
+                                      translateLedgerName(context, ledger.name),
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w600,
@@ -203,17 +218,23 @@ class LedgerCard extends ConsumerWidget {
                         Text(
                           l10n.ledgersBalance(
                             ref.watch(compactAmountProvider)
-                              ? formatBalance(
-                                  ledger.balance,
-                                  ledger.currency,
-                                  isChineseLocale: Localizations.localeOf(context).languageCode == 'zh',
-                                )
-                              : formatBalanceFull(ledger.balance, ledger.currency),
+                                ? formatBalance(
+                                    ledger.balance,
+                                    ledger.currency,
+                                    isChineseLocale:
+                                        Localizations.localeOf(context)
+                                                .languageCode ==
+                                            'zh',
+                                  )
+                                : formatBalanceFull(
+                                    ledger.balance, ledger.currency),
                           ),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: ledger.balance >= 0 ? BeeTokens.success(context) : BeeTokens.error(context),
+                            color: ledger.balance >= 0
+                                ? BeeTokens.success(context)
+                                : BeeTokens.error(context),
                           ),
                         ),
                       ],
@@ -275,6 +296,160 @@ class LedgerCard extends ConsumerWidget {
     );
   }
 
+  Widget _buildLiquidCard(BuildContext context, WidgetRef ref, Color primary,
+      bool isRemote, Widget status) {
+    final l10n = AppLocalizations.of(context);
+    final balance = ref.watch(compactAmountProvider)
+        ? formatBalance(ledger.balance, ledger.currency,
+            isChineseLocale:
+                Localizations.localeOf(context).languageCode == 'zh')
+        : formatBalanceFull(ledger.balance, ledger.currency);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: GlassPressable(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        selectionFeedback: true,
+        child: GlassSurface(
+          prominent: selected,
+          borderRadius: 24,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Icon(
+                      isRemote
+                          ? Icons.cloud_download_rounded
+                          : Icons.book_rounded,
+                      color: primary,
+                      size: 23,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          translateLedgerName(context, ledger.name),
+                          style: TextStyle(
+                            color: BeeTokens.textPrimary(context),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text('ID: ${ledger.id}',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: BeeTokens.textSecondary(context))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (selected) ...[
+                    Icon(Icons.check_circle_rounded, color: primary, size: 20),
+                    const SizedBox(width: 8),
+                  ],
+                  status,
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                l10n.ledgersBalance(balance),
+                style: TextStyle(
+                  fontSize: 24,
+                  height: 1.2,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -.5,
+                  color: ledger.balance >= 0
+                      ? BeeTokens.textPrimary(context)
+                      : BeeTokens.error(context),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${l10n.ledgersCurrency}：${getCurrencyName(ledger.currency, context)}（${ledger.currency}）',
+                style: TextStyle(
+                    fontSize: 13, color: BeeTokens.textSecondary(context)),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(l10n.ledgersRecords('${ledger.transactionCount}'),
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: BeeTokens.textSecondary(context))),
+                        if (ledger.isShared)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.handshake_outlined,
+                                  size: 15, color: primary),
+                              const SizedBox(width: 4),
+                              Text('${ledger.memberCount}',
+                                  style:
+                                      TextStyle(color: primary, fontSize: 12)),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (onMore != null)
+                    IconButton(
+                      onPressed: () {
+                        GlassFeedback.selection(context);
+                        onMore!();
+                      },
+                      tooltip: l10n.ledgersActions,
+                      icon: const Icon(Icons.more_horiz_rounded),
+                      style: IconButton.styleFrom(
+                        backgroundColor: primary.withValues(alpha: .08),
+                        foregroundColor: primary,
+                      ),
+                    ),
+                ],
+              ),
+              if (isRemote) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.arrow_downward_rounded,
+                        color: primary, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(l10n.ledgerCardDownloadCloud,
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: primary)),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 状态图标
   Widget _buildStatusIcon(
     BuildContext context,
@@ -326,5 +501,4 @@ class LedgerCard extends ConsumerWidget {
       );
     }
   }
-
 }

@@ -236,7 +236,7 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     // 统一的 filled 圆角输入框装饰（委托顶层实现，便于点击式字段框复用）
     InputDecoration filledDec(
@@ -877,7 +877,7 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
       if (!mounted) return;
       final confirm = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => BeeAlertDialog(
           title: Text(l10n.accountDeleteWarningTitle),
           content: Text(l10n.accountDeleteWarningMessage(txCount)),
           actions: [
@@ -900,7 +900,7 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
       if (!mounted) return;
       final confirm = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => BeeAlertDialog(
           title: Text(l10n.commonConfirm),
           content: Text(l10n.accountDeleteConfirm),
           actions: [
@@ -974,7 +974,7 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
     if (!mounted) return;
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.accountHideConfirmTitle),
         content: Text(recurringCount > 0
             ? '${l10n.accountHideConfirmBody}\n${l10n.accountHideRecurringWarn(recurringCount)}'
@@ -1056,7 +1056,7 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
 
   /// 显示币种选择器（复用账本页面的实现）
   Future<String?> _showCurrencyPicker(BuildContext context, {String? initial}) async {
-    return showModalBottomSheet<String>(
+    return showBeeBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: BeeTokens.surfaceElevated(context),
@@ -1217,7 +1217,7 @@ class _DayPickerTile extends ConsumerWidget {
     FocusManager.instance.primaryFocus?.unfocus();
     await Future.delayed(const Duration(milliseconds: 100));
     if (!context.mounted) return;
-    await showModalBottomSheet(
+    await showBeeBottomSheet(
       context: context,
       backgroundColor: BeeTokens.surfaceElevated(context),
       shape: const RoundedRectangleBorder(

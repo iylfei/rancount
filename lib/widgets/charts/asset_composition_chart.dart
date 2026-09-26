@@ -6,7 +6,6 @@ import '../../styles/tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/account_type_utils.dart';
 import '../../utils/ui_scale_extensions.dart';
-import '../../providers/theme_providers.dart';
 import '../biz/biz.dart';
 
 /// 资产构成饼图
@@ -30,7 +29,7 @@ class _AssetCompositionChartState extends ConsumerState<AssetCompositionChart> {
   static const _maxSlices = 8;
 
   List<({String type, double value, Color color})> _buildSlices() {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     // 过滤出正值项（资产构成只看正余额）
     final positiveItems = widget.data
         .where((d) => d.totalBalance > 0)

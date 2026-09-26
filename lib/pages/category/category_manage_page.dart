@@ -57,7 +57,7 @@ class _CategoryManagePageState extends ConsumerState<CategoryManagePage> with Ti
   Widget build(BuildContext context) {
     final categoriesWithCountAsync = ref.watch(categoriesWithCountProvider);
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       body: Column(
@@ -233,7 +233,7 @@ class _CategoryManagePageState extends ConsumerState<CategoryManagePage> with Ti
     // 选择分享范围
     final scope = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.categoryShareScopeTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -349,7 +349,7 @@ class _CategoryManagePageState extends ConsumerState<CategoryManagePage> with Ti
       // 选择导入模式
       final mode = await showDialog<String>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => BeeAlertDialog(
           title: Text(l10n.categoryImportModeTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -447,7 +447,7 @@ class _CategoryManagePageState extends ConsumerState<CategoryManagePage> with Ti
     // 确认对话框
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.categoryClearUnusedTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,

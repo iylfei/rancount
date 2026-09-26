@@ -134,7 +134,7 @@ class MemberListPage extends ConsumerWidget {
   ) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => BeeAlertDialog(
         title: Text(l10n.sharedMembersRemoveTitle),
         content: Text(l10n.sharedMembersRemoveConfirm(
             target.displayName ?? target.email)),
@@ -172,7 +172,7 @@ class MemberListPage extends ConsumerWidget {
   ) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => BeeAlertDialog(
         title: Text(l10n.sharedMembersTransferTitle),
         content: Text(l10n.sharedMembersTransferConfirm(
             target.displayName ?? target.email)),
@@ -204,7 +204,7 @@ class MemberListPage extends ConsumerWidget {
   ) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => BeeAlertDialog(
         title: Text(l10n.sharedMembersLeaveTitle),
         content: Text(l10n.sharedMembersLeaveConfirm(ledgerName)),
         actions: [

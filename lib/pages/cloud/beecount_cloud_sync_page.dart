@@ -359,7 +359,7 @@ class _BeeCountCloudSyncPageState extends ConsumerState<BeeCountCloudSyncPage> {
                 MaterialPageRoute(builder: (_) => const LogCenterPage()),
               ),
               style: TextButton.styleFrom(
-                foregroundColor: ref.watch(primaryColorProvider),
+                foregroundColor: Theme.of(context).colorScheme.primary,
                 padding: EdgeInsets.zero,
                 minimumSize: const Size(0, 36),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,

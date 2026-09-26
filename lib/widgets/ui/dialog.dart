@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../styles/tokens.dart';
@@ -134,7 +135,7 @@ class AppDialog {
 
     return showDialog<T>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => BeeAlertDialog(
         backgroundColor: BeeTokens.surfaceElevated(ctx),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),

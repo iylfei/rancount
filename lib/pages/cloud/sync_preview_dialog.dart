@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -69,7 +70,7 @@ class _SyncPreviewDialogState extends State<_SyncPreviewDialog> {
     final deletedChanges =
         changes.where((c) => c.type == SyncChangeType.deleted).toList();
 
-    return AlertDialog(
+    return BeeAlertDialog(
       backgroundColor: BeeTokens.surface(context),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(

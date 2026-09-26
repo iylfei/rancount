@@ -428,7 +428,7 @@ class _ImportConfirmPageState extends ConsumerState<ImportConfirmPage> {
           final p = r.watch(importProgressProvider);
           final percent =
               p.total == 0 ? 0.0 : (p.done / p.total).clamp(0.0, 1.0);
-          return AlertDialog(
+          return BeeAlertDialog(
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Text(AppLocalizations.of(context)!.importInProgress),
@@ -617,7 +617,7 @@ class _ImportConfirmPageState extends ConsumerState<ImportConfirmPage> {
       // 有失败或跳过: 使用弹窗显示详细信息,等待用户确认后再关闭页面
       await showDialog(
         context: currentContext,
-        builder: (ctx) => AlertDialog(
+        builder: (ctx) => BeeAlertDialog(
           title: Text(l10nToast.importCompleteTitle),
           content: Text(message),
           actions: [

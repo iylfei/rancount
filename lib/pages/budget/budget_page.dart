@@ -5,7 +5,6 @@ import '../../data/repositories/budget_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers.dart';
 import '../../providers/budget_providers.dart';
-import '../../providers/theme_providers.dart';
 import '../../styles/tokens.dart';
 import '../../utils/currencies.dart';
 import '../../utils/ui_scale_extensions.dart';
@@ -312,7 +311,7 @@ class BudgetPage extends ConsumerWidget {
           onChanged: (value) {
             ref.read(homeBudgetCardEnabledProvider.notifier).toggle(value);
           },
-          activeColor: ref.watch(primaryColorProvider),
+          activeColor: Theme.of(context).colorScheme.primary,
         ),
         onTap: () {
           final current = ref.read(homeBudgetCardEnabledProvider);

@@ -7,7 +7,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../providers/theme_providers.dart';
 import '../../styles/tokens.dart';
 import '../../utils/website_urls.dart';
 import '../../widgets/ui/ui.dart';
@@ -41,7 +40,7 @@ class _PrivacyPolicyPageState extends ConsumerState<PrivacyPolicyPage> {
     _url = WebsiteUrls.privacy(
       locale,
       dark: BeeTokens.isDark(context),
-      primaryHex: _hex(ref.read(primaryColorProvider)),
+      primaryHex: _hex(Theme.of(context).colorScheme.primary),
     );
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -90,7 +89,7 @@ class _PrivacyPolicyPageState extends ConsumerState<PrivacyPolicyPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
 
     return PopScope(
       // iOS:单页隐私政策无 SPA 历史,直接放行退出;

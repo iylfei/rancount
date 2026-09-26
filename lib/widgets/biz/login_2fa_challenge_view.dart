@@ -1,10 +1,10 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cloud_sync/flutter_cloud_sync.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../providers/theme_providers.dart';
 import '../../styles/tokens.dart';
 
 /// 2FA 输码对话框 — 当 BeeCountCloudAuthService.signInWithEmail 收到 server 的
@@ -109,7 +109,7 @@ class _Login2FAChallengeDialogState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
     final hasRecovery =
         widget.request.availableMethods.contains('recovery_code');
 
@@ -121,7 +121,7 @@ class _Login2FAChallengeDialogState
       fontFamily: null,
     );
 
-    return AlertDialog(
+    return BeeAlertDialog(
       title: Text(l10n.twofaChallengeTitle),
       content: SizedBox(
         width: 320,

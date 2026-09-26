@@ -1,3 +1,6 @@
+import '../biz/transaction_glass.dart';
+import '../../styles/liquid_theme.dart';
+import '../ui/liquid_glass.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -65,8 +68,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
       final ctx = await repo.db.loadLedgerPickerContext(ctxLedgerId);
       final ledgerSyncId = ctx?.ledgerSyncId;
       if (ledgerSyncId != null) {
-        final rows = await (repo.db.select(repo.db.sharedLedgerCategories)
-              ..where((t) => t.ledgerSyncId.equals(ledgerSyncId)))
+        final rows = await (repo.db.select(
+          repo.db.sharedLedgerCategories,
+        )..where((t) => t.ledgerSyncId.equals(ledgerSyncId)))
             .get();
         for (final s in rows) {
           if (syntheticIdForSyncId(s.syncId) == initialId) {
@@ -85,7 +89,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
     }
 
     final initialCategory = await repo.getCategoryById(initialId);
-    if (initialCategory != null && initialCategory.level == 2 && initialCategory.parentId != null) {
+    if (initialCategory != null &&
+        initialCategory.level == 2 &&
+        initialCategory.parentId != null) {
       // 如果是二级分类，展开其父分类
       setState(() {
         _expandedCategoryId = initialCategory.parentId;
@@ -139,13 +145,16 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
               WidgetsBinding.instance.addPostFrameCallback((_) async {
                 // 获取初始分类信息以确定滚动目标
                 final repo = ref.read(repositoryProvider);
-                final initialCategory = await repo.getCategoryById(widget.initialCategoryId!);
+                final initialCategory = await repo.getCategoryById(
+                  widget.initialCategoryId!,
+                );
 
                 if (initialCategory != null) {
                   int scrollTargetId;
 
                   // 如果是二级分类，滚动到父分类；否则滚动到自己
-                  if (initialCategory.level == 2 && initialCategory.parentId != null) {
+                  if (initialCategory.level == 2 &&
+                      initialCategory.parentId != null) {
                     scrollTargetId = initialCategory.parentId!;
                   } else {
                     scrollTargetId = initialCategory.id;
@@ -179,49 +188,53 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
               // 添加网格行
               displayItems.add(
                 Container(
-                  key: _keys.putIfAbsent(firstCategoryInRow.id, () => GlobalKey()),
-                  child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.9,
+                  key: _keys.putIfAbsent(
+                    firstCategoryInRow.id,
+                    () => GlobalKey(),
                   ),
-                  itemCount: rowItems.length,
-                  itemBuilder: (context, index) {
-                    final topCat = rowItems[index];
-                    final children = subCategoriesMap[topCat.id] ?? [];
-                    final hasChildren = children.isNotEmpty;
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.9,
+                    ),
+                    itemCount: rowItems.length,
+                    itemBuilder: (context, index) {
+                      final topCat = rowItems[index];
+                      final children = subCategoriesMap[topCat.id] ?? [];
+                      final hasChildren = children.isNotEmpty;
 
-                    return _CategoryItem(
-                      category: topCat,
-                      selected: _selectedId == topCat.id,
-                      hasChildren: hasChildren,
-                      expanded: _expandedCategoryId == topCat.id,
-                      onTap: () {
-                        if (hasChildren) {
-                          // 有子分类，切换展开/折叠
-                          setState(() {
-                            if (_expandedCategoryId == topCat.id) {
-                              _expandedCategoryId = null;
-                            } else {
-                              _expandedCategoryId = topCat.id;
-                            }
-                          });
-                        } else {
-                          // 无子分类，直接选中，同时关闭展开的二级分类
-                          setState(() {
-                            _selectedId = topCat.id;
-                            _expandedCategoryId = null; // 关闭展开的二级分类
-                          });
-                          widget.onCategorySelected(topCat);
-                        }
-                      },
-                    );
-                  },
+                      return _CategoryItem(
+                        category: topCat,
+                        selected: _selectedId == topCat.id,
+                        hasChildren: hasChildren,
+                        expanded: _expandedCategoryId == topCat.id,
+                        onTap: () {
+                          if (hasChildren) {
+                            // 有子分类，切换展开/折叠
+                            setState(() {
+                              if (_expandedCategoryId == topCat.id) {
+                                _expandedCategoryId = null;
+                              } else {
+                                _expandedCategoryId = topCat.id;
+                              }
+                            });
+                          } else {
+                            // 无子分类，直接选中，同时关闭展开的二级分类
+                            setState(() {
+                              _selectedId = topCat.id;
+                              _expandedCategoryId = null; // 关闭展开的二级分类
+                            });
+                            widget.onCategorySelected(topCat);
+                          }
+                        },
+                      );
+                    },
                   ),
                 ),
               );
@@ -233,9 +246,7 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
                 final hasChildren = children.isNotEmpty;
 
                 if (_expandedCategoryId == topCat.id && hasChildren) {
-                  displayItems.add(
-                    const SizedBox(height: 12),
-                  );
+                  displayItems.add(const SizedBox(height: 12));
                   displayItems.add(
                     _SubcategorySelectorCard(
                       parentCategory: topCat,
@@ -260,38 +271,43 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
             displayItems.add(const SizedBox(height: 24));
             displayItems.add(
               Center(
-                child: InkWell(
-                  onTap: () {
-                    // expense: tab 0, income: tab 1
-                    final tabIndex = widget.kind == 'expense' ? 0 : 1;
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => CategoryManagePage(
-                          initialTabIndex: tabIndex,
+                child: GlassPressEffect(
+                  enabled: LiquidTheme.isActive(context),
+                  child: InkWell(
+                    onTap: () {
+                      // expense: tab 0, income: tab 1
+                      final tabIndex = widget.kind == 'expense' ? 0 : 1;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              CategoryManagePage(initialTabIndex: tabIndex),
                         ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(24),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(24),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.settings_outlined,
-                          size: 20,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          AppLocalizations.of(context).mineCategoryManagement,
-                          style: TextStyle(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.settings_outlined,
+                            size: 20,
                             color: Theme.of(context).colorScheme.primary,
-                            fontSize: 14,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Text(
+                            AppLocalizations.of(context).mineCategoryManagement,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -310,7 +326,8 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
   }
 
   Future<Map<int, List<Category>>> _loadSubCategories(
-      List<Category> topLevelCategories) async {
+    List<Category> topLevelCategories,
+  ) async {
     final repo = ref.read(repositoryProvider);
     final result = <int, List<Category>>{};
 
@@ -328,7 +345,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
       List<Category> children;
       if (isSharedEditor && cat.id < 0 && repo is LocalRepository) {
         children = await repo.db.getSharedSubCategoriesBySyntheticParentId(
-            cat.id, ctx!.ledgerSyncId!);
+          cat.id,
+          ctx!.ledgerSyncId!,
+        );
       } else {
         children = await repo.getSubCategories(cat.id);
       }
@@ -360,7 +379,7 @@ class _SubcategorySelectorCard extends ConsumerWidget {
     final primaryColor = Theme.of(context).colorScheme.primary;
     final isDark = BeeTokens.isDark(context);
 
-    return Container(
+    return TransactionPanel(
       decoration: BoxDecoration(
         color: BeeTokens.surfacePopoverCard(context),
         borderRadius: BorderRadius.circular(12),
@@ -441,76 +460,150 @@ class _CategoryItem extends StatelessWidget {
     final fontSize = isSubCategory ? 11.0 : 12.0;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(48),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
+    if (LiquidTheme.isActive(context)) {
+      return Semantics(
+        selected: selected,
+        button: true,
+        child: GlassPressable(
+          selectionFeedback: true,
+          onTap: onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              AnimatedContainer(
+                duration: LiquidTheme.motionOf(context)
+                    ? const Duration(milliseconds: 180)
+                    : Duration.zero,
                 width: iconSize,
                 height: iconSize,
                 decoration: BoxDecoration(
-                  color: selected
-                      ? primaryColor.withValues(alpha: 0.25)
-                      : isSubCategory
-                          ? BeeTokens.surfaceCategoryIconLight(context)
-                          : BeeTokens.surfaceCategoryIcon(context),
-                  shape: BoxShape.circle,
+                  color: selected || expanded
+                      ? primaryColor.withValues(alpha: .14)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.surface.withValues(alpha: .72),
+                  borderRadius: BorderRadius.circular(isSubCategory ? 17 : 20),
+                  border: Border.all(
+                    color: selected || expanded
+                        ? primaryColor.withValues(alpha: .55)
+                        : BeeTokens.border(context),
+                  ),
                 ),
-                child: _buildIcon(
-                  context,
-                  isSubCategory ? 20 : 24,
-                  selected ? primaryColor : BeeTokens.iconCategory(context),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _buildIcon(
+                      context,
+                      isSubCategory ? 20 : 24,
+                      selected ? primaryColor : BeeTokens.iconCategory(context),
+                    ),
+                    if (hasChildren && !isSubCategory)
+                      Positioned(
+                        right: 3,
+                        bottom: 3,
+                        child: Icon(
+                          expanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          size: 14,
+                          color: primaryColor,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              // 有子分类时在图标右下角显示三个点（完全分开，不重叠）
-              if (hasChildren && !isSubCategory)
-                Positioned(
-                  right: -6,
-                  bottom: -6,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? primaryColor.withValues(alpha: 0.25)
-                          : BeeTokens.surfaceCategoryIcon(context),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: BeeTokens.surface(context),
-                        width: 2,
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.more_horiz,
-                        size: 14,
+              const SizedBox(height: 7),
+              Text(
+                CategoryUtils.getDisplayName(category.name, context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color:
+                      selected ? primaryColor : BeeTokens.textPrimary(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: iconSize,
+                  height: iconSize,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? primaryColor.withValues(alpha: 0.25)
+                        : isSubCategory
+                            ? BeeTokens.surfaceCategoryIconLight(context)
+                            : BeeTokens.surfaceCategoryIcon(context),
+                    shape: BoxShape.circle,
+                  ),
+                  child: _buildIcon(
+                    context,
+                    isSubCategory ? 20 : 24,
+                    selected ? primaryColor : BeeTokens.iconCategory(context),
+                  ),
+                ),
+                // 有子分类时在图标右下角显示三个点（完全分开，不重叠）
+                if (hasChildren && !isSubCategory)
+                  Positioned(
+                    right: -6,
+                    bottom: -6,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
                         color: selected
-                            ? primaryColor
-                            : BeeTokens.iconCategory(context),
+                            ? primaryColor.withValues(alpha: 0.25)
+                            : BeeTokens.surfaceCategoryIcon(context),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: BeeTokens.surface(context),
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          Icons.more_horiz,
+                          size: 14,
+                          color: selected
+                              ? primaryColor
+                              : BeeTokens.iconCategory(context),
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            CategoryUtils.getDisplayName(category.name, context),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontSize: fontSize,
-                  color: isSubCategory
-                      ? BeeTokens.textSecondary(context)
-                      : BeeTokens.textPrimary(context),
-                ),
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              CategoryUtils.getDisplayName(category.name, context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: fontSize,
+                    color: isSubCategory
+                        ? BeeTokens.textSecondary(context)
+                        : BeeTokens.textPrimary(context),
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ on:
     tags:
       - "*"
       - "!rancount-preview-*"
+      - "!rancount-v*"
   workflow_dispatch:
     inputs:
       tag_name:
@@ -33,7 +34,7 @@ permissions:
   contents: write
 
 env:
-  FLUTTER_VERSION: "3.27.3"
+  FLUTTER_VERSION: "3.32.8"
 
 jobs:
   check-branch:

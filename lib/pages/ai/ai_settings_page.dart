@@ -1,3 +1,4 @@
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -93,7 +94,9 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
   Widget _buildEnableSection(AIConfigData config) {
     final l10n = AppLocalizations.of(context);
     final notifier = ref.read(aiConfigProvider.notifier);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
 
     return SectionCard(
       margin: EdgeInsets.zero,
@@ -109,7 +112,9 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
               await notifier.setEnabled(value);
               if (mounted) {
                 showToast(
-                    context, value ? l10n.aiEnableToastOn : l10n.aiEnableToastOff);
+                  context,
+                  value ? l10n.aiEnableToastOn : l10n.aiEnableToastOff,
+                );
               }
             },
             title: Text(
@@ -130,7 +135,9 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
   /// 2. 服务商管理入口
   Widget _buildProviderManageEntry() {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
 
     return SectionCard(
       margin: EdgeInsets.zero,
@@ -158,7 +165,9 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
   /// 3. 能力绑定区域
   Widget _buildCapabilityBindingSection() {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     final bindingAsync = ref.watch(aiCapabilityBindingProvider);
     final providersAsync = ref.watch(aiProviderListForCapabilityProvider);
 
@@ -175,7 +184,10 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
                 const SizedBox(width: 8),
                 Text(
                   l10n.aiCapabilitySelectTitle,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -200,19 +212,15 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
                 padding: EdgeInsets.all(16),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (e, _) => Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text('$e'),
-              ),
+              error: (e, _) =>
+                  Padding(padding: const EdgeInsets.all(16), child: Text('$e')),
             ),
             loading: () => const Padding(
               padding: EdgeInsets.all(16),
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('$e'),
-            ),
+            error: (e, _) =>
+                Padding(padding: const EdgeInsets.all(16), child: Text('$e')),
           ),
         ],
       ),
@@ -266,7 +274,9 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
     required List<AIServiceProviderConfig> providers,
     required AICapabilityType capabilityType,
   }) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
 
     // 根据能力类型过滤支持的服务商
     final supportedProviders = providers.where((p) {
@@ -320,11 +330,13 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
     required AICapabilityType capabilityType,
   }) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.read(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.read(primaryColorProvider));
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: Text(title),
         titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -337,13 +349,19 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
               return ListTile(
                 leading: Icon(
                   isSelected ? Icons.check_circle : Icons.circle_outlined,
-                  color: isSelected ? primaryColor : BeeTokens.textTertiary(context),
+                  color: isSelected
+                      ? primaryColor
+                      : BeeTokens.textTertiary(context),
                 ),
                 title: Text(
                   provider.name,
                   style: TextStyle(
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    color: isSelected ? primaryColor : BeeTokens.textPrimary(context),
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    color: isSelected
+                        ? primaryColor
+                        : BeeTokens.textPrimary(context),
                   ),
                 ),
                 subtitle: provider.isValid
@@ -383,7 +401,9 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
   /// 高级设置（可折叠）
   Widget _buildAdvancedSettingsSection(AIConfigData config) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     final notifier = ref.read(aiConfigProvider.notifier);
 
     return SectionCard(
@@ -417,8 +437,11 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Row(
                 children: [
-                  Icon(Icons.route_outlined,
-                      size: 18, color: BeeTokens.textSecondary(context)),
+                  Icon(
+                    Icons.route_outlined,
+                    size: 18,
+                    color: BeeTokens.textSecondary(context),
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     l10n.aiStrategyTitle,
@@ -439,15 +462,21 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
                 if (value != null) {
                   await notifier.setStrategy(value);
                   if (mounted) {
-                    showToast(context,
-                        l10n.aiStrategySwitched(l10n.aiStrategyCloudFirst));
+                    showToast(
+                      context,
+                      l10n.aiStrategySwitched(l10n.aiStrategyCloudFirst),
+                    );
                   }
                 }
               },
-              title: Text(l10n.aiStrategyCloudFirst,
-                  style: const TextStyle(fontSize: 14)),
-              subtitle: Text(l10n.aiStrategyCloudFirstDesc,
-                  style: const TextStyle(fontSize: 12)),
+              title: Text(
+                l10n.aiStrategyCloudFirst,
+                style: const TextStyle(fontSize: 14),
+              ),
+              subtitle: Text(
+                l10n.aiStrategyCloudFirstDesc,
+                style: const TextStyle(fontSize: 12),
+              ),
               activeColor: primaryColor,
               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
               dense: true,
@@ -459,15 +488,21 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
                 if (value != null) {
                   await notifier.setStrategy(value);
                   if (mounted) {
-                    showToast(context,
-                        l10n.aiStrategySwitched(l10n.aiStrategyCloudOnly));
+                    showToast(
+                      context,
+                      l10n.aiStrategySwitched(l10n.aiStrategyCloudOnly),
+                    );
                   }
                 }
               },
-              title: Text(l10n.aiStrategyCloudOnly,
-                  style: const TextStyle(fontSize: 14)),
-              subtitle: Text(l10n.aiStrategyCloudOnlyDesc,
-                  style: const TextStyle(fontSize: 12)),
+              title: Text(
+                l10n.aiStrategyCloudOnly,
+                style: const TextStyle(fontSize: 14),
+              ),
+              subtitle: Text(
+                l10n.aiStrategyCloudOnlyDesc,
+                style: const TextStyle(fontSize: 12),
+              ),
               activeColor: primaryColor,
               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
               dense: true,
@@ -476,10 +511,14 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
               value: AIStrategy.localFirst,
               groupValue: config.strategy,
               onChanged: null,
-              title: Text(l10n.aiStrategyLocalFirst,
-                  style: const TextStyle(fontSize: 14)),
-              subtitle: Text(l10n.aiStrategyUnavailable,
-                  style: const TextStyle(fontSize: 12)),
+              title: Text(
+                l10n.aiStrategyLocalFirst,
+                style: const TextStyle(fontSize: 14),
+              ),
+              subtitle: Text(
+                l10n.aiStrategyUnavailable,
+                style: const TextStyle(fontSize: 12),
+              ),
               activeColor: primaryColor,
               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
               dense: true,
@@ -488,10 +527,14 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
               value: AIStrategy.localOnly,
               groupValue: config.strategy,
               onChanged: null,
-              title: Text(l10n.aiStrategyLocalOnly,
-                  style: const TextStyle(fontSize: 14)),
-              subtitle: Text(l10n.aiStrategyUnavailable,
-                  style: const TextStyle(fontSize: 12)),
+              title: Text(
+                l10n.aiStrategyLocalOnly,
+                style: const TextStyle(fontSize: 14),
+              ),
+              subtitle: Text(
+                l10n.aiStrategyUnavailable,
+                style: const TextStyle(fontSize: 12),
+              ),
               activeColor: primaryColor,
               contentPadding: const EdgeInsets.symmetric(horizontal: 8),
               dense: true,
@@ -507,10 +550,14 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
             ListTile(
               dense: true,
               leading: Icon(Icons.edit_note, size: 20, color: primaryColor),
-              title: Text(l10n.aiPromptEditEntry,
-                  style: const TextStyle(fontSize: 14)),
-              subtitle: Text(l10n.aiPromptEditEntryDesc,
-                  style: const TextStyle(fontSize: 12)),
+              title: Text(
+                l10n.aiPromptEditEntry,
+                style: const TextStyle(fontSize: 14),
+              ),
+              subtitle: Text(
+                l10n.aiPromptEditEntryDesc,
+                style: const TextStyle(fontSize: 12),
+              ),
               trailing: const Icon(Icons.chevron_right, size: 20),
               onTap: () {
                 Navigator.push(

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../styles/tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/ui_scale_extensions.dart';
-import '../../providers/theme_providers.dart';
 import '../../data/db.dart' as db;
 import '../biz/section_card.dart';
 import 'category_pie_chart.dart';
@@ -41,7 +40,7 @@ class _AccountCategoryPieChartState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final Color primaryColor = widget.accentColor ?? ref.watch(primaryColorProvider);
+    final Color primaryColor = widget.accentColor ?? Theme.of(context).colorScheme.primary;
 
     // embedded 模式由父级 tab 决定类型;独立模式用内部切换状态
     final selectedType =

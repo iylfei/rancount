@@ -1,3 +1,5 @@
+import '../../widgets/biz/transaction_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:drift/drift.dart' as d;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,7 +59,8 @@ class TransactionEditorPage extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<TransactionEditorPage> createState() => _TransactionEditorPageState();
+  ConsumerState<TransactionEditorPage> createState() =>
+      _TransactionEditorPageState();
 }
 
 class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
@@ -80,7 +83,9 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
 
     // 若需要自动打开金额输入，则在首帧后查询分类并触发
     // 注意：转账类型不走这个逻辑
-    if (widget.quickAdd && widget.initialCategoryId != null && widget.initialKind != 'transfer') {
+    if (widget.quickAdd &&
+        widget.initialCategoryId != null &&
+        widget.initialKind != 'transfer') {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!mounted || _autoOpened) return;
         final repo = ref.read(repositoryProvider);
@@ -88,7 +93,9 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
         // 共享账本下记的 tx,反查走 SharedLedger* 表。
         Category? c;
         if (widget.initialCategoryId! < 0 && repo is LocalRepository) {
-          c = await repo.db.findCategoryBySyntheticId(widget.initialCategoryId!);
+          c = await repo.db.findCategoryBySyntheticId(
+            widget.initialCategoryId!,
+          );
         } else {
           c = await repo.getCategoryById(widget.initialCategoryId!);
         }
@@ -108,12 +115,15 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final liquid = LiquidTheme.isActive(context);
+    final primary = Theme.of(context).colorScheme.primary;
+    return TransactionScaffold(
       body: Column(
         children: [
           // 紧凑顶部：去除多余留白 + 选中下划线
           PrimaryHeader(
             title: '',
+            showTitleSection: !liquid,
             padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
             bottom: Column(
               mainAxisSize: MainAxisSize.min,
@@ -124,29 +134,71 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
                     children: [
                       Expanded(
                         child: Center(
-                          child: TabBar(
-                            controller: _tab,
-                            isScrollable: false,
-                            labelColor: BeeTokens.textPrimary(context),
-                            unselectedLabelColor: BeeTokens.textSecondary(context),
-                            indicator: UnderlineTabIndicator(
-                              borderSide:
-                                  BorderSide(width: 2, color: BeeTokens.textPrimary(context)),
-                              insets: const EdgeInsets.symmetric(horizontal: 0),
+                          child: TransactionGlass(
+                            borderRadius: 26,
+                            child: TabBar(
+                              controller: _tab,
+                              isScrollable: false,
+                              labelColor: liquid
+                                  ? primary
+                                  : BeeTokens.textPrimary(context),
+                              unselectedLabelColor: BeeTokens.textSecondary(
+                                context,
+                              ),
+                              dividerColor: liquid ? Colors.transparent : null,
+                              indicatorSize: liquid
+                                  ? TabBarIndicatorSize.tab
+                                  : null,
+                              indicatorPadding: liquid
+                                  ? const EdgeInsets.all(4)
+                                  : EdgeInsets.zero,
+                              onTap: (_) {
+                                if (liquid) GlassFeedback.selection(context);
+                              },
+                              indicator: liquid
+                                  ? BoxDecoration(
+                                      color: primary.withValues(alpha: .12),
+                                      borderRadius: BorderRadius.circular(22),
+                                    )
+                                  : UnderlineTabIndicator(
+                                      borderSide: BorderSide(
+                                        width: 2,
+                                        color: BeeTokens.textPrimary(context),
+                                      ),
+                                      insets: const EdgeInsets.symmetric(
+                                        horizontal: 0,
+                                      ),
+                                    ),
+                              tabs: [
+                                Tab(
+                                  text: AppLocalizations.of(
+                                    context,
+                                  )!.categoryExpense,
+                                ),
+                                Tab(
+                                  text: AppLocalizations.of(
+                                    context,
+                                  )!.categoryIncome,
+                                ),
+                                Tab(
+                                  text: AppLocalizations.of(
+                                    context,
+                                  )!.transferTitle,
+                                ),
+                              ],
                             ),
-                            tabs: [
-                              Tab(text: AppLocalizations.of(context)!.categoryExpense),
-                              Tab(text: AppLocalizations.of(context)!.categoryIncome),
-                              Tab(text: AppLocalizations.of(context)!.transferTitle),
-                            ],
                           ),
                         ),
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: Text(AppLocalizations.of(context)!.commonCancel,
-                            style: TextStyle(color: BeeTokens.textPrimary(context))),
-                      )
+                        child: Text(
+                          AppLocalizations.of(context)!.commonCancel,
+                          style: TextStyle(
+                            color: BeeTokens.textPrimary(context),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -159,12 +211,14 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
               children: [
                 CategorySelector(
                   kind: 'expense',
-                  onCategorySelected: (c) => _onCategorySelected(context, c, 'expense'),
+                  onCategorySelected: (c) =>
+                      _onCategorySelected(context, c, 'expense'),
                   initialCategoryId: widget.initialCategoryId,
                 ),
                 CategorySelector(
                   kind: 'income',
-                  onCategorySelected: (c) => _onCategorySelected(context, c, 'income'),
+                  onCategorySelected: (c) =>
+                      _onCategorySelected(context, c, 'income'),
                   initialCategoryId: widget.initialCategoryId,
                 ),
                 TransferForm(
@@ -203,7 +257,9 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
       if (ledger == null) return null;
 
       // 3. 获取默认账户信息
-      final account = await ref.read(accountByIdProvider(defaultAccountId).future);
+      final account = await ref.read(
+        accountByIdProvider(defaultAccountId).future,
+      );
       if (account == null) return null;
 
       // 账户隐藏 #240 E3:默认账户已被隐藏时按「无默认」处理(defensive 兜底,
@@ -219,7 +275,11 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
     }
   }
 
-  Future<void> _onCategorySelected(BuildContext context, Category c, String kind) async {
+  Future<void> _onCategorySelected(
+    BuildContext context,
+    Category c,
+    String kind,
+  ) async {
     if (!widget.quickAdd) {
       Navigator.pop(context, c);
       return;
@@ -228,15 +288,19 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
 
     // 确定初始账户ID（新建时使用默认账户，编辑时保持原值）
     int? initialAccountId = widget.initialAccountId;
-    if (widget.editingTransactionId == null && widget.initialAccountId == null) {
+    if (widget.editingTransactionId == null &&
+        widget.initialAccountId == null) {
       // 新建模式：尝试获取默认账户
       initialAccountId = await _getDefaultAccountId(kind, ledgerId);
     }
 
-    await showModalBottomSheet(
+    if (!context.mounted) return;
+    await showBeeBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BeeTokens.surfaceSheet(context),
+      backgroundColor: LiquidTheme.isActive(context)
+          ? Colors.transparent
+          : BeeTokens.surfaceSheet(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -276,8 +340,9 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
           final accountIdForAdd = isSyntheticAccount ? null : res.accountId;
           final accountIdForUpdate = d.Value<int?>(accountIdForAdd);
           final categoryOverride = isSyntheticCategory ? c.syncId : null;
-          final accountOverride =
-              isSyntheticAccount ? await _resolveSyncIdByAccountId(res.accountId!, ledgerId) : null;
+          final accountOverride = isSyntheticAccount
+              ? await _resolveSyncIdByAccountId(res.accountId!, ledgerId)
+              : null;
           if (widget.editingTransactionId != null) {
             // 编辑模式：使用repository更新交易
             await repo.updateTransaction(
@@ -351,17 +416,18 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
           // §7 写 override:先反查 tx.syncId + 把 synthetic tag_id 翻译成
           // Owner tag syncId,再 upsert 进 TransactionTagOverrides
           if (repo is LocalRepository) {
-            final txRow = await (repo.db.select(repo.db.transactions)
-                  ..where((t) => t.id.equals(transactionId)))
-                .getSingleOrNull();
+            final txRow = await (repo.db.select(
+              repo.db.transactions,
+            )..where((t) => t.id.equals(transactionId))).getSingleOrNull();
             final txSyncId = txRow?.syncId;
             if (txSyncId != null) {
-              await (repo.db.delete(repo.db.transactionTagOverrides)
-                    ..where((t) => t.transactionSyncId.equals(txSyncId)))
-                  .go();
+              await (repo.db.delete(
+                repo.db.transactionTagOverrides,
+              )..where((t) => t.transactionSyncId.equals(txSyncId))).go();
               if (syntheticTagIds.isNotEmpty) {
-                final allShared =
-                    await repo.db.select(repo.db.sharedLedgerTags).get();
+                final allShared = await repo.db
+                    .select(repo.db.sharedLedgerTags)
+                    .get();
                 final now = DateTime.now().toUtc();
                 for (final sid in syntheticTagIds) {
                   for (final s in allShared) {
@@ -369,12 +435,12 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
                       await repo.db
                           .into(repo.db.transactionTagOverrides)
                           .insert(
-                        TransactionTagOverridesCompanion.insert(
-                          transactionSyncId: txSyncId,
-                          tagSyncId: s.syncId,
-                          createdAt: now,
-                        ),
-                      );
+                            TransactionTagOverridesCompanion.insert(
+                              transactionSyncId: txSyncId,
+                              tagSyncId: s.syncId,
+                              createdAt: now,
+                            ),
+                          );
                       break;
                     }
                   }
@@ -404,10 +470,14 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
             updateAppWidget(ref, context);
           }
           // 先关闭页面，再播放反馈
-          if (ctx.mounted && Navigator.of(ctx).canPop()) Navigator.of(ctx).pop();
-          if (context.mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+          if (ctx.mounted && Navigator.of(ctx).canPop())
+            Navigator.of(ctx).pop();
+          if (context.mounted && Navigator.of(context).canPop())
+            Navigator.of(context).pop();
           // 反馈：轻微触感 + 系统点击音
-          HapticFeedback.lightImpact();
+          if (!LiquidTheme.isActive(context)) {
+            HapticFeedback.lightImpact();
+          }
           SystemSound.play(SystemSoundType.click);
         },
       ),
@@ -422,13 +492,13 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
     final repo = ref.read(repositoryProvider);
     if (repo is! LocalRepository) return null;
     // 反查:本地 ledger.syncId → SharedLedgerAccounts ledgerSyncId 范围
-    final ledger = await (repo.db.select(repo.db.ledgers)
-          ..where((l) => l.id.equals(ledgerId)))
-        .getSingleOrNull();
+    final ledger = await (repo.db.select(
+      repo.db.ledgers,
+    )..where((l) => l.id.equals(ledgerId))).getSingleOrNull();
     if (ledger?.syncId == null) return null;
-    final rows = await (repo.db.select(repo.db.sharedLedgerAccounts)
-          ..where((t) => t.ledgerSyncId.equals(ledger!.syncId!)))
-        .get();
+    final rows = await (repo.db.select(
+      repo.db.sharedLedgerAccounts,
+    )..where((t) => t.ledgerSyncId.equals(ledger!.syncId!))).get();
     for (final r in rows) {
       if (syntheticIdForSyncId(r.syncId) == accountId) return r.syncId;
     }

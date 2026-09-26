@@ -1,3 +1,7 @@
+import '../../providers/appearance_providers.dart';
+import '../../styles/app_theme.dart';
+import '../../styles/liquid_theme.dart';
+import '../../widgets/ui/liquid_glass.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -17,7 +21,20 @@ const _dialogChannel = MethodChannel('com.tntlikely.beecount/capture_dialog');
 
 Future<void> runScreenshotDialog() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: _ScreenshotDialogApp()));
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.reload();
+  final container = ProviderContainer();
+  restoreAppearanceSettings(container.read, prefs);
+  await Future.wait([
+    container.read(themeModeInitProvider.future),
+    container.read(primaryColorInitProvider.future),
+  ]);
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const _ScreenshotDialogApp(),
+    ),
+  );
 }
 
 final _dialogInitProvider = FutureProvider<File>((ref) async {
@@ -83,6 +100,16 @@ class _ScreenshotDialogAppState extends ConsumerState<_ScreenshotDialogApp>
   Widget build(BuildContext context) {
     final init = ref.watch(_dialogInitProvider);
     final locked = ref.watch(isAppLockedProvider);
+    final appearance = LiquidTheme(
+      enabled:
+          AppAppearanceSettings.supportsLiquidGlass &&
+          ref.watch(visualStyleProvider) == AppVisualStyle.liquidGlass,
+      simplified: ref.watch(glassQualityProvider) == GlassQuality.simplified,
+      animationsEnabled: ref.watch(interfaceAnimationsProvider),
+      hapticsEnabled: ref.watch(hapticsEnabledProvider),
+    );
+    final primary = ref.watch(primaryColorProvider);
+    final platform = Theme.of(context).platform;
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       locale: const Locale('zh'),
@@ -93,39 +120,55 @@ class _ScreenshotDialogAppState extends ConsumerState<_ScreenshotDialogApp>
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-          useMaterial3: true, colorSchemeSeed: const Color(0xfff5b400)),
-      builder: (context, child) => Stack(children: [
-        child ?? const SizedBox.shrink(),
-        if (init.hasValue && locked)
-          const Positioned.fill(child: AppLockScreen()),
-      ]),
+      theme: buildAppTheme(
+        brightness: Brightness.light,
+        classicPrimary: primary,
+        platform: platform,
+        appearance: appearance,
+      ),
+      darkTheme: buildAppTheme(
+        brightness: Brightness.dark,
+        classicPrimary: primary,
+        platform: platform,
+        appearance: appearance,
+      ),
+      themeMode: ref.watch(themeModeProvider),
+      builder: (context, child) => Stack(
+        children: [
+          LiquidBackdrop(child: child ?? const SizedBox.shrink()),
+          if (init.hasValue && locked)
+            const Positioned.fill(child: AppLockScreen()),
+        ],
+      ),
       home: init.when(
         loading: () => const _DialogStatus(),
         error: (error, _) => _DialogStatus(
-          message:
-              error is StateError ? error.message.toString() : '初始化失败，请关闭后重试',
+          message: error is StateError
+              ? error.message.toString()
+              : '初始化失败，请关闭后重试',
         ),
         data: (image) {
           if (!locked) _unlockedOnce = true;
-          return Stack(children: [
-            if (_unlockedOnce)
-              ImageDraftPage(
-                image: image,
-                ownsImage: true,
-                onClose: () => _dialogChannel.invokeMethod<void>('close'),
-                // The temporary engine is destroyed on close. Queue durable
-                // WorkManager retries instead of starting a disposable sync job.
-                onSaved: (id) async {
-                  await _dialogChannel.invokeMethod<void>('saved');
-                  try {
-                    await BackgroundSyncRetry.schedule(id, immediately: true);
-                  } catch (_) {
-                    // The confirmed local change remains queued for app startup.
-                  }
-                },
-              ),
-          ]);
+          return Stack(
+            children: [
+              if (_unlockedOnce)
+                ImageDraftPage(
+                  image: image,
+                  ownsImage: true,
+                  onClose: () => _dialogChannel.invokeMethod<void>('close'),
+                  // The temporary engine is destroyed on close. Queue durable
+                  // WorkManager retries instead of starting a disposable sync job.
+                  onSaved: (id) async {
+                    await _dialogChannel.invokeMethod<void>('saved');
+                    try {
+                      await BackgroundSyncRetry.schedule(id, immediately: true);
+                    } catch (_) {
+                      // The confirmed local change remains queued for app startup.
+                    }
+                  },
+                ),
+            ],
+          );
         },
       ),
     );
@@ -138,18 +181,17 @@ class _DialogStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: const Text('截图记账'),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => _dialogChannel.invokeMethod<void>('close'),
-          ),
-        ),
-        body: Center(
-          child: message == null
-              ? const CircularProgressIndicator()
-              : Padding(
-                  padding: const EdgeInsets.all(24), child: Text(message!)),
-        ),
-      );
+    appBar: AppBar(
+      title: const Text('截图记账'),
+      leading: IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () => _dialogChannel.invokeMethod<void>('close'),
+      ),
+    ),
+    body: Center(
+      child: message == null
+          ? const CircularProgressIndicator()
+          : Padding(padding: const EdgeInsets.all(24), child: Text(message!)),
+    ),
+  );
 }

@@ -1,3 +1,7 @@
+import 'package:beecount/widgets/ui/bee_sheet.dart';
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
+import '../../widgets/ui/liquid_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -70,7 +74,7 @@ final class _AgentPermissionsPageState
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.agentPermissionsRestoreTitle),
         content: Text(l10n.agentPermissionsRestoreDescription),
         actions: [
@@ -99,7 +103,7 @@ final class _AgentPermissionsPageState
     AgentToolPermission current,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final selected = await showModalBottomSheet<AgentToolPermission>(
+    final selected = await showBeeBottomSheet<AgentToolPermission>(
       context: context,
       showDragHandle: true,
       backgroundColor: BeeTokens.surfaceSheet(context),
@@ -151,10 +155,7 @@ final class _AgentPermissionsPageState
       backgroundColor: BeeTokens.scaffoldBackground(context),
       body: Column(
         children: [
-          PrimaryHeader(
-            title: l10n.agentPermissionsTitle,
-            showBack: true,
-          ),
+          PrimaryHeader(title: l10n.agentPermissionsTitle, showBack: true),
           Expanded(
             child: permissions == null
                 ? const Center(child: CircularProgressIndicator())
@@ -211,34 +212,39 @@ final class _AgentPermissionsPageState
   }
 
   Widget _buildIntroCard(AppLocalizations l10n) {
-    return Container(
-      key: const ValueKey('agent-permissions-intro'),
-      decoration: BoxDecoration(
-        color: BeeTokens.surfaceSecondary(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: BeeTokens.divider(context)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              Icons.info_outline_rounded,
-              color: BeeTokens.textSecondary(context),
-              size: 21,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                l10n.agentPermissionsIntro,
-                style: BeeTextTokens.body(context).copyWith(
-                  color: BeeTokens.textSecondary(context),
-                  height: 1.45,
+    return GlassSurface(
+      prominent: false,
+      child: Container(
+        key: const ValueKey('agent-permissions-intro'),
+        decoration: LiquidTheme.isActive(context)
+            ? null
+            : BoxDecoration(
+                color: BeeTokens.surfaceSecondary(context),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: BeeTokens.divider(context)),
+              ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.info_outline_rounded,
+                color: BeeTokens.textSecondary(context),
+                size: 21,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  l10n.agentPermissionsIntro,
+                  style: BeeTextTokens.body(context).copyWith(
+                    color: BeeTokens.textSecondary(context),
+                    height: 1.45,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -312,51 +318,65 @@ final class _AgentPermissionsPageState
         ? BeeTokens.warning(context)
         : BeeTokens.success(context);
 
-    return InkWell(
-      onTap:
-          isWriting ? null : () => _showPermissionSheet(descriptor, permission),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 13, 14, 13),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AgentToolPresentation.label(l10n, descriptor.toolName),
-                    style: BeeTextTokens.body(context),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    AgentToolPresentation.description(
-                        l10n, descriptor.toolName),
-                    style: BeeTextTokens.label(context),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-            if (isWriting)
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: statusColor,
+    return GlassPressEffect(
+      enabled: !isWriting,
+      child: InkWell(
+        onTap: isWriting
+            ? null
+            : () {
+                if (LiquidTheme.isActive(context)) {
+                  GlassFeedback.selection(context);
+                }
+                _showPermissionSheet(descriptor, permission);
+              },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 13, 14, 13),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AgentToolPresentation.label(l10n, descriptor.toolName),
+                      style: BeeTextTokens.body(context),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      AgentToolPresentation.description(
+                        l10n,
+                        descriptor.toolName,
+                      ),
+                      style: BeeTextTokens.label(context),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-              )
-            else
-              _PermissionPill(
-                key: ValueKey('permission-status-${descriptor.toolName}'),
-                permission: permission,
-                label: AgentToolPresentation.permissionLabel(l10n, permission),
-                color: statusColor,
-                onTap: () => _showPermissionSheet(descriptor, permission),
               ),
-          ],
+              const SizedBox(width: 10),
+              if (isWriting)
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: statusColor,
+                  ),
+                )
+              else
+                _PermissionPill(
+                  key: ValueKey('permission-status-${descriptor.toolName}'),
+                  permission: permission,
+                  label: AgentToolPresentation.permissionLabel(
+                    l10n,
+                    permission,
+                  ),
+                  color: statusColor,
+                  onTap: () => _showPermissionSheet(descriptor, permission),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -364,30 +384,35 @@ final class _AgentPermissionsPageState
 
   Widget _buildRestoreCard(int changedCount, AppLocalizations l10n) {
     final color = BeeTokens.textSecondary(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-      decoration: BoxDecoration(
-        color: BeeTokens.surfaceSecondary(context),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.restart_alt_rounded, color: color, size: 21),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              changedCount == 0
-                  ? l10n.agentPermissionsDefaultsActive
-                  : l10n.agentPermissionsModifiedCount(changedCount),
-              style: BeeTextTokens.label(context),
+    return GlassSurface(
+      prominent: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+        decoration: LiquidTheme.isActive(context)
+            ? null
+            : BoxDecoration(
+                color: BeeTokens.surfaceSecondary(context),
+                borderRadius: BorderRadius.circular(16),
+              ),
+        child: Row(
+          children: [
+            Icon(Icons.restart_alt_rounded, color: color, size: 21),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                changedCount == 0
+                    ? l10n.agentPermissionsDefaultsActive
+                    : l10n.agentPermissionsModifiedCount(changedCount),
+                style: BeeTextTokens.label(context),
+              ),
             ),
-          ),
-          TextButton(
-            key: const ValueKey('restore-agent-permissions'),
-            onPressed: _restoreDefaults,
-            child: Text(l10n.agentPermissionsRestoreDefaults),
-          ),
-        ],
+            TextButton(
+              key: const ValueKey('restore-agent-permissions'),
+              onPressed: _restoreDefaults,
+              child: Text(l10n.agentPermissionsRestoreDefaults),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -412,31 +437,38 @@ final class _PermissionPill extends StatelessWidget {
     return Material(
       color: color.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(100),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(100),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                permission == AgentToolPermission.ask
-                    ? Icons.help_outline_rounded
-                    : Icons.check_circle_outline_rounded,
-                size: 15,
-                color: color,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
+      child: GlassPressEffect(
+        child: InkWell(
+          onTap: () {
+            if (LiquidTheme.isActive(context)) {
+              GlassFeedback.selection(context);
+            }
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(100),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  permission == AgentToolPermission.ask
+                      ? Icons.help_outline_rounded
+                      : Icons.check_circle_outline_rounded,
+                  size: 15,
                   color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
                 ),
-              ),
-            ],
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -465,25 +497,32 @@ final class _PermissionOption extends StatelessWidget {
     return Material(
       color: selected ? color.withValues(alpha: 0.12) : Colors.transparent,
       borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          child: Row(
-            children: [
-              Icon(
-                permission == AgentToolPermission.ask
-                    ? Icons.help_outline_rounded
-                    : Icons.check_circle_outline_rounded,
-                color: color,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(label, style: BeeTextTokens.body(context)),
-              ),
-              if (selected) Icon(Icons.check_rounded, color: color),
-            ],
+      child: GlassPressEffect(
+        child: InkWell(
+          onTap: () {
+            if (LiquidTheme.isActive(context)) {
+              GlassFeedback.selection(context);
+            }
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                Icon(
+                  permission == AgentToolPermission.ask
+                      ? Icons.help_outline_rounded
+                      : Icons.check_circle_outline_rounded,
+                  color: color,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(label, style: BeeTextTokens.body(context)),
+                ),
+                if (selected) Icon(Icons.check_rounded, color: color),
+              ],
+            ),
           ),
         ),
       ),

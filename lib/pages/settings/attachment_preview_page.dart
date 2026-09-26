@@ -6,7 +6,6 @@ import '../../styles/tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../../services/attachment_export_import_service.dart';
-import '../../providers.dart';
 
 /// 附件预览页面
 /// 用于展示即将导出或导入的附件图片和自定义图标
@@ -76,8 +75,8 @@ class _AttachmentPreviewPageState extends ConsumerState<AttachmentPreviewPage>
               color: BeeTokens.surface(context),
               child: TabBar(
                 controller: _tabController,
-                indicatorColor: ref.watch(primaryColorProvider),
-                labelColor: ref.watch(primaryColorProvider),
+                indicatorColor: Theme.of(context).colorScheme.primary,
+                labelColor: Theme.of(context).colorScheme.primary,
                 unselectedLabelColor: BeeTokens.textSecondary(context),
                 tabs: [
                   Tab(text: '${l10n.attachmentImportTitle} ($attachmentCount)'),
@@ -152,7 +151,7 @@ class _AttachmentPreviewPageState extends ConsumerState<AttachmentPreviewPage>
           borderRadius: BorderRadius.circular(8),
           border: isSelected
               ? Border.all(
-                  color: ref.watch(primaryColorProvider),
+                  color: Theme.of(context).colorScheme.primary,
                   width: 2,
                 )
               : null,

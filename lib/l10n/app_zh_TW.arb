@@ -2956,5 +2956,19 @@
   "currencyLSL": "萊索托洛蒂",
   "currencySZL": "斯威士蘭里蘭吉尼",
   "currencyMGA": "马達加斯加阿里亞里",
-  "currencyMRU": "毛里塔尼亞烏吉亞"
+  "currencyMRU": "毛里塔尼亞烏吉亞",
+  "appearanceVisualStyle": "介面風格",
+  "appearanceLiquidGlass": "液態玻璃",
+  "appearanceClassic": "經典",
+  "appearanceLiquidDescription": "通透材質 · 靈動回饋",
+  "appearanceClassicDescription": "原有配色與外觀",
+  "appearanceGlassEffects": "玻璃效果",
+  "appearanceGlassAutomatic": "自動",
+  "appearanceGlassSimplified": "簡化",
+  "appearanceInterfaceAnimations": "介面動效",
+  "appearanceMotionDescription": "同時遵循系統減少動態效果設定",
+  "appearanceHaptics": "觸感回饋",
+  "appearanceHapticsDescription": "操作時提供輕柔震動",
+  "appearanceGlassAutomaticDescription": "依裝置能力呈現玻璃折射",
+  "appearanceGlassSimplifiedDescription": "柔和透明效果，減少繪製負擔"
 }

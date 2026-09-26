@@ -32,6 +32,8 @@ import 'services/system/logger_service.dart';
 import 'services/security/app_lock_service.dart';
 import 'providers/security_providers.dart';
 import 'styles/tokens.dart';
+import 'styles/liquid_theme.dart';
+import 'pages/main/widgets/liquid_bottom_bar.dart';
 import 'styles/header_skins.dart';
 import 'providers/avatar_providers.dart';
 
@@ -129,8 +131,10 @@ class _BeeAppState extends ConsumerState<BeeApp>
     _appLinkSubscription = ref.listenManual<AppLinkAction?>(
       pendingAppLinkActionProvider,
       (previous, next) {
-        logger.info('AppLink',
-            'BeeApp: 监听触发 previous=$previous, next=$next, mounted=$mounted');
+        logger.info(
+          'AppLink',
+          'BeeApp: 监听触发 previous=$previous, next=$next, mounted=$mounted',
+        );
         if (next != null && mounted) {
           // 不在此处直接 push：冷启动 / 厂商主题变更(themeChanged)会重建页面树,
           // 此刻多半处于 inactive/hidden,push 的路由会被丢弃(deep-link「没打开」根因)。
@@ -199,14 +203,10 @@ class _BeeAppState extends ConsumerState<BeeApp>
 
     // 持续监听 syncServiceProvider：即使第一次读到的是 LocalOnly（配置尚未加载）
     // 也能在 SyncEngine 实例就绪后再触发一次同步。
-    ref.listenManual<SyncService>(
-      syncServiceProvider,
-      (prev, next) {
-        if (prev is SyncEngine || next is! SyncEngine) return;
-        _triggerInitialCloudSync(next);
-      },
-      fireImmediately: false,
-    );
+    ref.listenManual<SyncService>(syncServiceProvider, (prev, next) {
+      if (prev is SyncEngine || next is! SyncEngine) return;
+      _triggerInitialCloudSync(next);
+    }, fireImmediately: false);
   }
 
   void _triggerInitialCloudSync(SyncEngine engine) {
@@ -215,8 +215,10 @@ class _BeeAppState extends ConsumerState<BeeApp>
     final now = DateTime.now();
     final last = _lastInitialCloudSyncTriggeredAt;
     if (last != null && now.difference(last).inSeconds < 5) {
-      logger.info('AppStart',
-          '_triggerInitialCloudSync 5 秒内已触发过(${now.difference(last).inMilliseconds}ms 前),跳过');
+      logger.info(
+        'AppStart',
+        '_triggerInitialCloudSync 5 秒内已触发过(${now.difference(last).inMilliseconds}ms 前),跳过',
+      );
       return;
     }
     _lastInitialCloudSyncTriggeredAt = now;
@@ -244,8 +246,7 @@ class _BeeAppState extends ConsumerState<BeeApp>
           logger.info('AppStart', '本地无账本,跳过首次同步');
           return;
         }
-        logger.info('AppStart',
-            'BeeCount Cloud 首次同步: 本地账本数=${ledgers.length}');
+        logger.info('AppStart', 'BeeCount Cloud 首次同步: 本地账本数=${ledgers.length}');
         final overallStart = DateTime.now();
 
         // ========== Phase 1: 用户级一次性 ==========
@@ -263,10 +264,13 @@ class _BeeAppState extends ConsumerState<BeeApp>
         List<dynamic>? remoteLedgers;
         try {
           remoteLedgers = await engine.provider.storage.list(path: '');
-          logger.info(
-              'AppStart', 'Phase1: 远端账本=${remoteLedgers.length}');
+          logger.info('AppStart', 'Phase1: 远端账本=${remoteLedgers.length}');
         } catch (e, st) {
-          logger.warning('AppStart', 'Phase1: 拉 remote_ledgers 失败,fallback', st);
+          logger.warning(
+            'AppStart',
+            'Phase1: 拉 remote_ledgers 失败,fallback',
+            st,
+          );
           logger.warning('AppStart', 'error: $e');
         }
 
@@ -286,7 +290,10 @@ class _BeeAppState extends ConsumerState<BeeApp>
         //       user-global 的新增/重命名也能推上去(原来 Phase 2 skip 时会漏)
         try {
           final pushed = await engine.pushUserGlobalEntities();
-          logger.info('AppStart', 'Phase1: pushUserGlobalEntities pushed=$pushed');
+          logger.info(
+            'AppStart',
+            'Phase1: pushUserGlobalEntities pushed=$pushed',
+          );
         } catch (e, st) {
           logger.error('AppStart', 'Phase1: pushUserGlobalEntities 失败', e, st);
         }
@@ -364,10 +371,11 @@ class _BeeAppState extends ConsumerState<BeeApp>
 
         final totalPushed = results.fold<int>(0, (a, b) => a + b.pushed);
         final skipped = results.where((r) => r.skipped).length;
-        final totalMs =
-            DateTime.now().difference(overallStart).inMilliseconds;
-        logger.info('AppStart',
-            'BeeCount Cloud 首次同步完成: synced=${ledgers.length - skipped} skipped=$skipped pushed=$totalPushed 总耗时 ${totalMs}ms');
+        final totalMs = DateTime.now().difference(overallStart).inMilliseconds;
+        logger.info(
+          'AppStart',
+          'BeeCount Cloud 首次同步完成: synced=${ledgers.length - skipped} skipped=$skipped pushed=$totalPushed 总耗时 ${totalMs}ms',
+        );
         ref.read(syncStatusRefreshProvider.notifier).state++;
         ref.read(ledgerListRefreshProvider.notifier).state++;
       } catch (e, st) {
@@ -429,33 +437,42 @@ class _BeeAppState extends ConsumerState<BeeApp>
     String? page,
   }) {
     SharedPreferences.getInstance().then((p) {
-      p.setString(_kPendingDeepLink, jsonEncode({
-        'action': action.name,
-        'type': type,
-        if (categoryId != null) 'categoryId': categoryId,
-        if (page != null) 'page': page,
-        'ts': DateTime.now().millisecondsSinceEpoch,
-      }));
+      p.setString(
+        _kPendingDeepLink,
+        jsonEncode({
+          'action': action.name,
+          'type': type,
+          if (categoryId != null) 'categoryId': categoryId,
+          if (page != null) 'page': page,
+          'ts': DateTime.now().millisecondsSinceEpoch,
+        }),
+      );
     }).catchError((_) {});
   }
 
   void _drainPendingDeepLink({String trigger = ''}) {
     if (!mounted) return;
     if (ref.read(appInitStateProvider) != AppInitState.ready) return;
-    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) return;
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
     // 重建有时在 resumed 之后还会再发生一次:延迟一拍再认领,只在「存活过这段缓冲期」的
     // 最终页面树上打开。若本页在缓冲期内被销毁(重建),timer 随 dispose 取消,新页面会
     // 重新排程,自然落到稳定的页面树上。
     _drainTimer?.cancel();
-    _drainTimer =
-        Timer(const Duration(milliseconds: 700), () => _executeDrain(trigger));
+    _drainTimer = Timer(
+      const Duration(milliseconds: 700),
+      () => _executeDrain(trigger),
+    );
   }
 
   Future<void> _executeDrain(String trigger) async {
     if (!mounted) return;
     // 必须就绪 + 前台稳定:冷启动/主题变更的重建窗口(inactive/hidden)里打开会被丢弃
     if (ref.read(appInitStateProvider) != AppInitState.ready) return;
-    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) return;
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return;
+    }
 
     SharedPreferences prefs;
     try {
@@ -504,8 +521,10 @@ class _BeeAppState extends ConsumerState<BeeApp>
     final type = data['type'] as String?;
     final categoryId = (data['categoryId'] as num?)?.toInt();
     final page = data['page'] as String?;
-    logger.info('AppLink',
-        'BeeApp: drain($trigger) 打开深链 $action type=$type categoryId=$categoryId page=$page');
+    logger.info(
+      'AppLink',
+      'BeeApp: drain($trigger) 打开深链 $action type=$type categoryId=$categoryId page=$page',
+    );
     _openDeepLink(action, type, categoryId: categoryId, page: page);
   }
 
@@ -538,13 +557,15 @@ class _BeeAppState extends ConsumerState<BeeApp>
       case AppLinkAction.newTransaction:
         // 小组件「快速记账」点分类格携带 categoryId 时,预填该分类(见
         // TransactionEditorPage.initialCategoryId);普通「记一笔」categoryId 为 null。
-        nav.push(MaterialPageRoute(
-          builder: (_) => TransactionEditorPage(
-            initialKind: type ?? 'expense',
-            quickAdd: true,
-            initialCategoryId: categoryId,
+        nav.push(
+          MaterialPageRoute(
+            builder: (_) => TransactionEditorPage(
+              initialKind: type ?? 'expense',
+              quickAdd: true,
+              initialCategoryId: categoryId,
+            ),
           ),
-        ));
+        );
         break;
       case AppLinkAction.open:
         _openPageForDeepLink(nav, page);
@@ -593,7 +614,13 @@ class _BeeAppState extends ConsumerState<BeeApp>
   }
 
   void _onLongPressStart(LongPressStartDetails details) {
-    _expandController.forward();
+    if (LiquidTheme.isActive(context) &&
+        (!LiquidTheme.of(context).animationsEnabled ||
+            MediaQuery.disableAnimationsOf(context))) {
+      _expandController.value = 1;
+    } else {
+      _expandController.forward();
+    }
     _showOverlay();
   }
 
@@ -667,7 +694,7 @@ class _BeeAppState extends ConsumerState<BeeApp>
         ],
         animation: _expandAnimation,
         hoveredIndex: _hoveredIndex,
-        backgroundColor: ref.read(primaryColorProvider),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         onDismiss: _dismissOverlay,
       ),
     );
@@ -712,6 +739,9 @@ class _BeeAppState extends ConsumerState<BeeApp>
     }
 
     if (newHoveredIndex != _hoveredIndex) {
+      if (newHoveredIndex != null && LiquidTheme.isActive(context)) {
+        GlassFeedback.selection(context);
+      }
       setState(() {
         _hoveredIndex = newHoveredIndex;
       });
@@ -793,7 +823,7 @@ class _BeeAppState extends ConsumerState<BeeApp>
   Widget build(BuildContext context) {
     final idx = ref.watch(bottomTabIndexProvider);
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final avatarPath = ref.watch(avatarPathProvider).asData?.value;
@@ -942,6 +972,18 @@ class _BeeBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (LiquidTheme.isActive(context)) {
+      return LiquidBottomBar(
+        currentIndex: currentIndex,
+        avatarPath: avatarPath,
+        centerButtonKey: centerButtonKey,
+        onTabTap: onTabTap,
+        onCenterTap: onCenterTap,
+        onCenterLongPressStart: onCenterLongPressStart,
+        onCenterLongPressMoveUpdate: onCenterLongPressMoveUpdate,
+        onCenterLongPressEnd: onCenterLongPressEnd,
+      );
+    }
     final bgColor = BeeTokens.tabBarBackground(context);
     final inactiveColor = isDark ? Colors.white70 : Colors.black54;
 
@@ -968,21 +1010,37 @@ class _BeeBottomBar extends StatelessWidget {
                 // 皮肤的悬浮 tab 装饰层(垫在图标之下,不影响点按)
                 if (skin?.tabBarBuilder != null)
                   Positioned.fill(
-                      child: IgnorePointer(
-                          child: SkinAnimationScope(
-                              child: skin!.tabBarBuilder!(
-                                  primaryColor, isDark)))),
+                    child: IgnorePointer(
+                      child: SkinAnimationScope(
+                        child: skin!.tabBarBuilder!(primaryColor, isDark),
+                      ),
+                    ),
+                  ),
                 Row(
                   children: [
-                    _buildTabItem(0, Icons.receipt_long_outlined,
-                        Icons.receipt_long, l10n.tabHome, inactiveColor),
-                    _buildTabItem(1, Icons.pie_chart_outline_rounded,
-                        Icons.pie_chart_rounded, l10n.tabInsights, inactiveColor),
+                    _buildTabItem(
+                      0,
+                      Icons.receipt_long_outlined,
+                      Icons.receipt_long,
+                      l10n.tabHome,
+                      inactiveColor,
+                    ),
+                    _buildTabItem(
+                      1,
+                      Icons.pie_chart_outline_rounded,
+                      Icons.pie_chart_rounded,
+                      l10n.tabInsights,
+                      inactiveColor,
+                    ),
                     // 中间记账按钮（作为 Tab 样式）
                     _buildCenterTabItem(inactiveColor),
-                    _buildTabItem(2, Icons.account_balance_wallet_outlined,
-                        Icons.account_balance_wallet, l10n.tabAssets,
-                        inactiveColor),
+                    _buildTabItem(
+                      2,
+                      Icons.account_balance_wallet_outlined,
+                      Icons.account_balance_wallet,
+                      l10n.tabAssets,
+                      inactiveColor,
+                    ),
                     _buildAvatarTabItem(3, l10n.tabMine, inactiveColor),
                   ],
                 ),
@@ -995,8 +1053,13 @@ class _BeeBottomBar extends StatelessWidget {
   }
 
   Widget _buildTabItem(
-      int index, IconData icon, IconData activeIcon, String label, Color inactiveColor,
-      {String? dotAnchor}) {
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label,
+    Color inactiveColor, {
+    String? dotAnchor,
+  }) {
     final isActive = index == currentIndex;
     final iconColor = isActive ? primaryColor : inactiveColor;
 
@@ -1021,13 +1084,19 @@ class _BeeBottomBar extends StatelessWidget {
                 // 新功能红点挂在图标上(不是整个 tab),这样位置跟着图标走、
                 // 不会因为 label 长短漂移
                 dotAnchor == null
-                    ? Icon(isActive ? activeIcon : icon,
-                        color: iconColor, size: 22)
+                    ? Icon(
+                        isActive ? activeIcon : icon,
+                        color: iconColor,
+                        size: 22,
+                      )
                     : FeatureDot(
                         anchor: dotAnchor,
                         offset: const Offset(-2, 0),
-                        child: Icon(isActive ? activeIcon : icon,
-                            color: iconColor, size: 22),
+                        child: Icon(
+                          isActive ? activeIcon : icon,
+                          color: iconColor,
+                          size: 22,
+                        ),
                       ),
                 const SizedBox(height: 1),
                 Text(
@@ -1104,8 +1173,11 @@ class _BeeBottomBar extends StatelessWidget {
         ),
       );
     } else {
-      iconWidget = Icon(isActive ? Icons.person_rounded : Icons.person_outline_rounded,
-          color: isActive ? primaryColor : inactiveColor, size: 24);
+      iconWidget = Icon(
+        isActive ? Icons.person_rounded : Icons.person_outline_rounded,
+        color: isActive ? primaryColor : inactiveColor,
+        size: 24,
+      );
     }
 
     return Expanded(
@@ -1203,57 +1275,96 @@ class _SpeedDialOverlay extends StatelessWidget {
               ),
             ),
             for (int i = 0; i < actions.length && i < angles.length; i++)
-              Builder(builder: (context) {
-                final angle = angles[i];
-                final radians = angle * math.pi / 180;
-                final progress = animation.value;
-                final offsetX = progress * distance * math.cos(radians);
-                final offsetY = progress * distance * math.sin(radians);
+              Builder(
+                builder: (context) {
+                  final angle = angles[i];
+                  final radians = angle * math.pi / 180;
+                  final progress = animation.value;
+                  final offsetX = progress * distance * math.cos(radians);
+                  final offsetY = progress * distance * math.sin(radians);
 
-                const btnSize = 48.0;
-                final left = buttonCenter.dx + offsetX - btnSize / 2;
-                final top = buttonCenter.dy + offsetY - btnSize / 2;
+                  const btnSize = 48.0;
+                  final left = buttonCenter.dx + offsetX - btnSize / 2;
+                  final top = buttonCenter.dy + offsetY - btnSize / 2;
 
-                final isEnabled = actions[i].enabled;
-                final bgColor =
-                    isEnabled ? backgroundColor : Colors.grey.shade400;
-                final isHovered = i == hoveredIndex;
+                  final isEnabled = actions[i].enabled;
+                  final bgColor =
+                      isEnabled ? backgroundColor : Colors.grey.shade400;
+                  final isHovered = i == hoveredIndex;
 
-                return Positioned(
-                  left: left,
-                  top: top,
-                  child: Transform.scale(
-                    scale: progress,
-                    child: Opacity(
-                      opacity: progress,
-                      child: AnimatedScale(
-                        scale: isHovered ? 1.2 : 1.0,
-                        duration: const Duration(milliseconds: 150),
-                        child: Material(
-                          color: bgColor,
-                          shape: const CircleBorder(),
-                          elevation: isHovered ? 8 : 4,
-                          child: Container(
-                            width: btnSize,
-                            height: btnSize,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: isHovered
-                                  ? Border.all(color: Colors.white, width: 3)
-                                  : null,
-                            ),
-                            child: Icon(
-                              actions[i].icon,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
+                  return Positioned(
+                    left: left,
+                    top: top,
+                    child: Transform.scale(
+                      scale: progress,
+                      child: Opacity(
+                        opacity: progress,
+                        child: AnimatedScale(
+                          scale: isHovered &&
+                                  (!LiquidTheme.isActive(context) ||
+                                      LiquidTheme.motionOf(context))
+                              ? 1.2
+                              : 1.0,
+                          duration: LiquidTheme.isActive(context) &&
+                                  !LiquidTheme.motionOf(context)
+                              ? Duration.zero
+                              : const Duration(milliseconds: 150),
+                          child: LiquidTheme.isActive(context)
+                              ? GlassSurface(
+                                  borderRadius: 24,
+                                  child: SizedBox(
+                                    width: btnSize,
+                                    height: btnSize,
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: bgColor.withValues(
+                                          alpha: isHovered ? .30 : .08,
+                                        ),
+                                        shape: BoxShape.circle,
+                                        border: isHovered
+                                            ? Border.all(
+                                                color: bgColor,
+                                                width: 2,
+                                              )
+                                            : null,
+                                      ),
+                                      child: Icon(
+                                        actions[i].icon,
+                                        color: bgColor,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Material(
+                                  color: bgColor,
+                                  shape: const CircleBorder(),
+                                  elevation: isHovered ? 8 : 4,
+                                  child: Container(
+                                    width: btnSize,
+                                    height: btnSize,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: isHovered
+                                          ? Border.all(
+                                              color: Colors.white,
+                                              width: 3,
+                                            )
+                                          : null,
+                                    ),
+                                    child: Icon(
+                                      actions[i].icon,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                },
+              ),
           ],
         );
       },

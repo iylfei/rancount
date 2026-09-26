@@ -10,12 +10,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'widgets/biz/login_2fa_challenge_view.dart';
 import 'widgets/ui/toast.dart';
-import 'theme.dart';
+import 'styles/app_theme.dart';
+import 'styles/liquid_theme.dart';
+import 'providers/appearance_providers.dart';
+import 'widgets/ui/liquid_glass.dart';
 import 'providers.dart';
-import 'providers/currency_providers.dart';
 import 'providers/font_scale_provider.dart';
 import 'providers/cloud_mode_providers.dart';
-import 'providers/ui_state_providers.dart';
 import 'utils/notification_factory.dart';
 import 'pages/auth/splash_page.dart';
 import 'pages/auth/welcome_page.dart';
@@ -106,6 +107,8 @@ Future<void> main() async {
   // 初始化应用模式（需要在生成重复交易之前，确保模式正确）
   // 直接从 SharedPreferences 读取并设置到 appModeProvider
   await _initializeAppMode(container);
+  await container.read(appearanceInitProvider.future);
+  await container.read(themeModeInitProvider.future);
 
   // 注意：不再在启动时生成重复交易
   // 周期交易生成已移至 appSplashInitProvider 中（等待数据库完全初始化后执行）
@@ -140,8 +143,9 @@ Future<void> main() async {
     _setupScreenshotCaptureHandler(container);
     String? pendingPath;
     try {
-      pendingPath =
-          await _captureChannel.invokeMethod<String>('peekPendingCapture');
+      pendingPath = await _captureChannel.invokeMethod<String>(
+        'peekPendingCapture',
+      );
     } catch (_) {
       // The native capture bridge must never block normal app startup.
     }
@@ -161,12 +165,14 @@ Future<void> main() async {
   if (Platform.isAndroid) {
     String? pendingSharePath;
     try {
-      pendingSharePath =
-          await const MethodChannel('com.tntlikely.beecount/share')
-              .invokeMethod<String>('peekPendingShare');
+      pendingSharePath = await const MethodChannel(
+        'com.tntlikely.beecount/share',
+      ).invokeMethod<String>('peekPendingShare');
     } catch (_) {}
     await _cleanStaleCaptureFiles(
-        folderName: 'shared_images', keepPath: pendingSharePath);
+      folderName: 'shared_images',
+      keepPath: pendingSharePath,
+    );
     _setupImageShareHandler(container);
   }
 
@@ -190,10 +196,7 @@ Future<void> main() async {
   // 执行,失败不致命。
   unawaited(_runOrphanFileGcOnce(container));
 
-  runApp(ProviderScope(
-    parent: container,
-    child: const MainApp(),
-  ));
+  runApp(ProviderScope(parent: container, child: const MainApp()));
   if (Platform.isAndroid) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_consumePendingCapture(container));
@@ -274,7 +277,8 @@ Future<void> _restoreUserReminder() async {
       final hour = prefs.getInt('reminder_hour') ?? 21;
       final minute = prefs.getInt('reminder_minute') ?? 0;
       print(
-          '✅ 发现用户已启用记账提醒: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
+        '✅ 发现用户已启用记账提醒: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+      );
       print('🔔 正在重新设置提醒任务...');
 
       try {
@@ -367,8 +371,9 @@ Future<void> _consumePendingCapture(ProviderContainer container) async {
   if (_captureOpening) return;
   _captureOpening = true;
   try {
-    final path =
-        await _captureChannel.invokeMethod<String>('consumePendingCapture');
+    final path = await _captureChannel.invokeMethod<String>(
+      'consumePendingCapture',
+    );
     if (path != null && path.isNotEmpty) {
       await _openImageDraft(container, File(path), ownsImage: true);
     }
@@ -377,18 +382,24 @@ Future<void> _consumePendingCapture(ProviderContainer container) async {
   }
 }
 
-Future<void> _openImageDraft(ProviderContainer container, File image,
-    {required bool ownsImage}) async {
+Future<void> _openImageDraft(
+  ProviderContainer container,
+  File image, {
+  required bool ownsImage,
+}) async {
   // Keep draft contents behind the existing splash and app lock screens.
   for (var attempt = 0; attempt < 1200; attempt++) {
-    final ready = container.read(appInitStateProvider) == AppInitState.ready &&
+    final ready =
+        container.read(appInitStateProvider) == AppInitState.ready &&
         !container.read(shouldShowWelcomeProvider) &&
         !container.read(isAppLockedProvider);
     final navigator = globalNavigatorKey.currentState;
     if (ready && navigator != null) {
-      await navigator.push(MaterialPageRoute(
-        builder: (_) => ImageDraftPage(image: image, ownsImage: ownsImage),
-      ));
+      await navigator.push(
+        MaterialPageRoute(
+          builder: (_) => ImageDraftPage(image: image, ownsImage: ownsImage),
+        ),
+      );
       return;
     }
     await Future.delayed(const Duration(milliseconds: 500));
@@ -397,8 +408,10 @@ Future<void> _openImageDraft(ProviderContainer container, File image,
   if (ownsImage && await image.exists()) await image.delete();
 }
 
-Future<void> _cleanStaleCaptureFiles(
-    {String folderName = 'rancount_capture', String? keepPath}) async {
+Future<void> _cleanStaleCaptureFiles({
+  String folderName = 'rancount_capture',
+  String? keepPath,
+}) async {
   try {
     final cache = await getTemporaryDirectory();
     final folder = Directory(p.join(cache.path, folderName));
@@ -498,17 +511,20 @@ void _setupUrlListener(ProviderContainer container) {
     });
 
     // 监听URL(冷启动初始链接 + 应用在后台时的后续链接都走这里)
-    appLinks.uriLinkStream.listen((uri) {
-      logger.info('AppLink', '收到URL: $uri');
-      if (isAppReady()) {
-        dispatch(uri);
-      } else {
-        logger.info('AppLink', '应用未就绪,暂存冷启动URL: $uri');
-        pendingUris.add(uri);
-      }
-    }, onError: (err) {
-      logger.error('AppLink', 'URL监听错误', err);
-    });
+    appLinks.uriLinkStream.listen(
+      (uri) {
+        logger.info('AppLink', '收到URL: $uri');
+        if (isAppReady()) {
+          dispatch(uri);
+        } else {
+          logger.info('AppLink', '应用未就绪,暂存冷启动URL: $uri');
+          pendingUris.add(uri);
+        }
+      },
+      onError: (err) {
+        logger.error('AppLink', 'URL监听错误', err);
+      },
+    );
 
     // 注意：不使用 getInitialLink/getLatestLink，因为它们会缓存旧链接
     // 只依赖 uriLinkStream，它会在应用通过 URL 启动时立即触发
@@ -524,7 +540,10 @@ class NoGlowScrollBehavior extends MaterialScrollBehavior {
   const NoGlowScrollBehavior();
   @override
   Widget buildOverscrollIndicator(
-      BuildContext context, Widget child, ScrollableDetails details) {
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
     return child; // 去除 Android 上的发光效果，避免顶部出现一抹红
   }
 }
@@ -572,57 +591,20 @@ class MainApp extends ConsumerWidget {
 
     final primary = ref.watch(primaryColorProvider);
     final platform = Theme.of(context).platform; // 当前平台
-    final base = BeeTheme.lightTheme(platform: platform);
-    final baseTextTheme = base.textTheme;
-
-    // ⭐ 亮色主题
-    final theme = base.copyWith(
-      textTheme: baseTextTheme,
-      colorScheme: base.colorScheme.copyWith(primary: primary),
-      primaryColor: primary,
-      scaffoldBackgroundColor: Colors.white,
-      dividerColor: Colors.black.withOpacity(0.06),
-      listTileTheme: ListTileThemeData(
-        dense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-        iconColor: const Color(0xFF111827),
-      ),
-      dialogTheme: base.dialogTheme.copyWith(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        titleTextStyle: baseTextTheme.titleMedium?.copyWith(
-            color: const Color(0xFF111827), fontWeight: FontWeight.w600),
-        contentTextStyle:
-            baseTextTheme.bodyMedium?.copyWith(color: const Color(0xFF6B7280)),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primary,
-          textStyle: baseTextTheme.labelLarge,
-        ),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: primary,
-          foregroundColor: Colors.white,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
-      floatingActionButtonTheme: base.floatingActionButtonTheme.copyWith(
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
-      ),
-      bottomNavigationBarTheme: base.bottomNavigationBarTheme.copyWith(
-        selectedItemColor: primary,
-        type: BottomNavigationBarType.fixed,
-      ),
-      cardTheme: base.cardTheme.copyWith(
-        color: Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: EdgeInsets.zero,
-      ),
+    ref.watch(appearanceInitProvider);
+    final appearance = LiquidTheme(
+      enabled:
+          AppAppearanceSettings.supportsLiquidGlass &&
+          ref.watch(visualStyleProvider) == AppVisualStyle.liquidGlass,
+      simplified: ref.watch(glassQualityProvider) == GlassQuality.simplified,
+      animationsEnabled: ref.watch(interfaceAnimationsProvider),
+      hapticsEnabled: ref.watch(hapticsEnabledProvider),
+    );
+    final theme = buildAppTheme(
+      brightness: Brightness.light,
+      classicPrimary: primary,
+      platform: platform,
+      appearance: appearance,
     );
     // Clamp 系统字体缩放，避免部分设备设置 1.5+ 造成 UI 溢出
     final media = MediaQuery.of(context);
@@ -643,12 +625,12 @@ class MainApp extends ConsumerWidget {
         scrollBehavior: const NoGlowScrollBehavior(),
         debugShowCheckedModeBanner: false,
         theme: theme,
-        darkTheme: BeeTheme.darkTheme(platform: platform).copyWith(
-          colorScheme: BeeTheme.darkTheme(platform: platform)
-              .colorScheme
-              .copyWith(primary: primary),
-          primaryColor: primary,
-        ), // ⭐ 暗黑主题（使用动态主题色）
+        darkTheme: buildAppTheme(
+          brightness: Brightness.dark,
+          classicPrimary: primary,
+          platform: platform,
+          appearance: appearance,
+        ),
         themeMode: ref.watch(themeModeProvider), // ⭐ 使用 provider 支持手动切换
         localizationsDelegates: const [
           AppLocalizations.delegate,
@@ -667,7 +649,7 @@ class MainApp extends ConsumerWidget {
           final showPrivacy = ref.watch(showPrivacyScreenProvider);
           return Stack(
             children: [
-              child ?? const SizedBox.shrink(),
+              LiquidBackdrop(child: child ?? const SizedBox.shrink()),
               if (showPrivacy)
                 Positioned.fill(
                   child: BackdropFilter(
@@ -692,8 +674,9 @@ class MainApp extends ConsumerWidget {
           if (settings.name == Navigator.defaultRouteName ||
               settings.name == '/') {
             return MaterialPageRoute(
-                builder: (_) => _getHomePage(initState, ref),
-                settings: const RouteSettings(name: '/'));
+              builder: (_) => _getHomePage(initState, ref),
+              settings: const RouteSettings(name: '/'),
+            );
           }
           return null;
         },
@@ -763,7 +746,9 @@ Future<void> _runOrphanFileGcOnce(ProviderContainer container) async {
             try {
               await entity.delete();
               thumbCleaned++;
-            } catch (_) {/* best effort */}
+            } catch (_) {
+              /* best effort */
+            }
           }
         }
       }
@@ -777,9 +762,9 @@ Future<void> _runOrphanFileGcOnce(ProviderContainer container) async {
       final iconDir = Directory('${appDir.path}/custom_icons');
       if (await iconDir.exists()) {
         final usedIconNames = <String>{};
-        final categoryRows = await (db.select(db.categories)
-              ..where((c) => c.customIconPath.isNotNull()))
-            .get();
+        final categoryRows = await (db.select(
+          db.categories,
+        )..where((c) => c.customIconPath.isNotNull())).get();
         for (final row in categoryRows) {
           final cp = row.customIconPath;
           if (cp != null && cp.trim().isNotEmpty) {

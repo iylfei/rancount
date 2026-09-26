@@ -6,7 +6,6 @@ import '../services/data/category_service.dart';
 import '../services/custom_icon_service.dart';
 import '../data/db.dart';
 import '../data/models/category_icon.dart';
-import '../providers/theme_providers.dart';
 
 /// 获取分类的图标数据。**永远只读 `category.icon` 字段**,不再按名字推导。
 ///
@@ -51,7 +50,7 @@ class CategoryIconWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final iconColor = color ?? primaryColor;
 
     // 检查是否有自定义图标

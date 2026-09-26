@@ -18,8 +18,292 @@ import './header_skin_page.dart';
 import '../../styles/header_skins.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/feature_highlight_providers.dart';
+import '../../providers/appearance_providers.dart';
 import '../currency/exchange_rate_page.dart';
 import '../../utils/ui_scale_extensions.dart';
+
+class _AppearanceStyleChooser extends ConsumerWidget {
+  const _AppearanceStyleChooser();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(visualStyleProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            AppLocalizations.of(context).appearanceVisualStyle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _StylePreview(
+                glass: true,
+                selected: selected == AppVisualStyle.liquidGlass,
+                primary: const Color(0xFF007AFF),
+                onTap: () => ref.read(visualStyleProvider.notifier).state =
+                    AppVisualStyle.liquidGlass,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StylePreview(
+                glass: false,
+                selected: selected == AppVisualStyle.classic,
+                primary: ref.watch(primaryColorProvider),
+                onTap: () => ref.read(visualStyleProvider.notifier).state =
+                    AppVisualStyle.classic,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StylePreview extends StatelessWidget {
+  final bool glass;
+  final bool selected;
+  final Color primary;
+  final VoidCallback onTap;
+
+  const _StylePreview({
+    required this.glass,
+    required this.selected,
+    required this.primary,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final label = glass
+        ? AppLocalizations.of(context).appearanceLiquidGlass
+        : AppLocalizations.of(context).appearanceClassic;
+    final surface = dark ? const Color(0xFF242A35) : Colors.white;
+    return Semantics(
+      selected: selected,
+      label: label,
+      child: GlassPressable(
+        selectionFeedback: true,
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: selected ? primary : BeeTokens.border(context),
+              width: selected ? 2 : 1,
+            ),
+          ),
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  height: 138,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: glass
+                            ? dark
+                                  ? const [Color(0xFF2C3D55), Color(0xFF161C29)]
+                                  : const [Color(0xFFF1F7FF), Color(0xFFB9D4FF)]
+                            : [primary.withValues(alpha: 0.8), surface],
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.account_balance_wallet_outlined,
+                            size: 20,
+                            color: glass ? primary : surface,
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            height: 6,
+                            width: 60,
+                            decoration: BoxDecoration(
+                              color: primary.withValues(alpha: 0.65),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            height: 6,
+                            width: 42,
+                            decoration: BoxDecoration(
+                              color: primary.withValues(alpha: 0.24),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                          const Spacer(),
+                          if (glass)
+                            GlassSurface(
+                              borderRadius: 16,
+                              padding: const EdgeInsets.all(8),
+                              child: _previewNavigation(primary),
+                            )
+                          else
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: surface,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: _previewNavigation(primary),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                  ),
+                  Icon(
+                    selected ? Icons.check_circle : Icons.circle_outlined,
+                    size: 20,
+                    color: selected ? primary : BeeTokens.iconTertiary(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                glass
+                    ? AppLocalizations.of(context).appearanceLiquidDescription
+                    : AppLocalizations.of(context).appearanceClassicDescription,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: BeeTokens.textSecondary(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _previewNavigation(Color color) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Icon(Icons.receipt_long_outlined, size: 16, color: color),
+      Icon(Icons.add_circle, size: 20, color: color),
+      Icon(Icons.person_outline, size: 16, color: color),
+    ],
+  );
+}
+
+class _LiquidAppearanceOptions extends ConsumerWidget {
+  const _LiquidAppearanceOptions();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quality = ref.watch(glassQualityProvider);
+    return Column(
+      children: [
+        AppListTile(
+          leading: Icons.blur_on,
+          title: AppLocalizations.of(context).appearanceGlassEffects,
+          subtitle: quality == GlassQuality.automatic
+              ? AppLocalizations.of(context).appearanceGlassAutomatic
+              : AppLocalizations.of(context).appearanceGlassSimplified,
+          onTap: () => _showQualityDialog(context, ref),
+        ),
+        BeeTokens.cardDivider(context),
+        AppListTile(
+          leading: Icons.animation_outlined,
+          title: AppLocalizations.of(context).appearanceInterfaceAnimations,
+          subtitle: AppLocalizations.of(context).appearanceMotionDescription,
+          trailing: Switch.adaptive(
+            value: ref.watch(interfaceAnimationsProvider),
+            onChanged: (value) {
+              GlassFeedback.selection(context);
+              ref.read(interfaceAnimationsProvider.notifier).state = value;
+            },
+          ),
+        ),
+        BeeTokens.cardDivider(context),
+        AppListTile(
+          leading: Icons.vibration,
+          title: AppLocalizations.of(context).appearanceHaptics,
+          subtitle: AppLocalizations.of(context).appearanceHapticsDescription,
+          trailing: Switch.adaptive(
+            value: ref.watch(hapticsEnabledProvider),
+            onChanged: (value) {
+              if (!value) GlassFeedback.selection(context);
+              ref.read(hapticsEnabledProvider.notifier).state = value;
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showQualityDialog(BuildContext context, WidgetRef ref) {
+    final current = ref.read(glassQualityProvider);
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => BeeAlertDialog(
+        title: Text(AppLocalizations.of(context).appearanceGlassEffects),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final quality in GlassQuality.values)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  quality == GlassQuality.automatic
+                      ? AppLocalizations.of(context).appearanceGlassAutomatic
+                      : AppLocalizations.of(context).appearanceGlassSimplified,
+                ),
+                subtitle: Text(
+                  quality == GlassQuality.automatic
+                      ? AppLocalizations.of(
+                          context,
+                        ).appearanceGlassAutomaticDescription
+                      : AppLocalizations.of(
+                          context,
+                        ).appearanceGlassSimplifiedDescription,
+                ),
+                trailing: current == quality
+                    ? Icon(
+                        Icons.check,
+                        color: Theme.of(context).colorScheme.primary,
+                      )
+                    : null,
+                onTap: () {
+                  GlassFeedback.selection(context);
+                  ref.read(glassQualityProvider.notifier).state = quality;
+                  Navigator.pop(dialogContext);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// 外观设置二级页面
 class AppearanceSettingsPage extends ConsumerStatefulWidget {
@@ -47,6 +331,10 @@ class _AppearanceSettingsPageState
   Widget build(BuildContext context) {
     final currentLanguage = ref.watch(languageProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final supportsGlass = AppAppearanceSettings.supportsLiquidGlass;
+    final usesGlass =
+        supportsGlass &&
+        ref.watch(visualStyleProvider) == AppVisualStyle.liquidGlass;
     final l10n = AppLocalizations.of(context);
 
     String languageDisplay;
@@ -100,6 +388,10 @@ class _AppearanceSettingsPageState
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (supportsGlass) ...[
+                  const _AppearanceStyleChooser(),
+                  const SizedBox(height: 16),
+                ],
                 // 纯样式:外观模式 / 主题色 / 皮肤 / 显示缩放
                 SectionCard(
                   margin: EdgeInsets.zero,
@@ -113,53 +405,71 @@ class _AppearanceSettingsPageState
                         onTap: () => _showThemeModeDialog(context, ref, l10n),
                       ),
                       BeeTokens.cardDivider(context),
-                      // 主题色设置
-                      AppListTile(
-                        leading: Icons.brush_outlined,
-                        title: l10n.personalizeTitle,
-                        subtitle: l10n.personalizeSubtitle,
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const PersonalizePage()),
-                          );
-                        },
-                      ),
-                      BeeTokens.cardDivider(context),
-                      // 皮肤
-                      AppListTile(
-                        leading: Icons.wallpaper_outlined,
-                        // 红点链的终点。进到皮肤页就算「看到了」,整条链
-                        // (我的 tab → 个性化 → 皮肤)一起熄灭。
-                        dotAnchor: 'header_skin',
-                        title: l10n.headerSkinTitle,
-                        subtitle: skinDisplay,
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const HeaderSkinPage()),
-                          );
-                        },
-                      ),
-                      BeeTokens.cardDivider(context),
-                      // 皮肤动效 —— 关掉后动态皮肤停在静态帧(省电)
-                      AppListTile(
-                        leading: Icons.auto_awesome_motion_outlined,
-                        title: l10n.appearanceSkinAnimation,
-                        subtitle: l10n.appearanceSkinAnimationDesc,
-                        trailing: Switch.adaptive(
-                          value: ref.watch(skinAnimationEnabledProvider),
-                          onChanged: (value) {
-                            ref.read(skinAnimationEnabledProvider.notifier).state =
-                                value;
+                      if (usesGlass) ...[
+                        const _LiquidAppearanceOptions(),
+                        BeeTokens.cardDivider(context),
+                      ],
+                      if (!usesGlass) ...[
+                        // 主题色设置
+                        AppListTile(
+                          leading: Icons.brush_outlined,
+                          title: l10n.personalizeTitle,
+                          subtitle: l10n.personalizeSubtitle,
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const PersonalizePage(),
+                              ),
+                            );
                           },
-                          activeColor: ref.watch(primaryColorProvider),
                         ),
-                        onTap: () {
-                          final current = ref.read(skinAnimationEnabledProvider);
-                          ref.read(skinAnimationEnabledProvider.notifier).state =
-                              !current;
-                        },
-                      ),
-                      BeeTokens.cardDivider(context),
+                        BeeTokens.cardDivider(context),
+                        // 皮肤
+                        AppListTile(
+                          leading: Icons.wallpaper_outlined,
+                          // 红点链的终点。进到皮肤页就算「看到了」,整条链
+                          // (我的 tab → 个性化 → 皮肤)一起熄灭。
+                          dotAnchor: 'header_skin',
+                          title: l10n.headerSkinTitle,
+                          subtitle: skinDisplay,
+                          onTap: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const HeaderSkinPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        BeeTokens.cardDivider(context),
+                        // 皮肤动效 —— 关掉后动态皮肤停在静态帧(省电)
+                        AppListTile(
+                          leading: Icons.auto_awesome_motion_outlined,
+                          title: l10n.appearanceSkinAnimation,
+                          subtitle: l10n.appearanceSkinAnimationDesc,
+                          trailing: Switch.adaptive(
+                            value: ref.watch(skinAnimationEnabledProvider),
+                            onChanged: (value) {
+                              ref
+                                      .read(
+                                        skinAnimationEnabledProvider.notifier,
+                                      )
+                                      .state =
+                                  value;
+                            },
+                            activeColor: Theme.of(context).colorScheme.primary,
+                          ),
+                          onTap: () {
+                            final current = ref.read(
+                              skinAnimationEnabledProvider,
+                            );
+                            ref
+                                    .read(skinAnimationEnabledProvider.notifier)
+                                    .state =
+                                !current;
+                          },
+                        ),
+                        BeeTokens.cardDivider(context),
+                      ],
                       // 显示缩放
                       AppListTile(
                         leading: Icons.zoom_out_map_outlined,
@@ -167,7 +477,9 @@ class _AppearanceSettingsPageState
                         subtitle: l10n.mineDisplayScaleSubtitle,
                         onTap: () async {
                           await Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const FontSettingsPage()),
+                            MaterialPageRoute(
+                              builder: (_) => const FontSettingsPage(),
+                            ),
                           );
                         },
                       ),
@@ -187,7 +499,8 @@ class _AppearanceSettingsPageState
                         subtitle: ref.watch(compactAmountProvider)
                             ? l10n.appearanceAmountFormatCompact
                             : l10n.appearanceAmountFormatFull,
-                        onTap: () => _showAmountFormatDialog(context, ref, l10n),
+                        onTap: () =>
+                            _showAmountFormatDialog(context, ref, l10n),
                       ),
                       BeeTokens.cardDivider(context),
                       // 显示交易时间
@@ -198,13 +511,17 @@ class _AppearanceSettingsPageState
                         trailing: Switch.adaptive(
                           value: ref.watch(showTransactionTimeProvider),
                           onChanged: (value) {
-                            ref.read(showTransactionTimeProvider.notifier).state = value;
+                            ref
+                                    .read(showTransactionTimeProvider.notifier)
+                                    .state =
+                                value;
                           },
-                          activeColor: ref.watch(primaryColorProvider),
+                          activeColor: Theme.of(context).colorScheme.primary,
                         ),
                         onTap: () {
                           final current = ref.read(showTransactionTimeProvider);
-                          ref.read(showTransactionTimeProvider.notifier).state = !current;
+                          ref.read(showTransactionTimeProvider.notifier).state =
+                              !current;
                         },
                       ),
                       BeeTokens.cardDivider(context),
@@ -249,8 +566,9 @@ class _AppearanceSettingsPageState
                         leading: Icons.payments_outlined,
                         title: l10n.baseCurrencyLabel,
                         subtitle: displayCurrency(
-                            ref.watch(baseCurrencyProvider).toUpperCase(),
-                            context),
+                          ref.watch(baseCurrencyProvider).toUpperCase(),
+                          context,
+                        ),
                         onTap: () => _pickBaseCurrency(context, ref),
                       ),
                       BeeTokens.cardDivider(context),
@@ -281,7 +599,9 @@ class _AppearanceSettingsPageState
                         subtitle: languageDisplay,
                         onTap: () async {
                           await Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const LanguageSettingsPage()),
+                            MaterialPageRoute(
+                              builder: (_) => const LanguageSettingsPage(),
+                            ),
                           );
                         },
                       ),
@@ -293,7 +613,9 @@ class _AppearanceSettingsPageState
                         subtitle: l10n.widgetManagementDesc,
                         onTap: () async {
                           await Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const WidgetManagementPage()),
+                            MaterialPageRoute(
+                              builder: (_) => const WidgetManagementPage(),
+                            ),
                           );
                         },
                       ),
@@ -305,7 +627,9 @@ class _AppearanceSettingsPageState
                         subtitle: l10n.appLockDesc,
                         onTap: () async {
                           await Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const AppLockSettingsPage()),
+                            MaterialPageRoute(
+                              builder: (_) => const AppLockSettingsPage(),
+                            ),
                           );
                         },
                       ),
@@ -334,12 +658,16 @@ class _AppearanceSettingsPageState
   }
 
   /// 显示主题模式选择对话框
-  void _showThemeModeDialog(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+  void _showThemeModeDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
     final currentMode = ref.read(themeModeProvider);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         backgroundColor: BeeTokens.surfaceElevated(context),
         title: Text(
           l10n.appearanceThemeMode,
@@ -349,21 +677,24 @@ class _AppearanceSettingsPageState
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildModeOption(
-              context, ref,
+              context,
+              ref,
               title: l10n.appearanceThemeModeSystem,
               value: ThemeMode.system,
               currentValue: currentMode,
               icon: Icons.settings_suggest_outlined,
             ),
             _buildModeOption(
-              context, ref,
+              context,
+              ref,
               title: l10n.appearanceThemeModeLight,
               value: ThemeMode.light,
               currentValue: currentMode,
               icon: Icons.light_mode_outlined,
             ),
             _buildModeOption(
-              context, ref,
+              context,
+              ref,
               title: l10n.appearanceThemeModeDark,
               value: ThemeMode.dark,
               currentValue: currentMode,
@@ -384,7 +715,7 @@ class _AppearanceSettingsPageState
     required IconData icon,
   }) {
     final isSelected = value == currentValue;
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return ListTile(
       leading: Icon(
@@ -398,9 +729,7 @@ class _AppearanceSettingsPageState
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
-      trailing: isSelected
-          ? Icon(Icons.check, color: primaryColor)
-          : null,
+      trailing: isSelected ? Icon(Icons.check, color: primaryColor) : null,
       onTap: () {
         ref.read(themeModeProvider.notifier).state = value;
         Navigator.pop(context);
@@ -409,12 +738,16 @@ class _AppearanceSettingsPageState
   }
 
   /// 显示金额显示格式选择对话框
-  void _showAmountFormatDialog(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+  void _showAmountFormatDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
     final isCompact = ref.read(compactAmountProvider);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         backgroundColor: BeeTokens.surfaceElevated(context),
         title: Text(
           l10n.appearanceAmountFormat,
@@ -424,7 +757,8 @@ class _AppearanceSettingsPageState
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildAmountFormatOption(
-              context, ref,
+              context,
+              ref,
               title: l10n.appearanceAmountFormatFull,
               subtitle: l10n.appearanceAmountFormatFullDesc,
               value: false,
@@ -432,7 +766,8 @@ class _AppearanceSettingsPageState
               icon: Icons.format_list_numbered_outlined,
             ),
             _buildAmountFormatOption(
-              context, ref,
+              context,
+              ref,
               title: l10n.appearanceAmountFormatCompact,
               subtitle: l10n.appearanceAmountFormatCompactDesc,
               value: true,
@@ -455,7 +790,7 @@ class _AppearanceSettingsPageState
     required IconData icon,
   }) {
     final isSelected = value == currentValue;
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return ListTile(
       leading: Icon(
@@ -471,14 +806,9 @@ class _AppearanceSettingsPageState
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          color: BeeTokens.textSecondary(context),
-          fontSize: 12,
-        ),
+        style: TextStyle(color: BeeTokens.textSecondary(context), fontSize: 12),
       ),
-      trailing: isSelected
-          ? Icon(Icons.check, color: primaryColor)
-          : null,
+      trailing: isSelected ? Icon(Icons.check, color: primaryColor) : null,
       onTap: () {
         ref.read(compactAmountProvider.notifier).state = value;
         Navigator.pop(context);
@@ -487,11 +817,15 @@ class _AppearanceSettingsPageState
   }
 
   /// 显示备注显示方式选择对话框
-  void _showNoteDisplayDialog(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+  void _showNoteDisplayDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
     final current = ref.read(noteDisplayModeProvider);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         backgroundColor: BeeTokens.surfaceElevated(context),
         title: Text(
           l10n.appearanceNoteDisplay,
@@ -501,7 +835,8 @@ class _AppearanceSettingsPageState
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildNoteDisplayOption(
-              context, ref,
+              context,
+              ref,
               title: l10n.appearanceNoteDisplayCategory,
               subtitle: l10n.appearanceNoteDisplayCategoryDesc,
               value: 'category',
@@ -509,7 +844,8 @@ class _AppearanceSettingsPageState
               icon: Icons.label_outline,
             ),
             _buildNoteDisplayOption(
-              context, ref,
+              context,
+              ref,
               title: l10n.appearanceNoteDisplayNote,
               subtitle: l10n.appearanceNoteDisplayNoteDesc,
               value: 'note',
@@ -532,9 +868,12 @@ class _AppearanceSettingsPageState
     required IconData icon,
   }) {
     final isSelected = value == currentValue;
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return ListTile(
-      leading: Icon(icon, color: isSelected ? primaryColor : BeeTokens.iconSecondary(context)),
+      leading: Icon(
+        icon,
+        color: isSelected ? primaryColor : BeeTokens.iconSecondary(context),
+      ),
       title: Text(
         title,
         style: TextStyle(
@@ -570,14 +909,17 @@ class _AppearanceSettingsPageState
 
   /// 显示历史备注范围和排序方式的个性化设置对话框。
   void _showNoteHistoryDialog(
-      BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
     var selectedScope = ref.read(noteHistoryScopeProvider);
     var selectedSort = ref.read(noteHistorySortProvider);
     var limitError = false;
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+        builder: (context, setDialogState) => BeeAlertDialog(
           backgroundColor: BeeTokens.surfaceElevated(context),
           title: Text(
             l10n.appearanceNoteHistory,
@@ -675,8 +1017,9 @@ class _AppearanceSettingsPageState
                     SizedBox(
                       width: 72.scaled(context, ref),
                       child: TextFormField(
-                        initialValue:
-                            ref.read(noteHistoryLimitProvider).toString(),
+                        initialValue: ref
+                            .read(noteHistoryLimitProvider)
+                            .toString(),
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
                         inputFormatters: [
@@ -691,7 +1034,8 @@ class _AppearanceSettingsPageState
                         ),
                         onChanged: (value) {
                           final limit = int.tryParse(value);
-                          final isValid = limit != null &&
+                          final isValid =
+                              limit != null &&
                               limit >= noteHistoryMinLimit &&
                               limit <= noteHistoryMaxLimit;
                           setDialogState(() => limitError = !isValid);
@@ -706,8 +1050,7 @@ class _AppearanceSettingsPageState
                 ),
                 if (limitError)
                   Padding(
-                    padding:
-                        const EdgeInsets.only(top: 4).scaled(context, ref),
+                    padding: const EdgeInsets.only(top: 4).scaled(context, ref),
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: Text(
@@ -736,12 +1079,15 @@ class _AppearanceSettingsPageState
 
   /// 显示收支颜色方案选择对话框
   void _showColorSchemeDialog(
-      BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+  ) {
     final currentScheme = ref.read(incomeExpenseColorSchemeProvider);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         backgroundColor: BeeTokens.surfaceElevated(context),
         title: Text(
           l10n.appearanceColorScheme,
@@ -751,7 +1097,8 @@ class _AppearanceSettingsPageState
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildColorSchemeOption(
-              context, ref,
+              context,
+              ref,
               title: l10n.appearanceColorSchemeOn,
               subtitle: l10n.appearanceColorSchemeOnDesc,
               value: true,
@@ -759,7 +1106,8 @@ class _AppearanceSettingsPageState
               icon: Icons.trending_up,
             ),
             _buildColorSchemeOption(
-              context, ref,
+              context,
+              ref,
               title: l10n.appearanceColorSchemeOff,
               subtitle: l10n.appearanceColorSchemeOffDesc,
               value: false,
@@ -782,7 +1130,7 @@ class _AppearanceSettingsPageState
     required IconData icon,
   }) {
     final isSelected = value == currentValue;
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return ListTile(
       leading: Icon(
@@ -798,14 +1146,9 @@ class _AppearanceSettingsPageState
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          color: BeeTokens.textSecondary(context),
-          fontSize: 12,
-        ),
+        style: TextStyle(color: BeeTokens.textSecondary(context), fontSize: 12),
       ),
-      trailing: isSelected
-          ? Icon(Icons.check, color: primaryColor)
-          : null,
+      trailing: isSelected ? Icon(Icons.check, color: primaryColor) : null,
       onTap: () {
         ref.read(incomeExpenseColorSchemeProvider.notifier).state = value;
         Navigator.pop(context);

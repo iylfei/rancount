@@ -383,7 +383,7 @@ class _OrphanCleanupPageState extends ConsumerState<OrphanCleanupPage> {
     final l10n = AppLocalizations.of(context);
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => BeeAlertDialog(
         title: Text(title),
         content: Text(message),
         actions: [

@@ -1,3 +1,5 @@
+import '../../widgets/biz/transaction_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -17,9 +19,11 @@ class RecurringTransactionPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final recurringTransactionsAsync = ref.watch(allRecurringTransactionsProvider);
+    final recurringTransactionsAsync = ref.watch(
+      allRecurringTransactionsProvider,
+    );
 
-    return Scaffold(
+    return TransactionScaffold(
       body: Column(
         children: [
           PrimaryHeader(
@@ -36,9 +40,7 @@ class RecurringTransactionPage extends ConsumerWidget {
           Expanded(
             child: recurringTransactionsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(
-                child: Text('Error: $error'),
-              ),
+              error: (error, stack) => Center(child: Text('Error: $error')),
               data: (recurringTransactions) {
                 if (recurringTransactions.isEmpty) {
                   return Center(
@@ -52,17 +54,25 @@ class RecurringTransactionPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          AppLocalizations.of(context)!.recurringTransactionEmpty,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: BeeTokens.textSecondary(context),
-                          ),
+                          AppLocalizations.of(
+                            context,
+                          )!
+                              .recurringTransactionEmpty,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: BeeTokens.textSecondary(context),
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          AppLocalizations.of(context)!.recurringTransactionEmptyHint,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: BeeTokens.textTertiary(context),
-                          ),
+                          AppLocalizations.of(
+                            context,
+                          )!
+                              .recurringTransactionEmptyHint,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: BeeTokens.textTertiary(context),
+                                  ),
                         ),
                       ],
                     ),
@@ -70,8 +80,12 @@ class RecurringTransactionPage extends ConsumerWidget {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  itemCount: recurringTransactions.length + 1, // +1 for usage guide card
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 16,
+                  ),
+                  itemCount: recurringTransactions.length +
+                      1, // +1 for usage guide card
                   itemBuilder: (context, index) {
                     // 第一个显示使用说明卡片
                     if (index == 0) {
@@ -95,9 +109,7 @@ class RecurringTransactionPage extends ConsumerWidget {
 
   void _addRecurringTransaction(BuildContext context, WidgetRef ref) async {
     final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => const RecurringTransactionEditPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const RecurringTransactionEditPage()),
     );
     // 如果返回 true，表示数据已更改，强制刷新列表
     if (result == true) {
@@ -125,9 +137,12 @@ class _RecurringTransactionCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.watch(repositoryProvider);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = transactionPrimary(
+      context,
+      ref.watch(primaryColorProvider),
+    );
 
-    return Container(
+    return TransactionPanel(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: BeeTokens.surface(context),
@@ -152,106 +167,95 @@ class _RecurringTransactionCard extends ConsumerWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            final result = await Navigator.of(context).push<bool>(
-              MaterialPageRoute(
-                builder: (_) => RecurringTransactionEditPage(recurring: recurring),
-              ),
-            );
-            // 如果返回 true，表示数据已更改，强制刷新列表
-            if (result == true) {
-              ref.invalidate(allRecurringTransactionsProvider);
-            }
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                // 左侧：类型指示条
-                Container(
-                  width: 3,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: recurring.type == 'expense'
-                        ? BeeTokens.error(context)
-                        : recurring.type == 'income'
-                            ? BeeTokens.success(context)
-                            : primaryColor,
-                    borderRadius: BorderRadius.circular(1.5),
-                  ),
+        child: GlassPressEffect(
+          enabled: LiquidTheme.isActive(context),
+          child: InkWell(
+            onTap: () async {
+              final result = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      RecurringTransactionEditPage(recurring: recurring),
                 ),
-                const SizedBox(width: 12),
-                // 中间：信息区域
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 第一行：分类名称
-                      recurring.type == 'transfer'
-                          ? Text(
-                              AppLocalizations.of(context)!.transferTitle,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: BeeTokens.textPrimary(context),
+              );
+              // 如果返回 true，表示数据已更改，强制刷新列表
+              if (result == true) {
+                ref.invalidate(allRecurringTransactionsProvider);
+              }
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  // 左侧：类型指示条
+                  Container(
+                    width: 3,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: recurring.type == 'expense'
+                          ? BeeTokens.error(context)
+                          : recurring.type == 'income'
+                              ? BeeTokens.success(context)
+                              : primaryColor,
+                      borderRadius: BorderRadius.circular(1.5),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // 中间：信息区域
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 第一行：分类名称
+                        recurring.type == 'transfer'
+                            ? Text(
+                                AppLocalizations.of(context)!.transferTitle,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: BeeTokens.textPrimary(context),
+                                ),
+                              )
+                            : FutureBuilder<Category?>(
+                                future: _getCategory(ref, recurring.categoryId),
+                                builder: (context, snapshot) {
+                                  final categoryName =
+                                      snapshot.data?.name ?? '';
+                                  return Text(
+                                    CategoryUtils.getDisplayName(
+                                      categoryName,
+                                      context,
+                                    ),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: BeeTokens.textPrimary(context),
+                                    ),
+                                  );
+                                },
                               ),
-                            )
-                          : FutureBuilder<Category?>(
-                              future: _getCategory(ref, recurring.categoryId),
+                        const SizedBox(height: 6),
+                        // 第二行：账本 + 频率 + 时间
+                        Row(
+                          children: [
+                            // 账本
+                            FutureBuilder<Ledger?>(
+                              future: _getLedger(ref, recurring.ledgerId),
                               builder: (context, snapshot) {
-                                final categoryName = snapshot.data?.name ?? '';
+                                final ledgerName = snapshot.data?.name ?? '';
                                 return Text(
-                                  CategoryUtils.getDisplayName(categoryName, context),
+                                  ledgerName,
                                   style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: BeeTokens.textPrimary(context),
+                                    fontSize: 12,
+                                    color: BeeTokens.textTertiary(context),
                                   ),
                                 );
                               },
                             ),
-                      const SizedBox(height: 6),
-                      // 第二行：账本 + 频率 + 时间
-                      Row(
-                        children: [
-                          // 账本
-                          FutureBuilder<Ledger?>(
-                            future: _getLedger(ref, recurring.ledgerId),
-                            builder: (context, snapshot) {
-                              final ledgerName = snapshot.data?.name ?? '';
-                              return Text(
-                                ledgerName,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: BeeTokens.textTertiary(context),
-                                ),
-                              );
-                            },
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Text(
-                              '·',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: BeeTokens.textTertiary(context),
-                              ),
-                            ),
-                          ),
-                          // 频率
-                          Text(
-                            _getFrequencyDescription(context),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: BeeTokens.textTertiary(context),
-                            ),
-                          ),
-                          // 下次生成时间（如果有）
-                          if (recurring.lastGeneratedDate != null) ...[
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
                               child: Text(
                                 '·',
                                 style: TextStyle(
@@ -260,113 +264,145 @@ class _RecurringTransactionCard extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            Icon(
-                              Icons.access_time,
-                              size: 11,
-                              color: primaryColor,
-                            ),
-                            const SizedBox(width: 3),
+                            // 频率
                             Text(
-                              DateFormat.Md().format(recurring.lastGeneratedDate!),
+                              _getFrequencyDescription(context),
                               style: TextStyle(
                                 fontSize: 12,
-                                color: primaryColor,
-                                fontWeight: FontWeight.w500,
+                                color: BeeTokens.textTertiary(context),
                               ),
                             ),
+                            // 下次生成时间（如果有）
+                            if (recurring.lastGeneratedDate != null) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                ),
+                                child: Text(
+                                  '·',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: BeeTokens.textTertiary(context),
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.access_time,
+                                size: 11,
+                                color: primaryColor,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                DateFormat.Md().format(
+                                  recurring.lastGeneratedDate!,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
-                      ),
-                      // 备注（如果有）
-                      if (recurring.note != null && recurring.note!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          recurring.note!,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: BeeTokens.textSecondary(context),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // 右侧：金额 + 开关
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 金额(v32 / issue #444:外币模板在金额左侧标 ISO 码)
-                    //
-                    // 标**码**而不是符号:JPY/CNY 的符号都是「¥」,只换符号
-                    // 的话 5000 日元和 5000 元长得一模一样,等于没标。
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        if (_isForeign(ref)) ...[
+                        // 备注（如果有）
+                        if (recurring.note != null &&
+                            recurring.note!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
                           Text(
-                            recurring.currencyCode!.toUpperCase(),
+                            recurring.note!,
                             style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
                               color: BeeTokens.textSecondary(context),
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(width: 4),
                         ],
-                        AmountText(
-                          value: recurring.type == 'expense'
-                              ? -recurring.amount
-                              : recurring.amount,
-                          signed: recurring.type != 'transfer',
-                          decimals: 2,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: recurring.type == 'expense'
-                                ? BeeTokens.error(context)
-                                : recurring.type == 'income'
-                                    ? BeeTokens.success(context)
-                                    : BeeTokens.textPrimary(context),
-                          ),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 2),
-                    // 开关
-                    Transform.scale(
-                      scale: 0.65,
-                      alignment: Alignment.centerRight,
-                      child: Switch(
-                        value: recurring.enabled,
-                        onChanged: (value) async {
-                          print('🔧 [周期记账] 开关点击: id=${recurring.id}, newValue=$value, repo类型=${repo.runtimeType}');
-
-                          try {
-                            await repo.toggleRecurringTransaction(
-                                recurring.id, value);
-                            print('✅ [周期记账] toggleRecurringTransaction 完成');
-
-                            // 给Realtime一点时间触发更新
-                            await Future.delayed(const Duration(milliseconds: 100));
-
-                            ref.invalidate(allRecurringTransactionsProvider);
-                            print('✅ [周期记账] Provider已invalidate');
-                          } catch (e, stackTrace) {
-                            print('❌ [周期记账] 切换失败: $e');
-                            print('堆栈: $stackTrace');
-                          }
-                        },
-                        activeColor: primaryColor,
+                  ),
+                  const SizedBox(width: 12),
+                  // 右侧：金额 + 开关
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 金额(v32 / issue #444:外币模板在金额左侧标 ISO 码)
+                      //
+                      // 标**码**而不是符号:JPY/CNY 的符号都是「¥」,只换符号
+                      // 的话 5000 日元和 5000 元长得一模一样,等于没标。
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (_isForeign(ref)) ...[
+                            Text(
+                              recurring.currencyCode!.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: BeeTokens.textSecondary(context),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          AmountText(
+                            value: recurring.type == 'expense'
+                                ? -recurring.amount
+                                : recurring.amount,
+                            signed: recurring.type != 'transfer',
+                            decimals: 2,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: recurring.type == 'expense'
+                                  ? BeeTokens.error(context)
+                                  : recurring.type == 'income'
+                                      ? BeeTokens.success(context)
+                                      : BeeTokens.textPrimary(context),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(height: 2),
+                      // 开关
+                      Transform.scale(
+                        scale: 0.65,
+                        alignment: Alignment.centerRight,
+                        child: Switch(
+                          value: recurring.enabled,
+                          onChanged: (value) async {
+                            print(
+                              '🔧 [周期记账] 开关点击: id=${recurring.id}, newValue=$value, repo类型=${repo.runtimeType}',
+                            );
+
+                            try {
+                              await repo.toggleRecurringTransaction(
+                                recurring.id,
+                                value,
+                              );
+                              print('✅ [周期记账] toggleRecurringTransaction 完成');
+
+                              // 给Realtime一点时间触发更新
+                              await Future.delayed(
+                                const Duration(milliseconds: 100),
+                              );
+
+                              ref.invalidate(allRecurringTransactionsProvider);
+                              print('✅ [周期记账] Provider已invalidate');
+                            } catch (e, stackTrace) {
+                              print('❌ [周期记账] 切换失败: $e');
+                              print('堆栈: $stackTrace');
+                            }
+                          },
+                          activeColor: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -421,18 +457,17 @@ class _UsageGuideCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = transactionPrimary(
+      context,
+      ref.watch(primaryColorProvider),
+    );
 
     return SectionCard(
       margin: EdgeInsets.zero,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.info_outline,
-            size: 20,
-            color: primaryColor,
-          ),
+          Icon(Icons.info_outline, size: 20, color: primaryColor),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

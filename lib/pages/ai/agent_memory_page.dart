@@ -1,3 +1,6 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
+import '../../widgets/ui/liquid_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -41,7 +44,7 @@ final class _AgentMemoryPageState extends ConsumerState<AgentMemoryPage> {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.agentMemoryDeleteTitle),
         content: Text(l10n.agentMemoryDeleteDescription),
         actions: [
@@ -72,7 +75,7 @@ final class _AgentMemoryPageState extends ConsumerState<AgentMemoryPage> {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.agentMemoryClearTitle),
         content: Text(l10n.agentMemoryClearDescription),
         actions: [
@@ -165,24 +168,27 @@ final class _InfoCard extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: BeeTokens.surfaceSecondary(context),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: BeeTokens.divider(context)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: BeeTokens.textSecondary(context)),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(text, style: BeeTextTokens.body(context)),
+  Widget build(BuildContext context) => GlassSurface(
+    prominent: false,
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: LiquidTheme.isActive(context)
+          ? null
+          : BoxDecoration(
+              color: BeeTokens.surfaceSecondary(context),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: BeeTokens.divider(context)),
             ),
-          ],
-        ),
-      );
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: BeeTokens.textSecondary(context)),
+          const SizedBox(width: 12),
+          Expanded(child: Text(text, style: BeeTextTokens.body(context))),
+        ],
+      ),
+    ),
+  );
 }
 
 final class _MemoryCard extends StatelessWidget {
@@ -197,30 +203,35 @@ final class _MemoryCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) => Container(
-        decoration: BoxDecoration(
-          color: BeeTokens.surface(context),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: BeeTokens.isDark(context) ? null : BeeShadows.card,
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-          leading: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: BeeTokens.info(context).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+  Widget build(BuildContext context) => GlassSurface(
+    prominent: false,
+    child: Container(
+      decoration: LiquidTheme.isActive(context)
+          ? null
+          : BoxDecoration(
+              color: BeeTokens.surface(context),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: BeeTokens.isDark(context) ? null : BeeShadows.card,
             ),
-            child: Icon(Icons.bookmark_outline, color: BeeTokens.info(context)),
+      child: ListTile(
+        contentPadding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: BeeTokens.info(context).withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
           ),
-          title: Text(memory.content, style: BeeTextTokens.body(context)),
-          trailing: IconButton(
-            key: ValueKey('agent-memory-delete-${memory.id}'),
-            tooltip: AppLocalizations.of(context).commonDelete,
-            onPressed: isMutating ? null : onDelete,
-            icon: const Icon(Icons.delete_outline),
-          ),
+          child: Icon(Icons.bookmark_outline, color: BeeTokens.info(context)),
         ),
-      );
+        title: Text(memory.content, style: BeeTextTokens.body(context)),
+        trailing: IconButton(
+          key: ValueKey('agent-memory-delete-${memory.id}'),
+          tooltip: AppLocalizations.of(context).commonDelete,
+          onPressed: isMutating ? null : onDelete,
+          icon: const Icon(Icons.delete_outline),
+        ),
+      ),
+    ),
+  );
 }

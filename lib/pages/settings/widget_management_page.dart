@@ -429,7 +429,7 @@ class WidgetManagementPage extends ConsumerWidget {
     WidgetRef ref,
     AppLocalizations l10n,
   ) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return SectionCard(
       margin: EdgeInsets.zero,
       child: Column(
@@ -478,7 +478,7 @@ class WidgetManagementPage extends ConsumerWidget {
     WidgetRef ref,
     List<String> steps,
   ) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: steps.asMap().entries.map((entry) {
@@ -529,7 +529,7 @@ class WidgetManagementPage extends ConsumerWidget {
     WidgetRef ref,
     AppLocalizations l10n,
   ) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return SectionCard(
       margin: EdgeInsets.zero,
       child: Column(
@@ -572,7 +572,7 @@ class WidgetManagementPage extends ConsumerWidget {
     WidgetRef ref,
     AppLocalizations l10n,
   ) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     return Container(
       decoration: BoxDecoration(
         color: primaryColor.withValues(alpha: 0.08),

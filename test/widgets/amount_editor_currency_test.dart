@@ -30,16 +30,16 @@ void main() {
   tearDown(() async => db.close());
 
   Ledger cnyLedger() => Ledger(
-        id: 1,
-        name: 'L',
-        currency: 'CNY',
-        type: 'personal',
-        createdAt: DateTime(2026, 1, 1),
-        myRole: 'owner',
-        memberCount: 1,
-        isShared: false,
-        monthStartDay: 1,
-      );
+    id: 1,
+    name: 'L',
+    currency: 'CNY',
+    type: 'personal',
+    createdAt: DateTime(2026, 1, 1),
+    myRole: 'owner',
+    memberCount: 1,
+    isShared: false,
+    monthStartDay: 1,
+  );
 
   Widget host({
     String? initialCurrencyCode,
@@ -49,8 +49,9 @@ void main() {
     return ProviderScope(
       overrides: [
         repositoryProvider.overrideWithValue(repo),
-        currentLedgerProvider
-            .overrideWith((ref) => Stream<Ledger?>.value(cnyLedger())),
+        currentLedgerProvider.overrideWith(
+          (ref) => Stream<Ledger?>.value(cnyLedger()),
+        ),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -73,7 +74,8 @@ void main() {
 
   testWidgets('单币种态:无账户显示本位币小字标,无汇率行(零打扰)', (tester) async {
     await db.customStatement(
-        "INSERT INTO ledgers (id, name, currency) VALUES (1, 'L', 'CNY')");
+      "INSERT INTO ledgers (id, name, currency) VALUES (1, 'L', 'CNY')",
+    );
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 
@@ -84,13 +86,16 @@ void main() {
 
   testWidgets('编辑外币交易:汇率行按隐含汇率回显 + 折算预览', (tester) async {
     await db.customStatement(
-        "INSERT INTO ledgers (id, name, currency) VALUES (1, 'L', 'CNY')");
+      "INSERT INTO ledgers (id, name, currency) VALUES (1, 'L', 'CNY')",
+    );
     // amount=12, native=86.4 → 隐含汇率 7.2
-    await tester.pumpWidget(host(
-      initialCurrencyCode: 'USD',
-      initialAmount: 12,
-      initialNativeAmount: 86.4,
-    ));
+    await tester.pumpWidget(
+      host(
+        initialCurrencyCode: 'USD',
+        initialAmount: 12,
+        initialNativeAmount: 86.4,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('USD'), findsOneWidget); // 币种标=该笔币种
@@ -98,5 +103,68 @@ void main() {
     // 而非当前有效汇率 —— 只改备注折算基准不漂移)
     expect(find.textContaining('1 USD ='), findsNothing);
     expect(find.textContaining('≈ 86.40 CNY'), findsOneWidget);
+  });
+
+  Future<void> openCalculator(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(500, 1100));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await db.customStatement(
+      "INSERT INTO ledgers (id, name, currency) VALUES (1, 'L', 'CNY')",
+    );
+    await tester.pumpWidget(host(initialAmount: 12));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('快速输入 12 + 3 = 15，数字不抢在运算符之前执行', (tester) async {
+    await openCalculator(tester);
+    await tester.tap(find.text('+/×', findRichText: true));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.text('3'));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.text('='));
+    await tester.pumpAndSettle();
+    expect(find.text('15'), findsOneWidget);
+    expect(find.text('123'), findsNothing);
+  });
+
+  testWidgets('双击运算符切换到乘法且保留左操作数', (tester) async {
+    await openCalculator(tester);
+    final operator = find.text('+/×', findRichText: true);
+    await tester.tap(operator);
+    await tester.pump(const Duration(milliseconds: 70));
+    await tester.tap(operator);
+    await tester.pump();
+    await tester.tap(find.text('3'));
+    await tester.pump();
+    await tester.tap(find.text('='));
+    await tester.pumpAndSettle();
+    expect(find.text('36'), findsOneWidget);
+  });
+
+  testWidgets('输入数字后再次按相同运算符会累计而非双击切换', (tester) async {
+    await openCalculator(tester);
+    final operator = find.text('+/×', findRichText: true);
+    await tester.tap(operator);
+    await tester.pump(const Duration(milliseconds: 30));
+    await tester.tap(find.text('3'));
+    await tester.pump(const Duration(milliseconds: 30));
+    await tester.tap(operator);
+    await tester.pump(const Duration(milliseconds: 30));
+    await tester.tap(find.text('4'));
+    await tester.pump();
+    await tester.tap(find.text('='));
+    await tester.pumpAndSettle();
+    expect(find.text('19'), findsOneWidget);
+  });
+
+  testWidgets('长按运算符仍可直接使用乘法', (tester) async {
+    await openCalculator(tester);
+    await tester.longPress(find.text('+/×', findRichText: true));
+    await tester.pump();
+    await tester.tap(find.text('3'));
+    await tester.pump();
+    await tester.tap(find.text('='));
+    await tester.pumpAndSettle();
+    expect(find.text('36'), findsOneWidget);
   });
 }

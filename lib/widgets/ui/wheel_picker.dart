@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
@@ -107,7 +108,7 @@ Future<T?> showWheelPicker<T>(
   required String Function(T) labelBuilder,
   required String title,
 }) {
-  return showModalBottomSheet<T>(
+  return showBeeBottomSheet<T>(
     context: context,
     backgroundColor: BeeTokens.surfaceElevated(context),
     shape: const RoundedRectangleBorder(

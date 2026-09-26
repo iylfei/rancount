@@ -140,7 +140,7 @@ class _PersonalizePageState extends ConsumerState<PersonalizePage> {
   void _showColorPicker(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(AppLocalizations.of(context)!.personalizeCustomTitle),
         content: SingleChildScrollView(
           child: _ColorPicker(

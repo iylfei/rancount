@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../styles/tokens.dart';
+import '../../styles/liquid_theme.dart';
+import '../ui/liquid_glass.dart';
 
 class SectionCard extends StatelessWidget {
   final Widget child;
@@ -15,6 +17,10 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (LiquidTheme.isActive(context)) {
+      return GlassSurface(prominent: false, padding: padding, margin: margin,
+        child: child);
+    }
     final isDark = BeeTokens.isDark(context);
     final borderWidth = BeeTokens.cardOuterBorderWidth(context);
     final borderColor = BeeTokens.cardOuterBorderColor(context);

@@ -9,7 +9,7 @@
 ![Release](https://img.shields.io/github/v/release/TNT-Likely/BeeCount?label=latest&color=green)
 ![Downloads](https://img.shields.io/github/downloads/TNT-Likely/BeeCount/total?color=blue)
 ![Last commit](https://img.shields.io/github/last-commit/TNT-Likely/BeeCount)
-![Flutter](https://img.shields.io/badge/Flutter-3.27%2B-02569B?logo=flutter)
+![Flutter](https://img.shields.io/badge/Flutter-3.32.8%2B-02569B?logo=flutter)
 
 **你的数据,你做主的开源记账应用**
 
@@ -223,7 +223,7 @@
 
 ### 技术栈
 
-- **Flutter 3.27+** · 跨平台 UI 框架
+- **Flutter 3.32.8+** · 跨平台 UI 框架
 - **Riverpod** · 状态管理
 - **Drift (SQLite)** · 本地数据库 ORM
 - **Supabase / 自建 BeeCount Cloud / WebDAV / S3** · 云端同步多方案

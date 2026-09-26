@@ -434,7 +434,7 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         backgroundColor: BeeTokens.surfaceElevated(context),
         title: Row(
           children: [
@@ -851,7 +851,7 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: Row(
           children: [
             Icon(Icons.cloud, color: BeeTokens.brandSupabase),
@@ -936,7 +936,7 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: Row(
           children: [
             Icon(Icons.cloud_circle, color: BeeTokens.brandCloud),
@@ -1097,7 +1097,7 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: Row(
           children: [
             Icon(Icons.folder_shared, color: BeeTokens.brandWebdav),
@@ -1179,7 +1179,7 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: Row(
           children: [
             Icon(Icons.cloud, color: BeeTokens.brandIcloud),
@@ -1260,7 +1260,7 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: Row(
           children: [
             Icon(Icons.storage, color: BeeTokens.brandS3),
@@ -2035,7 +2035,7 @@ class _BeeCountCloudConfigDialogState extends State<_BeeCountCloudConfigDialog> 
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return BeeAlertDialog(
       title: Text(AppLocalizations.of(context).cloudConfigureBeeCountCloudTitle),
       content: SingleChildScrollView(
         child: Column(
@@ -2142,7 +2142,7 @@ class _SupabaseConfigDialogState extends State<_SupabaseConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return BeeAlertDialog(
       title: Text(AppLocalizations.of(context).cloudConfigureSupabaseTitle),
       content: SingleChildScrollView(
         child: Column(
@@ -2244,7 +2244,7 @@ class _WebdavConfigDialogState extends State<_WebdavConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return BeeAlertDialog(
       title: Text(AppLocalizations.of(context).cloudConfigureWebdavTitle),
       content: SingleChildScrollView(
         child: Column(
@@ -2375,7 +2375,7 @@ class _S3ConfigDialogState extends State<_S3ConfigDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return BeeAlertDialog(
       title: Text(AppLocalizations.of(context).cloudConfigureS3Title),
       content: SingleChildScrollView(
         child: Column(

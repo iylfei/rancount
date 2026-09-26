@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_sheet.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
@@ -29,7 +30,7 @@ Future<DateTime?> showWheelDatePicker(
   DateTime? minDate,
   DateTime? maxDate,
 }) {
-  return showModalBottomSheet<DateTime>(
+  return showBeeBottomSheet<DateTime>(
     context: context,
     backgroundColor: BeeTokens.surfaceElevated(context),
     shape: const RoundedRectangleBorder(
@@ -265,7 +266,7 @@ Future<DateTime?> showWheelDateTimePicker(
   DateTime? maxDate,
 }) async {
   // 第一步：选择日期
-  final dateResult = await showModalBottomSheet<DateTime>(
+  final dateResult = await showBeeBottomSheet<DateTime>(
     context: context,
     backgroundColor: BeeTokens.surfaceElevated(context),
     shape: const RoundedRectangleBorder(
@@ -281,7 +282,7 @@ Future<DateTime?> showWheelDateTimePicker(
   if (dateResult == null || !context.mounted) return null;
 
   // 第二步：选择时间（时分秒）
-  final timeResult = await showModalBottomSheet<({int hour, int minute, int second})>(
+  final timeResult = await showBeeBottomSheet<({int hour, int minute, int second})>(
     context: context,
     backgroundColor: BeeTokens.surfaceElevated(context),
     shape: const RoundedRectangleBorder(

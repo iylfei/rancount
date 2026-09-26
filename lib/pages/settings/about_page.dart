@@ -55,7 +55,7 @@ class _AboutPageState extends ConsumerState<AboutPage> {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.aboutDeveloperStoryTitle),
         content: SingleChildScrollView(
           child: Text(
@@ -79,7 +79,7 @@ class _AboutPageState extends ConsumerState<AboutPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
     final locale = Localizations.localeOf(context);
     final isSimplifiedZh =
         locale.languageCode == 'zh' && locale.countryCode != 'TW';
@@ -416,7 +416,7 @@ class _AboutPageState extends ConsumerState<AboutPage> {
     required String label,
     required VoidCallback onTap,
   }) {
-    final tint = ref.watch(primaryColorProvider);
+    final tint = Theme.of(context).colorScheme.primary;
     final size = 46.0.scaled(context, ref);
     final glyph = 22.0.scaled(context, ref);
     return InkWell(
@@ -461,7 +461,7 @@ class _AboutPageState extends ConsumerState<AboutPage> {
     required String label,
     required VoidCallback onTap,
   }) {
-    final primary = ref.watch(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: Text(

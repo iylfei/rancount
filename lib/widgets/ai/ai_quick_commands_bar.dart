@@ -1,3 +1,6 @@
+import 'package:beecount/widgets/ui/bee_sheet.dart';
+import '../../styles/liquid_theme.dart';
+import '../ui/liquid_glass.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,17 +15,16 @@ import '../../utils/ui_scale_extensions.dart';
 /// They help a new user discover useful tasks without permanently occupying
 /// vertical space once the conversation has started.
 final class AIQuickCommandSuggestions extends ConsumerWidget {
-  const AIQuickCommandSuggestions({
-    super.key,
-    required this.onCommandTap,
-  });
+  const AIQuickCommandSuggestions({super.key, required this.onCommandTap});
 
   final ValueChanged<AIQuickCommand> onCommandTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     final commands = AIQuickCommands.getAllCommands().take(4).toList();
     final gap = 8.0.scaled(context, ref);
     return LayoutBuilder(
@@ -37,7 +39,10 @@ final class AIQuickCommandSuggestions extends ConsumerWidget {
               for (var index = 0; index < commands.length; index++)
                 SizedBox(
                   width: itemWidth,
-                  height: 38.0.scaled(context, ref),
+                  height: (LiquidTheme.isActive(context) ? 48.0 : 38.0).scaled(
+                    context,
+                    ref,
+                  ),
                   child: _AIQuickCommandSuggestionCard(
                     key: ValueKey('ai-quick-command-suggestion-$index'),
                     iconKey: ValueKey(
@@ -78,6 +83,31 @@ final class _AIQuickCommandSuggestionCard extends StatelessWidget {
     final isDark = BeeTokens.isDark(context);
     final radius = BorderRadius.circular(12);
     final iconBackground = primary.withValues(alpha: isDark ? 0.22 : 0.14);
+    if (LiquidTheme.isActive(context)) {
+      return GlassPressable(
+        selectionFeedback: true,
+        onTap: onTap,
+        child: GlassSurface(
+          prominent: false,
+          borderRadius: 18,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              Icon(_iconFor(command), key: iconKey, color: primary, size: 18),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  title,
+                  style: BeeTextTokens.strongTitle(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Material(
       color: Colors.transparent,
       borderRadius: radius,
@@ -104,19 +134,15 @@ final class _AIQuickCommandSuggestionCard extends StatelessWidget {
                     color: iconBackground,
                     borderRadius: BorderRadius.circular(7),
                   ),
-                  child: Icon(
-                    _iconFor(command),
-                    color: primary,
-                    size: 14,
-                  ),
+                  child: Icon(_iconFor(command), color: primary, size: 14),
                 ),
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
                     title,
-                    style: BeeTextTokens.strongTitle(context).copyWith(
-                      color: BeeTokens.textPrimary(context),
-                    ),
+                    style: BeeTextTokens.strongTitle(
+                      context,
+                    ).copyWith(color: BeeTokens.textPrimary(context)),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -144,13 +170,15 @@ final class AIQuickCommandLauncher extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     return IconButton(
       key: const ValueKey('ai-quick-command-launcher'),
       tooltip: l10n.aiQuickCommandsOpen,
       onPressed: enabled
           ? () async {
-              final command = await showModalBottomSheet<AIQuickCommand>(
+              final command = await showBeeBottomSheet<AIQuickCommand>(
                 context: context,
                 backgroundColor: BeeTokens.surfaceSheet(context),
                 barrierColor: BeeTokens.overlay(context),
@@ -174,7 +202,9 @@ final class _AIQuickCommandsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     final commands = AIQuickCommands.getAllCommands();
     return SafeArea(
       top: false,
@@ -210,8 +240,9 @@ final class _AIQuickCommandsSheet extends ConsumerWidget {
                     height: 38.0.scaled(context, ref),
                     decoration: BoxDecoration(
                       color: primary.withValues(alpha: 0.14),
-                      borderRadius:
-                          BorderRadius.circular(13.0.scaled(context, ref)),
+                      borderRadius: BorderRadius.circular(
+                        13.0.scaled(context, ref),
+                      ),
                     ),
                     child: Icon(
                       Icons.auto_awesome_rounded,
@@ -250,12 +281,14 @@ final class _AIQuickCommandsSheet extends ConsumerWidget {
                     color: primary.withValues(
                       alpha: BeeTokens.isDark(context) ? 0.18 : 0.08,
                     ),
-                    borderRadius:
-                        BorderRadius.circular(16.0.scaled(context, ref)),
+                    borderRadius: BorderRadius.circular(
+                      16.0.scaled(context, ref),
+                    ),
                     child: InkWell(
                       onTap: () => Navigator.of(context).pop(command),
-                      borderRadius:
-                          BorderRadius.circular(16.0.scaled(context, ref)),
+                      borderRadius: BorderRadius.circular(
+                        16.0.scaled(context, ref),
+                      ),
                       child: Padding(
                         padding: EdgeInsets.all(12.0.scaled(context, ref)),
                         child: Row(

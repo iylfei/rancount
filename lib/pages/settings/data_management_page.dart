@@ -235,7 +235,7 @@ class _DataManagementPageState extends ConsumerState<DataManagementPage> {
 
   Widget _buildAttachmentSection(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
 
     return SectionCard(
       margin: EdgeInsets.zero,
@@ -475,7 +475,7 @@ class _DataManagementPageState extends ConsumerState<DataManagementPage> {
     AttachmentArchiveInfo info,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.read(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
     String conflictStrategy = AttachmentExportImportService.conflictSkip;
 
     return showDialog<Map<String, dynamic>>(
@@ -483,7 +483,7 @@ class _DataManagementPageState extends ConsumerState<DataManagementPage> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
-            return AlertDialog(
+            return BeeAlertDialog(
               title: Text(l10n.attachmentImportTitle),
               content: Column(
                 mainAxisSize: MainAxisSize.min,

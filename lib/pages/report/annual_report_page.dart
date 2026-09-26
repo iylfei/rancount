@@ -9,6 +9,9 @@ import '../../l10n/app_localizations.dart';
 import '../../providers.dart';
 import '../../utils/month_range.dart';
 import '../../widgets/ui/ui.dart';
+import '../../styles/liquid_theme.dart';
+import '../../styles/tokens.dart';
+import '../../widgets/biz/transaction_glass.dart';
 import '../../widgets/posters/annual_report_poster.dart';
 import '../../data/db.dart';
 import '../../services/export/share_poster_types.dart';
@@ -53,13 +56,18 @@ class AnnualReportData {
 }
 
 /// 年度账单数据 Provider
-final annualReportDataProvider =
-    FutureProvider.family<AnnualReportData?, int>((ref, year) async {
+final annualReportDataProvider = FutureProvider.family<AnnualReportData?, int>((
+  ref,
+  year,
+) async {
   final ledgerId = ref.watch(currentLedgerIdProvider);
   final repo = ref.watch(repositoryProvider);
 
   // 获取年度收支总额
-  final (income, expense) = await repo.yearlyTotals(ledgerId: ledgerId, year: year);
+  final (income, expense) = await repo.yearlyTotals(
+    ledgerId: ledgerId,
+    year: year,
+  );
 
   if (income == 0 && expense == 0) {
     return null; // 无数据
@@ -93,7 +101,10 @@ final annualReportDataProvider =
   );
 
   // 计算总支出用于百分比
-  final totalExpenseForPercent = categoryTotals.fold<double>(0, (sum, c) => sum + c.total);
+  final totalExpenseForPercent = categoryTotals.fold<double>(
+    0,
+    (sum, c) => sum + c.total,
+  );
 
   // 转换为 CategoryTotal 列表
   final topCategories = categoryTotals.take(5).map((c) {
@@ -102,7 +113,9 @@ final annualReportDataProvider =
       name: c.name,
       icon: c.icon,
       total: c.total,
-      percentage: totalExpenseForPercent > 0 ? c.total / totalExpenseForPercent : 0,
+      percentage: totalExpenseForPercent > 0
+          ? c.total / totalExpenseForPercent
+          : 0,
     );
   }).toList();
 
@@ -145,10 +158,14 @@ final annualReportDataProvider =
   Category? firstRecordCategory;
 
   if (largestExpense?.categoryId != null) {
-    largestExpenseCategory = await repo.getCategoryById(largestExpense!.categoryId!);
+    largestExpenseCategory = await repo.getCategoryById(
+      largestExpense!.categoryId!,
+    );
   }
   if (largestIncome?.categoryId != null) {
-    largestIncomeCategory = await repo.getCategoryById(largestIncome!.categoryId!);
+    largestIncomeCategory = await repo.getCategoryById(
+      largestIncome!.categoryId!,
+    );
   }
   if (firstRecord?.categoryId != null) {
     firstRecordCategory = await repo.getCategoryById(firstRecord!.categoryId!);
@@ -207,6 +224,14 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
   int _currentPage = 0;
   late int _selectedYear;
 
+  bool get _liquid => LiquidTheme.isActive(context);
+  Color get _reportInk =>
+      _liquid ? BeeTokens.textPrimary(context) : Colors.white;
+  Color get _reportTint =>
+      _liquid ? Theme.of(context).colorScheme.primary : Colors.white;
+  Color get _reportBody =>
+      _liquid ? BeeTokens.textSecondary(context) : const Color(0xFF666666);
+
   @override
   void initState() {
     super.initState();
@@ -224,10 +249,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final dataAsync = ref.watch(annualReportDataProvider(_selectedYear));
 
-    return Scaffold(
+    return TransactionScaffold(
       backgroundColor: primaryColor,
       body: dataAsync.when(
         loading: () => _buildLoading(l10n),
@@ -247,11 +272,11 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: Colors.white),
+          CircularProgressIndicator(color: _reportInk),
           const SizedBox(height: 16),
           Text(
             l10n.annualReportGenerating,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+            style: TextStyle(color: _reportInk, fontSize: 16),
           ),
         ],
       ),
@@ -263,16 +288,16 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 48),
+          Icon(Icons.error_outline, color: _reportInk, size: 48),
           const SizedBox(height: 16),
           Text(
             '${l10n.commonError}: $error',
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: _reportInk),
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(l10n.commonBack, style: const TextStyle(color: Colors.white)),
+            child: Text(l10n.commonBack, style: TextStyle(color: _reportInk)),
           ),
         ],
       ),
@@ -289,11 +314,18 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.inbox_outlined, color: Colors.white54, size: 64),
+                  Icon(
+                    Icons.inbox_outlined,
+                    color: _reportInk.withValues(alpha: .54),
+                    size: 64,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     l10n.annualReportNoData(_selectedYear),
-                    style: const TextStyle(color: Colors.white70, fontSize: 16),
+                    style: TextStyle(
+                      color: _reportInk.withValues(alpha: .70),
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   _buildYearSelector(),
@@ -309,17 +341,20 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
   Widget _buildHeader(AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const Spacer(),
-          _buildYearSelector(),
-          const Spacer(),
-          const SizedBox(width: 48), // Balance the close button
-        ],
+      child: TransactionGlass(
+        prominent: true,
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.close, color: _reportInk),
+              onPressed: () => Navigator.pop(context),
+            ),
+            const Spacer(),
+            _buildYearSelector(),
+            const Spacer(),
+            const SizedBox(width: 48), // Balance the close button
+          ],
+        ),
       ),
     );
   }
@@ -328,26 +363,31 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     final currentYear = DateTime.now().year;
     final years = List.generate(5, (i) => currentYear - i);
 
-    return Container(
+    return TransactionPanel(
+      borderRadius: 20,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
+        color: _reportTint.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: DropdownButton<int>(
         value: _selectedYear,
-        dropdownColor: ref.watch(primaryColorProvider),
+        dropdownColor: _liquid
+            ? Theme.of(context).colorScheme.surface
+            : Theme.of(context).colorScheme.primary,
         underline: const SizedBox(),
-        icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+        icon: Icon(Icons.arrow_drop_down, color: _reportInk),
+        style: TextStyle(
+          color: _reportInk,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
         items: years.map((year) {
-          return DropdownMenuItem(
-            value: year,
-            child: Text('$year'),
-          );
+          return DropdownMenuItem(value: year, child: Text('$year'));
         }).toList(),
         onChanged: (year) {
           if (year != null) {
+            if (_liquid) GlassFeedback.selection(context);
             setState(() => _selectedYear = year);
           }
         },
@@ -365,7 +405,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Expanded(
             child: PageView(
               controller: _pageController,
-              onPageChanged: (page) => setState(() => _currentPage = page),
+              onPageChanged: (page) {
+                if (_liquid) GlassFeedback.selection(context);
+                setState(() => _currentPage = page);
+              },
               children: [
                 _buildPage1Overview(context, data),
                 _buildPageInsights(context, data), // 年度洞察
@@ -392,12 +435,14 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
       children: List.generate(pageCount, (index) {
         final isActive = index == _currentPage;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: _liquid && !LiquidTheme.motionOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 200),
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: isActive ? 24 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
+            color: isActive ? _reportTint : _reportTint.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(4),
           ),
         );
@@ -412,13 +457,19 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: _generatePoster,
-          icon: const Icon(Icons.share),
+          icon: Icon(Icons.share),
           label: Text(l10n.annualReportShareButton),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: ref.watch(primaryColorProvider),
+            backgroundColor: _liquid
+                ? Theme.of(context).colorScheme.primary
+                : Colors.white,
+            foregroundColor: _liquid
+                ? Colors.white
+                : Theme.of(context).colorScheme.primary,
             padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(_liquid ? 24 : 12),
+            ),
           ),
         ),
       ),
@@ -487,10 +538,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
       final posterKey = GlobalKey();
       final poster = RepaintBoundary(
         key: posterKey,
-        child: AnnualReportPoster(
-          data: data,
-          primaryColor: primaryColor,
-        ),
+        child: AnnualReportPoster(data: data, primaryColor: primaryColor),
       );
 
       // Render to image using offscreen rendering
@@ -521,10 +569,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     final overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         left: -10000, // Off-screen
-        child: Material(
-          color: Colors.transparent,
-          child: poster,
-        ),
+        child: Material(color: Colors.transparent, child: poster),
       ),
     );
 
@@ -534,7 +579,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     await Future.delayed(const Duration(milliseconds: 500));
 
     try {
-      final boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) {
         throw Exception('Failed to find render boundary');
       }
@@ -559,8 +605,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           // 标题
           Text(
             l10n.annualReportPage1Title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: _reportInk,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -569,7 +615,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Text(
             l10n.annualReportPage1Subtitle(data.year),
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: _reportInk.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
@@ -615,10 +661,14 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           ),
           const SizedBox(height: 12),
           _buildAmountCard(
-            icon: data.netSavings >= 0 ? Icons.savings_rounded : Icons.warning_rounded,
+            icon: data.netSavings >= 0
+                ? Icons.savings_rounded
+                : Icons.warning_rounded,
             label: l10n.annualReportNetSavings,
             amount: data.netSavings,
-            color: data.netSavings >= 0 ? const Color(0xFF4CAF50) : const Color(0xFFFF5252),
+            color: data.netSavings >= 0
+                ? const Color(0xFF4CAF50)
+                : const Color(0xFFFF5252),
             showSign: true,
           ),
         ],
@@ -632,15 +682,15 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     required String value,
     required String unit,
   }) {
-    return Container(
+    return TransactionPanel(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: _reportTint.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         children: [
-          Icon(icon, color: Colors.white, size: 28),
+          Icon(icon, color: _reportInk, size: 28),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -648,8 +698,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
             children: [
               Text(
                 value,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: _reportInk,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),
@@ -659,7 +709,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                 child: Text(
                   unit,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
+                    color: _reportInk.withValues(alpha: 0.7),
                     fontSize: 14,
                   ),
                 ),
@@ -670,7 +720,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
+              color: _reportInk.withValues(alpha: 0.7),
               fontSize: 14,
             ),
           ),
@@ -689,10 +739,58 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     final formatter = NumberFormat('#,##0.00', 'zh_CN');
     final sign = showSign ? (amount >= 0 ? '+' : '-') : '';
 
-    return Container(
+    if (_liquid) {
+      return TransactionPanel(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: .10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: color, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: _reportBody,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '$sign¥${formatter.format(amount.abs())}',
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -.7,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return TransactionPanel(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _reportTint,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -707,13 +805,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
             child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(width: 16),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF666666),
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 16, color: _reportBody)),
           const Spacer(),
           Text(
             '$sign¥${formatter.format(amount.abs())}',
@@ -731,7 +823,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
   // ==================== 年度洞察页 ====================
   Widget _buildPageInsights(BuildContext context, AnnualReportData data) {
     final formatter = NumberFormat('#,##0.00', 'zh_CN');
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     // 计算各种洞察数据
     final avgExpensePerRecord = data.totalRecords > 0
@@ -742,14 +834,16 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     final now = DateTime.now();
     final sd = ref.watch(currentMonthStartDayProvider);
     final yr = yearRangeFor(data.year, sd);
-    final isCurrentYear =
-        !now.isBefore(yr.start) && now.isBefore(yr.end);
-    final yearEnd =
-        isCurrentYear ? now : yr.end.subtract(const Duration(days: 1));
+    final isCurrentYear = !now.isBefore(yr.start) && now.isBefore(yr.end);
+    final yearEnd = isCurrentYear
+        ? now
+        : yr.end.subtract(const Duration(days: 1));
     final yearStart = yr.start;
     final totalCalendarDays = yearEnd.difference(yearStart).inDays + 1;
 
-    final dailyAvg = totalCalendarDays > 0 ? data.totalExpense / totalCalendarDays : 0;
+    final dailyAvg = totalCalendarDays > 0
+        ? data.totalExpense / totalCalendarDays
+        : 0;
     final monthlyAvg = data.totalExpense / 12;
 
     // 找出记账最多的月份
@@ -773,10 +867,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '年度洞察',
             style: TextStyle(
-              color: Colors.white,
+              color: _reportInk,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -785,7 +879,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Text(
             '从数据中发现你的消费习惯',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: _reportInk.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
@@ -844,7 +938,9 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
               title: '储蓄率',
               value: '${savingsRate.toStringAsFixed(1)}%',
               description: savingsRate >= 0 ? '今年你攒下了收入的这个比例' : '今年支出超过了收入',
-              primaryColor: savingsRate >= 0 ? const Color(0xFF4CAF50) : const Color(0xFFFF5252),
+              primaryColor: savingsRate >= 0
+                  ? const Color(0xFF4CAF50)
+                  : const Color(0xFFFF5252),
             ),
         ],
       ),
@@ -859,13 +955,71 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     required Color primaryColor,
   }) {
     // 判断是否使用特殊颜色（红/绿）
-    final isSpecialColor = primaryColor == const Color(0xFF4CAF50) ||
+    final isSpecialColor =
+        primaryColor == const Color(0xFF4CAF50) ||
         primaryColor == const Color(0xFFFF5252);
 
-    return Container(
+    if (_liquid) {
+      return TransactionPanel(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: primaryColor.withValues(alpha: .10),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(icon, color: primaryColor, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: _reportBody,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        color: isSpecialColor ? primaryColor : _reportInk,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: BeeTokens.textTertiary(context),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return TransactionPanel(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: _reportTint.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -874,10 +1028,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: _reportTint.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: Colors.white, size: 24),
+            child: Icon(icon, color: _reportInk, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -886,8 +1040,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _reportInk,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -896,7 +1050,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                 Text(
                   description,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: _reportInk.withValues(alpha: 0.6),
                     fontSize: 12,
                   ),
                 ),
@@ -906,7 +1060,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Text(
             value,
             style: TextStyle(
-              color: isSpecialColor ? primaryColor : Colors.white,
+              color: isSpecialColor ? primaryColor : _reportInk,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -917,7 +1071,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
   }
 
   // ==================== 收支对比页 ====================
-  Widget _buildPageIncomeVsExpense(BuildContext context, AnnualReportData data) {
+  Widget _buildPageIncomeVsExpense(
+    BuildContext context,
+    AnnualReportData data,
+  ) {
     final formatter = NumberFormat('#,##0', 'zh_CN');
 
     // 找出最高和最低月份
@@ -944,10 +1101,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '收支对比',
             style: TextStyle(
-              color: Colors.white,
+              color: _reportInk,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -956,7 +1113,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Text(
             '每月收入与支出的对比',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: _reportInk.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
@@ -978,7 +1135,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
               Text(
                 '收入',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: _reportInk.withValues(alpha: 0.8),
                   fontSize: 14,
                 ),
               ),
@@ -995,7 +1152,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
               Text(
                 '支出',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: _reportInk.withValues(alpha: 0.8),
                   fontSize: 14,
                 ),
               ),
@@ -1021,7 +1178,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                       Text(
                         '${m.month}月',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: _reportInk.withValues(alpha: 0.9),
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1029,12 +1186,17 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                       const Spacer(),
                       if (isMaxIncome)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                            color: const Color(
+                              0xFF4CAF50,
+                            ).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             '收入最高',
                             style: TextStyle(
                               color: Color(0xFF4CAF50),
@@ -1045,12 +1207,17 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                       if (isMaxExpense)
                         Container(
                           margin: EdgeInsets.only(left: isMaxIncome ? 6 : 0),
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF5252).withValues(alpha: 0.2),
+                            color: const Color(
+                              0xFFFF5252,
+                            ).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             '支出最高',
                             style: TextStyle(
                               color: Color(0xFFFF5252),
@@ -1070,7 +1237,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                             Container(
                               height: 16,
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.1),
+                                color: _reportTint.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -1092,7 +1259,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                         width: 80,
                         child: Text(
                           '¥${formatter.format(m.income)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Color(0xFF4CAF50),
                             fontSize: 12,
                           ),
@@ -1111,7 +1278,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                             Container(
                               height: 16,
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.1),
+                                color: _reportTint.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -1133,7 +1300,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                         width: 80,
                         child: Text(
                           '¥${formatter.format(m.expense)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Color(0xFFFF5252),
                             fontSize: 12,
                           ),
@@ -1163,8 +1330,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
         children: [
           Text(
             l10n.annualReportPage2Title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: _reportInk,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -1173,7 +1340,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Text(
             l10n.annualReportPage2Subtitle,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: _reportInk.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
@@ -1187,16 +1354,20 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
               const Color(0xFFFFD700),
               const Color(0xFFC0C0C0),
               const Color(0xFFCD7F32),
-              Colors.white.withValues(alpha: 0.6),
-              Colors.white.withValues(alpha: 0.6),
+              _liquid
+                  ? _reportTint.withValues(alpha: .12)
+                  : Colors.white.withValues(alpha: .6),
+              _liquid
+                  ? _reportTint.withValues(alpha: .12)
+                  : Colors.white.withValues(alpha: .6),
             ];
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: Container(
+              child: TransactionPanel(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
+                  color: _reportTint.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -1213,7 +1384,11 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                         child: Text(
                           '${index + 1}',
                           style: TextStyle(
-                            color: index < 3 ? Colors.white : Colors.black54,
+                            color: index < 3
+                                ? Colors.white
+                                : (_liquid
+                                      ? BeeTokens.textPrimary(context)
+                                      : Colors.black54),
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1225,7 +1400,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                     if (category.icon != null)
                       Icon(
                         CategoryService.getCategoryIcon(category.icon),
-                        color: Colors.white,
+                        color: _reportInk,
                         size: 24,
                       ),
                     const SizedBox(width: 12),
@@ -1233,8 +1408,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                     Expanded(
                       child: Text(
                         category.name,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: _reportInk,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1246,8 +1421,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                       children: [
                         Text(
                           '¥${formatter.format(category.total)}',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: _reportInk,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1255,7 +1430,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                         Text(
                           '${(category.percentage * 100).toStringAsFixed(1)}%',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
+                            color: _reportInk.withValues(alpha: 0.7),
                             fontSize: 14,
                           ),
                         ),
@@ -1303,8 +1478,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
         children: [
           Text(
             l10n.annualReportPage3Title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: _reportInk,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -1313,7 +1488,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Text(
             l10n.annualReportPage3Subtitle,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: _reportInk.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
@@ -1344,10 +1519,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           const SizedBox(height: 24),
 
           // 简易柱状图
-          Container(
+          TransactionPanel(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
+              color: _reportTint.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -1358,7 +1533,9 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: data.monthlyData.map((m) {
-                      final heightRatio = maxExpense > 0 ? m.expense / maxExpense : 0.0;
+                      final heightRatio = maxExpense > 0
+                          ? m.expense / maxExpense
+                          : 0.0;
                       return Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -1371,16 +1548,18 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                                   color: m.month == maxMonth
                                       ? const Color(0xFFFF5252)
                                       : m.month == minMonth
-                                          ? const Color(0xFF4CAF50)
-                                          : Colors.white.withValues(alpha: 0.6),
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                      ? const Color(0xFF4CAF50)
+                                      : _reportTint.withValues(alpha: 0.6),
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(4),
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 '${m.month}',
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.7),
+                                  color: _reportInk.withValues(alpha: 0.7),
                                   fontSize: 11,
                                 ),
                               ),
@@ -1405,22 +1584,16 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     required String subValue,
     required Color color,
   }) {
-    return Container(
+    return TransactionPanel(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _reportTint,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF666666),
-              fontSize: 12,
-            ),
-          ),
+          Text(label, style: TextStyle(color: _reportBody, fontSize: 12)),
           const SizedBox(height: 8),
           Text(
             value,
@@ -1432,10 +1605,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           ),
           Text(
             subValue,
-            style: TextStyle(
-              color: color.withValues(alpha: 0.7),
-              fontSize: 14,
-            ),
+            style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 14),
           ),
         ],
       ),
@@ -1443,7 +1613,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
   }
 
   // ==================== Page 4: Special Moments ====================
-  Widget _buildPage4SpecialMoments(BuildContext context, AnnualReportData data) {
+  Widget _buildPage4SpecialMoments(
+    BuildContext context,
+    AnnualReportData data,
+  ) {
     final l10n = AppLocalizations.of(context);
     final dateFormatter = DateFormat('MM月dd日');
 
@@ -1454,8 +1627,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
         children: [
           Text(
             l10n.annualReportPage4Title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: _reportInk,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -1464,7 +1637,7 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Text(
             l10n.annualReportPage4Subtitle,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: _reportInk.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
@@ -1476,7 +1649,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
               icon: Icons.arrow_downward_rounded,
               label: l10n.annualReportLargestExpense,
               amount: data.largestExpense!.amount,
-              note: data.largestExpense!.note ?? data.largestExpenseCategory?.name ?? '',
+              note:
+                  data.largestExpense!.note ??
+                  data.largestExpenseCategory?.name ??
+                  '',
               date: dateFormatter.format(data.largestExpense!.happenedAt),
               color: const Color(0xFFFF5252),
             ),
@@ -1487,7 +1663,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
               icon: Icons.arrow_upward_rounded,
               label: l10n.annualReportLargestIncome,
               amount: data.largestIncome!.amount,
-              note: data.largestIncome!.note ?? data.largestIncomeCategory?.name ?? '',
+              note:
+                  data.largestIncome!.note ??
+                  data.largestIncomeCategory?.name ??
+                  '',
               date: dateFormatter.format(data.largestIncome!.happenedAt),
               color: const Color(0xFF4CAF50),
             ),
@@ -1499,9 +1678,12 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
               icon: Icons.flag_rounded,
               label: l10n.annualReportFirstRecord,
               amount: data.firstRecord!.amount,
-              note: data.firstRecord!.note ?? data.firstRecordCategory?.name ?? '',
+              note:
+                  data.firstRecord!.note ??
+                  data.firstRecordCategory?.name ??
+                  '',
               date: dateFormatter.format(data.firstRecord!.happenedAt),
-              color: ref.watch(primaryColorProvider),
+              color: Theme.of(context).colorScheme.primary,
             ),
           ],
         ],
@@ -1519,10 +1701,10 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
   }) {
     final formatter = NumberFormat('#,##0.00', 'zh_CN');
 
-    return Container(
+    return TransactionPanel(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _reportTint,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1540,18 +1722,14 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                 child: Icon(icon, color: color, size: 20),
               ),
               const SizedBox(width: 12),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF666666),
-                  fontSize: 14,
-                ),
-              ),
+              Text(label, style: TextStyle(color: _reportBody, fontSize: 14)),
               const Spacer(),
               Text(
                 date,
                 style: TextStyle(
-                  color: Colors.grey[400],
+                  color: _liquid
+                      ? BeeTokens.textTertiary(context)
+                      : Colors.grey[400],
                   fontSize: 12,
                 ),
               ),
@@ -1571,7 +1749,9 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
             Text(
               note,
               style: TextStyle(
-                color: Colors.grey[600],
+                color: _liquid
+                    ? BeeTokens.textSecondary(context)
+                    : Colors.grey[600],
                 fontSize: 14,
               ),
               maxLines: 1,
@@ -1588,26 +1768,29 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     final l10n = AppLocalizations.of(context);
 
     // 定义成就
-    final achievements = <({String title, String desc, IconData icon, bool unlocked})>[
-      (
-        title: l10n.annualReportAchievementConsistent,
-        desc: l10n.annualReportAchievementConsistentDesc(data.maxConsecutiveDays),
-        icon: Icons.local_fire_department_rounded,
-        unlocked: data.maxConsecutiveDays >= 7,
-      ),
-      (
-        title: l10n.annualReportAchievementSaver,
-        desc: l10n.annualReportAchievementSaverDesc,
-        icon: Icons.savings_rounded,
-        unlocked: data.netSavings > 0,
-      ),
-      (
-        title: l10n.annualReportAchievementDetail,
-        desc: l10n.annualReportAchievementDetailDesc(data.totalRecords),
-        icon: Icons.auto_awesome_rounded,
-        unlocked: data.totalRecords >= 100,
-      ),
-    ];
+    final achievements =
+        <({String title, String desc, IconData icon, bool unlocked})>[
+          (
+            title: l10n.annualReportAchievementConsistent,
+            desc: l10n.annualReportAchievementConsistentDesc(
+              data.maxConsecutiveDays,
+            ),
+            icon: Icons.local_fire_department_rounded,
+            unlocked: data.maxConsecutiveDays >= 7,
+          ),
+          (
+            title: l10n.annualReportAchievementSaver,
+            desc: l10n.annualReportAchievementSaverDesc,
+            icon: Icons.savings_rounded,
+            unlocked: data.netSavings > 0,
+          ),
+          (
+            title: l10n.annualReportAchievementDetail,
+            desc: l10n.annualReportAchievementDetailDesc(data.totalRecords),
+            icon: Icons.auto_awesome_rounded,
+            unlocked: data.totalRecords >= 100,
+          ),
+        ];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -1616,8 +1799,8 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
         children: [
           Text(
             l10n.annualReportPage5Title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: _reportInk,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -1626,22 +1809,24 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
           Text(
             l10n.annualReportPage5Subtitle,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: _reportInk.withValues(alpha: 0.8),
               fontSize: 16,
             ),
           ),
           const SizedBox(height: 32),
 
           // 成就列表
-          ...achievements.map((a) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _buildAchievementCard(
-                  icon: a.icon,
-                  title: a.title,
-                  desc: a.desc,
-                  unlocked: a.unlocked,
-                ),
-              )),
+          ...achievements.map(
+            (a) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _buildAchievementCard(
+                icon: a.icon,
+                title: a.title,
+                desc: a.desc,
+                unlocked: a.unlocked,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1653,12 +1838,12 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
     required String desc,
     required bool unlocked,
   }) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
-    return Container(
+    return TransactionPanel(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: unlocked ? Colors.white : Colors.white.withValues(alpha: 0.3),
+        color: unlocked ? _reportTint : _reportTint.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -1667,7 +1852,9 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: unlocked ? primaryColor.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.2),
+              color: unlocked
+                  ? primaryColor.withValues(alpha: 0.1)
+                  : Colors.grey.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -1684,7 +1871,11 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                 Text(
                   title,
                   style: TextStyle(
-                    color: unlocked ? Colors.black87 : Colors.grey,
+                    color: unlocked
+                        ? (_liquid
+                              ? BeeTokens.textPrimary(context)
+                              : Colors.black87)
+                        : Colors.grey,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1693,7 +1884,11 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
                 Text(
                   desc,
                   style: TextStyle(
-                    color: unlocked ? Colors.grey[600] : Colors.grey,
+                    color: unlocked
+                        ? (_liquid
+                              ? BeeTokens.textSecondary(context)
+                              : Colors.grey[600])
+                        : Colors.grey,
                     fontSize: 14,
                   ),
                 ),
@@ -1701,15 +1896,13 @@ class _AnnualReportPageState extends ConsumerState<AnnualReportPage> {
             ),
           ),
           if (unlocked)
-            Icon(
-              Icons.check_circle,
-              color: primaryColor,
-              size: 28,
-            )
+            Icon(Icons.check_circle, color: primaryColor, size: 28)
           else
             Icon(
               Icons.lock_outline,
-              color: Colors.grey[400],
+              color: _liquid
+                  ? BeeTokens.textTertiary(context)
+                  : Colors.grey[400],
               size: 24,
             ),
         ],
@@ -1731,10 +1924,12 @@ class _AnnualReportPosterPreview extends StatefulWidget {
   });
 
   @override
-  State<_AnnualReportPosterPreview> createState() => _AnnualReportPosterPreviewState();
+  State<_AnnualReportPosterPreview> createState() =>
+      _AnnualReportPosterPreviewState();
 }
 
-class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> {
+class _AnnualReportPosterPreviewState
+    extends State<_AnnualReportPosterPreview> {
   late Uint8List _imageBytes;
   bool _hideIncome = false;
   bool _isGenerating = false;
@@ -1783,10 +1978,7 @@ class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> 
     final overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
         left: -10000,
-        child: Material(
-          color: Colors.transparent,
-          child: poster,
-        ),
+        child: Material(color: Colors.transparent, child: poster),
       ),
     );
 
@@ -1795,7 +1987,8 @@ class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> 
     await Future.delayed(const Duration(milliseconds: 500));
 
     try {
-      final boundary = key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      final boundary =
+          key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) {
         throw Exception('Failed to find render boundary');
       }
@@ -1829,10 +2022,7 @@ class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> 
                       InteractiveViewer(
                         minScale: 0.5,
                         maxScale: 3.0,
-                        child: Image.memory(
-                          _imageBytes,
-                          fit: BoxFit.contain,
-                        ),
+                        child: Image.memory(_imageBytes, fit: BoxFit.contain),
                       ),
                       // 生成中的加载指示器
                       if (_isGenerating)
@@ -1842,7 +2032,9 @@ class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> 
                             child: const Center(
                               child: CircularProgressIndicator(
                                 strokeWidth: 3,
-                                valueColor: AlwaysStoppedAnimation(Colors.white),
+                                valueColor: AlwaysStoppedAnimation(
+                                  Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -1855,9 +2047,16 @@ class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> 
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              onTap: _toggleHideIncome,
+                              onTap: () {
+                                if (LiquidTheme.isActive(context)) {
+                                  GlassFeedback.selection(context);
+                                }
+                                _toggleHideIncome();
+                              },
                               borderRadius: BorderRadius.circular(20),
-                              child: Container(
+                              child: TransactionPanel(
+                                prominent: true,
+                                borderRadius: 20,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 8,
@@ -1874,13 +2073,19 @@ class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> 
                                           ? Icons.visibility_off
                                           : Icons.visibility,
                                       size: 16,
-                                      color: Colors.white,
+                                      color: LiquidTheme.isActive(context)
+                                          ? BeeTokens.textPrimary(context)
+                                          : Colors.white,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
-                                      _hideIncome ? l10n.sharePosterShowIncome : l10n.sharePosterHideIncome,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      _hideIncome
+                                          ? l10n.sharePosterShowIncome
+                                          : l10n.sharePosterHideIncome,
+                                      style: TextStyle(
+                                        color: LiquidTheme.isActive(context)
+                                            ? BeeTokens.textPrimary(context)
+                                            : Colors.white,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -1926,17 +2131,26 @@ class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> 
             top: 0,
             right: 0,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
+              onTap: () {
+                if (LiquidTheme.isActive(context)) {
+                  GlassFeedback.selection(context);
+                }
+                Navigator.pop(context);
+              },
+              child: TransactionPanel(
+                prominent: true,
+                borderRadius: 18,
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.close,
-                  color: Colors.white,
+                  color: LiquidTheme.isActive(context)
+                      ? BeeTokens.textPrimary(context)
+                      : Colors.white,
                   size: 20,
                 ),
               ),
@@ -1958,6 +2172,35 @@ class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> 
     final bgColor = isPrimary ? widget.primaryColor : Colors.white;
     final fgColor = isPrimary ? Colors.white : widget.primaryColor;
 
+    if (LiquidTheme.isActive(context)) {
+      final primary = Theme.of(context).colorScheme.primary;
+      return GlassPressable(
+        enabled: !isDisabled,
+        onTap: onTap,
+        child: Opacity(
+          opacity: isDisabled ? .5 : 1,
+          child: GlassSurface(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: primary),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isPrimary ? primary : BeeTokens.textPrimary(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Opacity(
@@ -1978,11 +2221,7 @@ class _AnnualReportPosterPreviewState extends State<_AnnualReportPosterPreview> 
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: fgColor,
-              ),
+              Icon(icon, size: 20, color: fgColor),
               const SizedBox(width: 8),
               Text(
                 label,

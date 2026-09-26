@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/database_providers.dart';
-import '../../providers/theme_providers.dart';
 import '../../data/db.dart' as db;
 import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/biz.dart';
@@ -83,13 +82,13 @@ class _CategoryMigrationPageState extends ConsumerState<CategoryMigrationPage> {
                   children: [
                     Icon(
                       Icons.info_outline,
-                      color: ref.watch(primaryColorProvider),
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       l10n.categoryMigrationDescription,
                       style: TextStyle(
-                        color: ref.watch(primaryColorProvider),
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
@@ -365,7 +364,7 @@ class _TypeButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return InkWell(
       onTap: onTap,
@@ -430,7 +429,7 @@ class _CategorySelectorButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return InkWell(
       onTap: enabled ? onTap : null,

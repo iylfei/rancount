@@ -1,3 +1,6 @@
+import 'package:beecount/widgets/ui/bee_sheet.dart';
+import '../../widgets/ui/liquid_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -38,7 +41,7 @@ final class _AgentAssistantSettingsPageState
 
   Future<void> _chooseExecutionDepth() async {
     final l10n = AppLocalizations.of(context);
-    final selected = await showModalBottomSheet<int>(
+    final selected = await showBeeBottomSheet<int>(
       context: context,
       showDragHandle: true,
       backgroundColor: BeeTokens.surfaceSheet(context),
@@ -61,9 +64,7 @@ final class _AgentAssistantSettingsPageState
                 groupValue: _executionSettings?.maximumModelTurns,
                 contentPadding: EdgeInsets.zero,
                 title: Text(option.label),
-                subtitle: Text(
-                  l10n.agentExecutionDepthSelected(option.turns),
-                ),
+                subtitle: Text(l10n.agentExecutionDepthSelected(option.turns)),
                 onChanged: (value) => Navigator.of(sheetContext).pop(value),
               ),
           ],
@@ -78,17 +79,17 @@ final class _AgentAssistantSettingsPageState
   }
 
   List<({int turns, String label})> _depthOptions(AppLocalizations l10n) => [
-        (turns: 2, label: l10n.agentExecutionDepthQuick),
-        (
-          turns: AgentExecutionSettings.standardTurns,
-          label: l10n.agentExecutionDepthStandard
-        ),
-        (turns: 6, label: l10n.agentExecutionDepthDeep),
-        (
-          turns: AgentExecutionSettings.maximumTurns,
-          label: l10n.agentExecutionDepthCustom
-        ),
-      ];
+    (turns: 2, label: l10n.agentExecutionDepthQuick),
+    (
+      turns: AgentExecutionSettings.standardTurns,
+      label: l10n.agentExecutionDepthStandard,
+    ),
+    (turns: 6, label: l10n.agentExecutionDepthDeep),
+    (
+      turns: AgentExecutionSettings.maximumTurns,
+      label: l10n.agentExecutionDepthCustom,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +114,8 @@ final class _AgentAssistantSettingsPageState
                   description: l10n.agentAssistantPermissionsEntryDescription,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                        builder: (_) => const AgentPermissionsPage()),
+                      builder: (_) => const AgentPermissionsPage(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -156,8 +158,9 @@ final class _AgentAssistantSettingsPageState
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : null,
-                  onTap:
-                      executionSettings == null ? null : _chooseExecutionDepth,
+                  onTap: executionSettings == null
+                      ? null
+                      : _chooseExecutionDepth,
                 ),
               ],
             ),
@@ -184,11 +187,24 @@ final class _SettingsCard extends StatelessWidget {
   final Widget? trailing;
 
   @override
-  Widget build(BuildContext context) => Material(
-        color: BeeTokens.surface(context),
-        borderRadius: BorderRadius.circular(18),
+  Widget build(BuildContext context) => GlassSurface(
+    prominent: false,
+    child: Material(
+      color: LiquidTheme.isActive(context)
+          ? Colors.transparent
+          : BeeTokens.surface(context),
+      borderRadius: BorderRadius.circular(18),
+      child: GlassPressEffect(
+        enabled: onTap != null,
         child: InkWell(
-          onTap: onTap,
+          onTap: onTap == null
+              ? null
+              : () {
+                  if (LiquidTheme.isActive(context)) {
+                    GlassFeedback.selection(context);
+                  }
+                  onTap!();
+                },
           borderRadius: BorderRadius.circular(18),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -216,11 +232,15 @@ final class _SettingsCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 trailing ??
-                    Icon(Icons.chevron_right,
-                        color: BeeTokens.iconSecondary(context)),
+                    Icon(
+                      Icons.chevron_right,
+                      color: BeeTokens.iconSecondary(context),
+                    ),
               ],
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }

@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../cloud/sync/sync_engine.dart';
@@ -66,7 +67,7 @@ class _SyncConflictCardState extends State<SyncConflictCard> {
       if (!mounted) return;
       final keepLocal = await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
+          builder: (context) => BeeAlertDialog(
                 title: const Text('选择要保留的版本'),
                 content: SingleChildScrollView(
                     child: Text(

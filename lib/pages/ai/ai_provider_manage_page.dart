@@ -1,3 +1,4 @@
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,7 +19,9 @@ import '../../utils/website_urls.dart';
 final aiProviderListRefreshProvider = StateProvider<int>((ref) => 0);
 
 /// AI 服务商列表 Provider
-final aiProvidersProvider = FutureProvider<List<AIServiceProviderConfig>>((ref) async {
+final aiProvidersProvider = FutureProvider<List<AIServiceProviderConfig>>((
+  ref,
+) async {
   ref.watch(aiProviderListRefreshProvider);
   return AIProviderManager.getProviders();
 });
@@ -28,7 +31,8 @@ class AIProviderManagePage extends ConsumerStatefulWidget {
   const AIProviderManagePage({super.key});
 
   @override
-  ConsumerState<AIProviderManagePage> createState() => _AIProviderManagePageState();
+  ConsumerState<AIProviderManagePage> createState() =>
+      _AIProviderManagePageState();
 }
 
 class _AIProviderManagePageState extends ConsumerState<AIProviderManagePage> {
@@ -106,128 +110,151 @@ class _AIProviderManagePageState extends ConsumerState<AIProviderManagePage> {
 
   Widget _buildProviderCard(AIServiceProviderConfig provider) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
 
     return SectionCard(
       margin: EdgeInsets.zero,
-      child: InkWell(
-        onTap: () => _editProvider(context, provider),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 标题行
-              Row(
-                children: [
-                  Icon(
-                    provider.isBuiltIn ? Icons.verified : Icons.cloud_outlined,
-                    color: provider.isBuiltIn ? primaryColor : BeeTokens.textSecondary(context),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      provider.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+      child: GlassPressEffect(
+        child: InkWell(
+          onTap: () {
+            if (LiquidTheme.isActive(context)) {
+              GlassFeedback.selection(context);
+            }
+            _editProvider(context, provider);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 标题行
+                Row(
+                  children: [
+                    Icon(
+                      provider.isBuiltIn
+                          ? Icons.verified
+                          : Icons.cloud_outlined,
+                      color: provider.isBuiltIn
+                          ? primaryColor
+                          : BeeTokens.textSecondary(context),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        provider.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
+                    if (provider.isBuiltIn)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          l10n.aiProviderBuiltIn,
+                          style: TextStyle(fontSize: 11, color: primaryColor),
+                        ),
+                      )
+                    else
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete_outline,
+                          size: 20,
+                          color: BeeTokens.textTertiary(context),
+                        ),
+                        onPressed: () => _deleteProvider(context, provider),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // 配置状态
+                Row(
+                  children: [
+                    _buildCapabilityChip(
+                      l10n.aiCapabilityText,
+                      provider.supportsText,
+                      Icons.chat_outlined,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildCapabilityChip(
+                      l10n.aiCapabilityVision,
+                      provider.supportsVision,
+                      Icons.image_outlined,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildCapabilityChip(
+                      l10n.aiCapabilitySpeech,
+                      provider.supportsSpeech,
+                      Icons.mic_outlined,
+                    ),
+                  ],
+                ),
+
+                // API Key 状态
+                if (!provider.isValid) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber,
+                          size: 16,
+                          color: Colors.orange[700],
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          l10n.aiProviderNoApiKey,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  if (provider.isBuiltIn)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: primaryColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        l10n.aiProviderBuiltIn,
-                        style: TextStyle(fontSize: 11, color: primaryColor),
-                      ),
-                    )
-                  else
-                    IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        size: 20,
+                ],
+
+                // 底部操作提示
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      l10n.aiProviderTapToEdit,
+                      style: TextStyle(
+                        fontSize: 12,
                         color: BeeTokens.textTertiary(context),
                       ),
-                      onPressed: () => _deleteProvider(context, provider),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
                     ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // 配置状态
-              Row(
-                children: [
-                  _buildCapabilityChip(
-                    l10n.aiCapabilityText,
-                    provider.supportsText,
-                    Icons.chat_outlined,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildCapabilityChip(
-                    l10n.aiCapabilityVision,
-                    provider.supportsVision,
-                    Icons.image_outlined,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildCapabilityChip(
-                    l10n.aiCapabilitySpeech,
-                    provider.supportsSpeech,
-                    Icons.mic_outlined,
-                  ),
-                ],
-              ),
-
-              // API Key 状态
-              if (!provider.isValid) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.warning_amber, size: 16, color: Colors.orange[700]),
-                      const SizedBox(width: 6),
-                      Text(
-                        l10n.aiProviderNoApiKey,
-                        style: TextStyle(fontSize: 12, color: Colors.orange[700]),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              // 底部操作提示
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    l10n.aiProviderTapToEdit,
-                    style: TextStyle(
-                      fontSize: 12,
+                    Icon(
+                      Icons.chevron_right,
+                      size: 16,
                       color: BeeTokens.textTertiary(context),
                     ),
-                  ),
-                  Icon(
-                    Icons.chevron_right,
-                    size: 16,
-                    color: BeeTokens.textTertiary(context),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -235,7 +262,9 @@ class _AIProviderManagePageState extends ConsumerState<AIProviderManagePage> {
   }
 
   Widget _buildCapabilityChip(String label, bool enabled, IconData icon) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -269,9 +298,7 @@ class _AIProviderManagePageState extends ConsumerState<AIProviderManagePage> {
   Future<void> _addProvider(BuildContext context) async {
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const AIProviderEditPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const AIProviderEditPage()),
     );
 
     if (result == true) {
@@ -279,12 +306,13 @@ class _AIProviderManagePageState extends ConsumerState<AIProviderManagePage> {
     }
   }
 
-  Future<void> _editProvider(BuildContext context, AIServiceProviderConfig provider) async {
+  Future<void> _editProvider(
+    BuildContext context,
+    AIServiceProviderConfig provider,
+  ) async {
     final result = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => AIProviderEditPage(provider: provider),
-      ),
+      MaterialPageRoute(builder: (_) => AIProviderEditPage(provider: provider)),
     );
 
     if (result == true) {
@@ -292,12 +320,15 @@ class _AIProviderManagePageState extends ConsumerState<AIProviderManagePage> {
     }
   }
 
-  Future<void> _deleteProvider(BuildContext context, AIServiceProviderConfig provider) async {
+  Future<void> _deleteProvider(
+    BuildContext context,
+    AIServiceProviderConfig provider,
+  ) async {
     final l10n = AppLocalizations.of(context);
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.aiProviderDeleteTitle),
         content: Text(l10n.aiProviderDeleteConfirm(provider.name)),
         actions: [
@@ -392,14 +423,18 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
 
     return Scaffold(
       backgroundColor: BeeTokens.scaffoldBackground(context),
       body: Column(
         children: [
           PrimaryHeader(
-            title: _isEditing ? l10n.aiProviderEditTitle : l10n.aiProviderAddTitle,
+            title: _isEditing
+                ? l10n.aiProviderEditTitle
+                : l10n.aiProviderAddTitle,
             showBack: true,
             actions: [
               TextButton(
@@ -457,7 +492,10 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                             border: const OutlineInputBorder(),
                             isDense: true,
                             focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: primaryColor, width: 2),
+                              borderSide: BorderSide(
+                                color: primaryColor,
+                                width: 2,
+                              ),
                             ),
                           ),
                         ),
@@ -470,11 +508,16 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                           decoration: InputDecoration(
                             labelText: 'Base URL',
                             hintText: 'https://api.example.com/v1',
-                            helperText: _isBuiltIn ? null : l10n.aiCustomBaseUrlHelper,
+                            helperText: _isBuiltIn
+                                ? null
+                                : l10n.aiCustomBaseUrlHelper,
                             border: const OutlineInputBorder(),
                             isDense: true,
                             focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: primaryColor, width: 2),
+                              borderSide: BorderSide(
+                                color: primaryColor,
+                                width: 2,
+                              ),
                             ),
                           ),
                         ),
@@ -485,7 +528,10 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                           children: [
                             const Text(
                               'API Key',
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             const Spacer(),
                             _buildInlineTestButton(
@@ -504,22 +550,30 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                             border: const OutlineInputBorder(),
                             isDense: true,
                             focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(color: primaryColor, width: 2),
+                              borderSide: BorderSide(
+                                color: primaryColor,
+                                width: 2,
+                              ),
                             ),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscureApiKey ? Icons.visibility_off : Icons.visibility,
+                                _obscureApiKey
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
                                 size: 20,
                               ),
                               onPressed: () {
-                                setState(() => _obscureApiKey = !_obscureApiKey);
+                                setState(
+                                  () => _obscureApiKey = !_obscureApiKey,
+                                );
                               },
                             ),
                           ),
                         ),
 
                         // 文本测试错误信息
-                        if (_textTestStatus == TestStatus.failed && _textTestError != null) ...[
+                        if (_textTestStatus == TestStatus.failed &&
+                            _textTestError != null) ...[
                           const SizedBox(height: 8),
                           Container(
                             width: double.infinity,
@@ -530,7 +584,10 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                             ),
                             child: Text(
                               _textTestError!,
-                              style: const TextStyle(fontSize: 12, color: Colors.red),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.red,
+                              ),
                             ),
                           ),
                         ],
@@ -555,7 +612,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                                 style: TextButton.styleFrom(
                                   foregroundColor: primaryColor,
                                   textStyle: const TextStyle(fontSize: 13),
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
                                 ),
                               ),
                               const Spacer(),
@@ -566,7 +625,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                                 style: TextButton.styleFrom(
                                   foregroundColor: primaryColor,
                                   textStyle: const TextStyle(fontSize: 13),
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
                                 ),
                               ),
                             ],
@@ -608,7 +669,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                         _buildModelInputWithTest(
                           controller: _textModelController,
                           label: l10n.aiTextModelTitle,
-                          hintText: _isBuiltIn ? AIConstants.defaultGlmModel : 'gpt-4o-mini',
+                          hintText: _isBuiltIn
+                              ? AIConstants.defaultGlmModel
+                              : 'gpt-4o-mini',
                           testStatus: _textTestStatus,
                           testError: _textTestError,
                           onTest: _testTextCapability,
@@ -619,7 +682,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                         _buildModelInputWithTest(
                           controller: _visionModelController,
                           label: l10n.aiVisionModelTitle,
-                          hintText: _isBuiltIn ? AIConstants.defaultGlmVisionModel : 'gpt-4o',
+                          hintText: _isBuiltIn
+                              ? AIConstants.defaultGlmVisionModel
+                              : 'gpt-4o',
                           testStatus: _visionTestStatus,
                           testError: _visionTestError,
                           onTest: _testVisionCapability,
@@ -630,7 +695,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
                         _buildModelInputWithTest(
                           controller: _audioModelController,
                           label: l10n.aiAudioModelTitle,
-                          hintText: _isBuiltIn ? AIConstants.defaultGlmAudioModel : 'whisper-1',
+                          hintText: _isBuiltIn
+                              ? AIConstants.defaultGlmAudioModel
+                              : 'whisper-1',
                           testStatus: _speechTestStatus,
                           testError: _speechTestError,
                           onTest: _testSpeechCapability,
@@ -684,7 +751,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
 
     try {
       final config = _getCurrentConfig();
-      final (success, error) = await AIProviderFactory.validateTextCapability(config);
+      final (success, error) = await AIProviderFactory.validateTextCapability(
+        config,
+      );
 
       if (mounted) {
         setState(() {
@@ -718,7 +787,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
 
     try {
       final config = _getCurrentConfig();
-      final (success, error) = await AIProviderFactory.validateVisionCapability(config);
+      final (success, error) = await AIProviderFactory.validateVisionCapability(
+        config,
+      );
 
       if (mounted) {
         setState(() {
@@ -752,7 +823,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
 
     try {
       final config = _getCurrentConfig();
-      final (success, error) = await AIProviderFactory.validateSpeechCapability(config);
+      final (success, error) = await AIProviderFactory.validateSpeechCapability(
+        config,
+      );
 
       if (mounted) {
         setState(() {
@@ -835,7 +908,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
     String? testError,
     required VoidCallback onTest,
   }) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     final l10n = AppLocalizations.of(context);
 
     return Column(
@@ -852,7 +927,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
             _buildInlineTestButton(
               status: testStatus,
               onTest: onTest,
-              enabled: _apiKeyController.text.isNotEmpty && controller.text.isNotEmpty,
+              enabled:
+                  _apiKeyController.text.isNotEmpty &&
+                  controller.text.isNotEmpty,
             ),
           ],
         ),
@@ -862,7 +939,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
           controller: controller,
           decoration: InputDecoration(
             hintText: hintText,
-            helperText: controller.text.isEmpty ? l10n.aiModelInputHelper : null,
+            helperText: controller.text.isEmpty
+                ? l10n.aiModelInputHelper
+                : null,
             border: const OutlineInputBorder(),
             isDense: true,
             focusedBorder: OutlineInputBorder(
@@ -894,17 +973,22 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
   /// 构建一键测试按钮
   Widget _buildTestAllButton() {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
 
-    final allTesting = _textTestStatus == TestStatus.testing ||
+    final allTesting =
+        _textTestStatus == TestStatus.testing ||
         _visionTestStatus == TestStatus.testing ||
         _speechTestStatus == TestStatus.testing;
 
-    final allSuccess = _textTestStatus == TestStatus.success &&
+    final allSuccess =
+        _textTestStatus == TestStatus.success &&
         _visionTestStatus == TestStatus.success &&
         _speechTestStatus == TestStatus.success;
 
-    final anyFailed = _textTestStatus == TestStatus.failed ||
+    final anyFailed =
+        _textTestStatus == TestStatus.failed ||
         _visionTestStatus == TestStatus.failed ||
         _speechTestStatus == TestStatus.failed;
 
@@ -972,7 +1056,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
     required VoidCallback onTest,
     required bool enabled,
   }) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     final l10n = AppLocalizations.of(context);
 
     Color getColor() {
@@ -1007,14 +1093,17 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
           ? SizedBox(
               width: 14,
               height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: primaryColor,
+              ),
             )
           : Icon(
               status == TestStatus.success
                   ? Icons.check_circle
                   : status == TestStatus.failed
-                      ? Icons.error
-                      : Icons.play_circle_outline,
+                  ? Icons.error
+                  : Icons.play_circle_outline,
               size: 16,
               color: getColor(),
             ),
@@ -1029,7 +1118,9 @@ class _AIProviderEditPageState extends ConsumerState<AIProviderEditPage> {
 
   /// 打开智谱 GLM 网站
   Future<void> _openGlmWebsite() async {
-    final uri = Uri.parse('https://open.bigmodel.cn/usercenter/proj-mgmt/apikeys');
+    final uri = Uri.parse(
+      'https://open.bigmodel.cn/usercenter/proj-mgmt/apikeys',
+    );
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

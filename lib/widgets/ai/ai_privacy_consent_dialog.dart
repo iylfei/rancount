@@ -1,3 +1,5 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,7 +16,8 @@ import '../../providers/theme_providers.dart';
 Future<bool> ensureAiPrivacyConsent(BuildContext context, WidgetRef ref) async {
   if (await AiPrivacyConsentStore.isConsented()) return true;
   if (!context.mounted) return false;
-  final agreed = await showDialog<bool>(
+  final agreed =
+      await showDialog<bool>(
         context: context,
         barrierDismissible: false,
         builder: (_) => const AiPrivacyConsentDialog(),
@@ -32,8 +35,10 @@ class AiPrivacyConsentDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
-    return AlertDialog(
+    final primary = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
+    return BeeAlertDialog(
       title: Text(l10n.aiConsentTitle),
       content: SingleChildScrollView(
         child: Column(
@@ -52,11 +57,12 @@ class AiPrivacyConsentDialog extends ConsumerWidget {
                 ),
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (_) => const PrivacyPolicyPage()),
+                  MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()),
                 ),
-                child: Text(l10n.aboutPrivacyPolicy,
-                    style: TextStyle(color: primary)),
+                child: Text(
+                  l10n.aboutPrivacyPolicy,
+                  style: TextStyle(color: primary),
+                ),
               ),
             ),
           ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../styles/tokens.dart';
+import '../../styles/liquid_theme.dart';
+import 'liquid_glass.dart';
 
 /// 胶囊选项配置
 class CapsuleOption<T> {
@@ -43,9 +45,12 @@ class CapsuleSwitcher<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (LiquidTheme.isActive(context)) return _buildLiquid(context);
     final isDark = BeeTokens.isDark(context);
     final bg = backgroundColor ?? BeeTokens.surfaceCapsule(context);
-    final selectedBg = selectedBackgroundColor ?? (isDark ? BeeTokens.primary(context) : Colors.black);
+    final selectedBg =
+        selectedBackgroundColor ??
+        (isDark ? BeeTokens.primary(context) : Colors.black);
     final selectedFg = selectedTextColor ?? Colors.white;
     final unselectedFg = unselectedTextColor ?? BeeTokens.textPrimary(context);
     final radius = borderRadius ?? BorderRadius.circular(20);
@@ -70,9 +75,9 @@ class CapsuleSwitcher<T> extends StatelessWidget {
                 Text(
                   option.label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: selected ? selectedFg : unselectedFg,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: selected ? selectedFg : unselectedFg,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 if (option.showArrow && option.onTap != null) ...[
                   const SizedBox(width: 4),
@@ -85,7 +90,7 @@ class CapsuleSwitcher<T> extends StatelessWidget {
                       color: selected ? selectedFg : unselectedFg,
                     ),
                   ),
-                ]
+                ],
               ],
             ),
           ),
@@ -96,16 +101,99 @@ class CapsuleSwitcher<T> extends StatelessWidget {
     return Container(
       height: height,
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: radius,
-      ),
+      decoration: BoxDecoration(color: bg, borderRadius: radius),
       child: Row(
         children: options
             .map((option) => buildSegment(option))
             .expand((widget) => [widget, const SizedBox(width: 4)])
             .take(options.length * 2 - 1) // 移除最后一个SizedBox
             .toList(),
+      ),
+    );
+  }
+
+  Widget _buildLiquid(BuildContext context) {
+    if (options.isEmpty) return const SizedBox.shrink();
+    final primary = Theme.of(context).colorScheme.primary;
+    final current = options.indexWhere(
+      (option) => option.value == selectedValue,
+    );
+    final selectedIndex = current < 0 ? 0 : current;
+    return GlassSurface(
+      borderRadius: 24,
+      padding: const EdgeInsets.all(4),
+      child: SizedBox(
+        height: height < 48 ? 48 : height,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth / options.length;
+            return Stack(
+              children: [
+                AnimatedPositioned(
+                  left: selectedIndex * width,
+                  top: 0,
+                  bottom: 0,
+                  width: width,
+                  duration: LiquidTheme.motionOf(context)
+                      ? const Duration(milliseconds: 280)
+                      : Duration.zero,
+                  curve: Curves.easeOutCubic,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: primary.withValues(alpha: .13),
+                      border: Border.all(
+                        color: primary.withValues(alpha: .15),
+                        width: .7,
+                      ),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    for (final option in options)
+                      Expanded(
+                        child: GlassPressable(
+                          selectionFeedback: true,
+                          onTap: () {
+                            if (selectedValue != option.value)
+                              onChanged(option.value);
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  option.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.labelLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: option.value == selectedValue
+                                            ? primary
+                                            : BeeTokens.textSecondary(context),
+                                      ),
+                                ),
+                              ),
+                              if (option.showArrow && option.onTap != null)
+                                IconButton(
+                                  onPressed: option.onTap,
+                                  icon: const Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 18,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

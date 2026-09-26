@@ -1,6 +1,7 @@
+import '../../widgets/biz/transaction_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
 import '../../providers.dart';
 import '../../widgets/ui/ui.dart';
@@ -21,10 +22,12 @@ class RecurringTransactionEditPage extends ConsumerStatefulWidget {
   const RecurringTransactionEditPage({super.key, this.recurring});
 
   @override
-  ConsumerState<RecurringTransactionEditPage> createState() => _RecurringTransactionEditPageState();
+  ConsumerState<RecurringTransactionEditPage> createState() =>
+      _RecurringTransactionEditPageState();
 }
 
-class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransactionEditPage> {
+class _RecurringTransactionEditPageState
+    extends ConsumerState<RecurringTransactionEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
@@ -107,13 +110,17 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
 
   /// 有效币种:模板币种 ?? 账本本位币。账户列表按它过滤,交易生成也落它。
   String _effectiveCurrency() =>
-      _currencyCode ?? _ledgerCurrency ?? ref.read(currentLedgerCurrencyProvider);
+      _currencyCode ??
+      _ledgerCurrency ??
+      ref.read(currentLedgerCurrencyProvider);
 
   Future<void> _loadCategoryAndAccount() async {
     if (_isEditing && widget.recurring!.categoryId != null) {
       final repo = ref.read(repositoryProvider);
 
-      final category = await repo.getCategoryById(widget.recurring!.categoryId!);
+      final category = await repo.getCategoryById(
+        widget.recurring!.categoryId!,
+      );
 
       setState(() {
         _selectedCategory = category;
@@ -132,7 +139,7 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
+    return TransactionScaffold(
       body: Column(
         children: [
           PrimaryHeader(
@@ -140,12 +147,14 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
                 ? l10n.recurringTransactionEdit
                 : l10n.recurringTransactionAdd,
             showBack: true,
-            actions: _isEditing ? [
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: _deleteRecurringTransaction,
-              ),
-            ] : null,
+            actions: _isEditing
+                ? [
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: _deleteRecurringTransaction,
+                    ),
+                  ]
+                : null,
           ),
           Expanded(
             child: Form(
@@ -170,9 +179,11 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
                     controller: _amountController,
                     decoration: InputDecoration(
                       labelText: l10n.importFieldAmount,
-                      border: const OutlineInputBorder(),
+                      border: transactionInputBorder(context),
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return l10n.commonError;
@@ -240,7 +251,7 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
                     controller: _noteController,
                     decoration: InputDecoration(
                       labelText: l10n.commonNoteHint,
-                      border: const OutlineInputBorder(),
+                      border: transactionInputBorder(context),
                     ),
                     maxLines: 3,
                   ),
@@ -250,12 +261,16 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
           ),
 
           // 底部保存按钮
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            child: FilledButton(
-              onPressed: _isFormValid() ? _saveRecurringTransaction : null,
-              child: Text(l10n.commonSave),
+          TransactionGlass(
+            prominent: true,
+            borderRadius: 28,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: FilledButton(
+                onPressed: _isFormValid() ? _saveRecurringTransaction : null,
+                child: Text(l10n.commonSave),
+              ),
             ),
           ),
         ],
@@ -264,11 +279,36 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
   }
 
   Widget _buildTypeSelector(AppLocalizations l10n) {
+    if (LiquidTheme.isActive(context)) {
+      return TransactionGlass(
+        padding: const EdgeInsets.all(4),
+        child: SegmentedButton<String>(
+          showSelectedIcon: false,
+          selected: {_type},
+          segments: [
+            ButtonSegment(value: 'expense', label: Text(l10n.categoryExpense)),
+            ButtonSegment(value: 'income', label: Text(l10n.categoryIncome)),
+            ButtonSegment(value: 'transfer', label: Text(l10n.transferTitle)),
+          ],
+          onSelectionChanged: (values) {
+            GlassFeedback.selection(context);
+            setState(() {
+              _type = values.single;
+              _selectedCategory = null;
+              if (_type != 'transfer') _selectedToAccountId = null;
+            });
+          },
+        ),
+      );
+    }
     return Row(
       children: [
         Expanded(
           child: RadioListTile<String>(
-            title: Text(l10n.categoryExpense, style: const TextStyle(fontSize: 14)),
+            title: Text(
+              l10n.categoryExpense,
+              style: const TextStyle(fontSize: 14),
+            ),
             value: 'expense',
             groupValue: _type,
             contentPadding: EdgeInsets.zero,
@@ -284,7 +324,10 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
         ),
         Expanded(
           child: RadioListTile<String>(
-            title: Text(l10n.categoryIncome, style: const TextStyle(fontSize: 14)),
+            title: Text(
+              l10n.categoryIncome,
+              style: const TextStyle(fontSize: 14),
+            ),
             value: 'income',
             groupValue: _type,
             contentPadding: EdgeInsets.zero,
@@ -300,7 +343,10 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
         ),
         Expanded(
           child: RadioListTile<String>(
-            title: Text(l10n.transferTitle, style: const TextStyle(fontSize: 14)),
+            title: Text(
+              l10n.transferTitle,
+              style: const TextStyle(fontSize: 14),
+            ),
             value: 'transfer',
             groupValue: _type,
             contentPadding: EdgeInsets.zero,
@@ -318,40 +364,46 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
   }
 
   Widget _buildCategorySelector(AppLocalizations l10n) {
-    return InkWell(
-      onTap: () => _selectCategory(),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.categoryTitle,
-          border: const OutlineInputBorder(),
-          errorText: _getCategoryErrorText(),
-        ),
-        child: Text(
-          _selectedCategory != null
-              ? CategoryUtils.getDisplayName(_selectedCategory!.name, context)
-              : l10n.commonSearch,
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: () => _selectCategory(),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: l10n.categoryTitle,
+            border: transactionInputBorder(context),
+            errorText: _getCategoryErrorText(),
+          ),
+          child: Text(
+            _selectedCategory != null
+                ? CategoryUtils.getDisplayName(_selectedCategory!.name, context)
+                : l10n.commonSearch,
+          ),
         ),
       ),
     );
   }
 
   Widget _buildLedgerSelector(AppLocalizations l10n) {
-    return InkWell(
-      onTap: () => _selectLedger(),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.ledgerSelectTitle,
-          border: const OutlineInputBorder(),
-          errorText: _getLedgerErrorText(),
-        ),
-        child: FutureBuilder<Ledger?>(
-          future: _selectedLedgerId != null
-              ? ref.read(repositoryProvider).getLedgerById(_selectedLedgerId!)
-              : Future.value(null),
-          builder: (context, snapshot) {
-            final ledgerName = snapshot.data?.name ?? l10n.ledgerSelect;
-            return Text(ledgerName);
-          },
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: () => _selectLedger(),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: l10n.ledgerSelectTitle,
+            border: transactionInputBorder(context),
+            errorText: _getLedgerErrorText(),
+          ),
+          child: FutureBuilder<Ledger?>(
+            future: _selectedLedgerId != null
+                ? ref.read(repositoryProvider).getLedgerById(_selectedLedgerId!)
+                : Future.value(null),
+            builder: (context, snapshot) {
+              final ledgerName = snapshot.data?.name ?? l10n.ledgerSelect;
+              return Text(ledgerName);
+            },
+          ),
         ),
       ),
     );
@@ -362,47 +414,58 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
   /// 故不展示折算预览,以免暗示"这笔换算已定"。
   Widget _buildCurrencySelector(AppLocalizations l10n) {
     final currency = _effectiveCurrency();
-    return InkWell(
-      onTap: _selectCurrency,
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.txCurrencyLabel,
-          border: const OutlineInputBorder(),
-        ),
-        child: Row(
-          children: [
-            currencyFlag(context, currency, width: 22, height: 16, radius: 4),
-            const SizedBox(width: 8),
-            Expanded(child: Text(displayCurrency(currency, context))),
-            const Icon(Icons.arrow_drop_down, size: 24),
-          ],
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: _selectCurrency,
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: l10n.txCurrencyLabel,
+            border: transactionInputBorder(context),
+          ),
+          child: Row(
+            children: [
+              currencyFlag(context, currency, width: 22, height: 16, radius: 4),
+              const SizedBox(width: 8),
+              Expanded(child: Text(displayCurrency(currency, context))),
+              const Icon(Icons.arrow_drop_down, size: 24),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildAccountSelector(AppLocalizations l10n, {required bool isFromAccount}) {
+  Widget _buildAccountSelector(
+    AppLocalizations l10n, {
+    required bool isFromAccount,
+  }) {
     final accountId = isFromAccount ? _selectedAccountId : _selectedToAccountId;
     final label = isFromAccount
-        ? (_type == 'transfer' ? l10n.transferFromAccount : l10n.accountSelectTitle)
+        ? (_type == 'transfer'
+            ? l10n.transferFromAccount
+            : l10n.accountSelectTitle)
         : l10n.transferToAccount;
 
-    return InkWell(
-      onTap: () => _selectAccount(isFromAccount: isFromAccount),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-          errorText: _getAccountErrorText(isFromAccount),
-        ),
-        child: FutureBuilder<Account?>(
-          future: accountId != null
-              ? ref.read(repositoryProvider).getAccount(accountId)
-              : Future.value(null),
-          builder: (context, snapshot) {
-            final accountName = snapshot.data?.name ?? l10n.accountNone;
-            return Text(accountName);
-          },
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: () => _selectAccount(isFromAccount: isFromAccount),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            border: transactionInputBorder(context),
+            errorText: _getAccountErrorText(isFromAccount),
+          ),
+          child: FutureBuilder<Account?>(
+            future: accountId != null
+                ? ref.read(repositoryProvider).getAccount(accountId)
+                : Future.value(null),
+            builder: (context, snapshot) {
+              final accountName = snapshot.data?.name ?? l10n.accountNone;
+              return Text(accountName);
+            },
+          ),
         ),
       ),
     );
@@ -450,7 +513,8 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
 
   bool _isFormValid() {
     // 检查金额
-    if (_amountController.text.isEmpty || double.tryParse(_amountController.text) == null) {
+    if (_amountController.text.isEmpty ||
+        double.tryParse(_amountController.text) == null) {
       return false;
     }
 
@@ -494,47 +558,50 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
         break;
     }
 
-    return InkWell(
-      onTap: () async {
-        final result = await showWheelPicker<RecurringFrequency>(
-          context,
-          initial: _frequency,
-          items: RecurringFrequency.values,
-          labelBuilder: (freq) {
-            switch (freq) {
-              case RecurringFrequency.daily:
-                return l10n.recurringTransactionDaily;
-              case RecurringFrequency.weekly:
-                return l10n.recurringTransactionWeekly;
-              case RecurringFrequency.monthly:
-                return l10n.recurringTransactionMonthly;
-              case RecurringFrequency.yearly:
-                return l10n.recurringTransactionYearly;
-            }
-          },
-          title: l10n.recurringTransactionFrequency,
-        );
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: () async {
+          final result = await showWheelPicker<RecurringFrequency>(
+            context,
+            initial: _frequency,
+            items: RecurringFrequency.values,
+            labelBuilder: (freq) {
+              switch (freq) {
+                case RecurringFrequency.daily:
+                  return l10n.recurringTransactionDaily;
+                case RecurringFrequency.weekly:
+                  return l10n.recurringTransactionWeekly;
+                case RecurringFrequency.monthly:
+                  return l10n.recurringTransactionMonthly;
+                case RecurringFrequency.yearly:
+                  return l10n.recurringTransactionYearly;
+              }
+            },
+            title: l10n.recurringTransactionFrequency,
+          );
 
-        if (result != null) {
-          setState(() {
-            _frequency = result;
-            if (_frequency == RecurringFrequency.daily) {
-              _interval = 1;
-            }
-          });
-        }
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.recurringTransactionFrequency,
-          border: const OutlineInputBorder(),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(frequencyLabel),
-            const Icon(Icons.arrow_drop_down, size: 24),
-          ],
+          if (result != null) {
+            setState(() {
+              _frequency = result;
+              if (_frequency == RecurringFrequency.daily) {
+                _interval = 1;
+              }
+            });
+          }
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: l10n.recurringTransactionFrequency,
+            border: transactionInputBorder(context),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(frequencyLabel),
+              const Icon(Icons.arrow_drop_down, size: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -557,77 +624,83 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
         break;
     }
 
-    return InkWell(
-      onTap: () async {
-        final result = await showWheelPicker<int>(
-          context,
-          initial: _interval,
-          items: List.generate(12, (index) => index + 1),
-          labelBuilder: (i) {
-            switch (_frequency) {
-              case RecurringFrequency.daily:
-                return l10n.recurringTransactionEveryNDays(i);
-              case RecurringFrequency.weekly:
-                return l10n.recurringTransactionEveryNWeeks(i);
-              case RecurringFrequency.monthly:
-                return l10n.recurringTransactionEveryNMonths(i);
-              case RecurringFrequency.yearly:
-                return l10n.recurringTransactionEveryNYears(i);
-            }
-          },
-          title: l10n.recurringTransactionInterval,
-        );
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: () async {
+          final result = await showWheelPicker<int>(
+            context,
+            initial: _interval,
+            items: List.generate(12, (index) => index + 1),
+            labelBuilder: (i) {
+              switch (_frequency) {
+                case RecurringFrequency.daily:
+                  return l10n.recurringTransactionEveryNDays(i);
+                case RecurringFrequency.weekly:
+                  return l10n.recurringTransactionEveryNWeeks(i);
+                case RecurringFrequency.monthly:
+                  return l10n.recurringTransactionEveryNMonths(i);
+                case RecurringFrequency.yearly:
+                  return l10n.recurringTransactionEveryNYears(i);
+              }
+            },
+            title: l10n.recurringTransactionInterval,
+          );
 
-        if (result != null) {
-          setState(() {
-            _interval = result;
-          });
-        }
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.recurringTransactionInterval,
-          border: const OutlineInputBorder(),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(intervalLabel),
-            const Icon(Icons.arrow_drop_down, size: 24),
-          ],
+          if (result != null) {
+            setState(() {
+              _interval = result;
+            });
+          }
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: l10n.recurringTransactionInterval,
+            border: transactionInputBorder(context),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(intervalLabel),
+              const Icon(Icons.arrow_drop_down, size: 24),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildDayOfMonthSelector(AppLocalizations l10n) {
-    return InkWell(
-      onTap: () async {
-        final result = await showWheelPicker<int>(
-          context,
-          initial: _dayOfMonth ?? 1,
-          items: List.generate(31, (index) => index + 1),
-          labelBuilder: (day) => '$day',
-          title: l10n.recurringTransactionDayOfMonth,
-        );
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: () async {
+          final result = await showWheelPicker<int>(
+            context,
+            initial: _dayOfMonth ?? 1,
+            items: List.generate(31, (index) => index + 1),
+            labelBuilder: (day) => '$day',
+            title: l10n.recurringTransactionDayOfMonth,
+          );
 
-        if (result != null) {
-          setState(() {
-            _dayOfMonth = result;
-          });
-        }
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: l10n.recurringTransactionDayOfMonth,
-          border: const OutlineInputBorder(),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('${_dayOfMonth ?? 1}'),
-            const Icon(Icons.arrow_drop_down, size: 24),
-          ],
+          if (result != null) {
+            setState(() {
+              _dayOfMonth = result;
+            });
+          }
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: l10n.recurringTransactionDayOfMonth,
+            border: transactionInputBorder(context),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('${_dayOfMonth ?? 1}'),
+              const Icon(Icons.arrow_drop_down, size: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -640,23 +713,23 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
     bool allowClear = false,
     VoidCallback? onClear,
   }) {
-    return InkWell(
-      onTap: onTap,
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-          suffixIcon: allowClear && date != null
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: onClear,
-                )
-              : null,
-        ),
-        child: Text(
-          date != null
-              ? DateFormat.yMd().format(date)
-              : AppLocalizations.of(context)!.recurringTransactionNoEndDate,
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: onTap,
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            border: transactionInputBorder(context),
+            suffixIcon: allowClear && date != null
+                ? IconButton(icon: const Icon(Icons.clear), onPressed: onClear)
+                : null,
+          ),
+          child: Text(
+            date != null
+                ? DateFormat.yMd().format(date)
+                : AppLocalizations.of(context)!.recurringTransactionNoEndDate,
+          ),
         ),
       ),
     );
@@ -708,11 +781,12 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
 
   Future<void> _selectCurrency() async {
     final l10n = AppLocalizations.of(context)!;
-    final String base = _ledgerCurrency ?? ref.read(currentLedgerCurrencyProvider);
+    final String base =
+        _ledgerCurrency ?? ref.read(currentLedgerCurrencyProvider);
     final picked = await showCurrencyPickerSheet(
       context,
       selected: _effectiveCurrency(),
-      primaryColor: ref.read(primaryColorProvider),
+      primaryColor: transactionPrimary(context, ref.read(primaryColorProvider)),
       title: l10n.txCurrencyPickerTitle,
       rateBase: base, // 展示各币种对账本本位币的汇率
     );
@@ -763,12 +837,14 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
     if (!mounted) return;
 
     final title = isFromAccount
-        ? (_type == 'transfer' ? AppLocalizations.of(context)!.transferFromAccount : AppLocalizations.of(context)!.accountSelectTitle)
+        ? (_type == 'transfer'
+            ? AppLocalizations.of(context)!.transferFromAccount
+            : AppLocalizations.of(context)!.accountSelectTitle)
         : AppLocalizations.of(context)!.transferToAccount;
 
     final selected = await showDialog<int?>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(title),
         content: SizedBox(
           width: double.maxFinite,
@@ -778,7 +854,10 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
               ? Text(AppLocalizations.of(context)!.commonEmpty)
               : ListView.builder(
                   shrinkWrap: true,
-                  itemCount: accounts.length + (_type == 'transfer' && !isFromAccount ? 0 : 1), // 转入账户不显示"无账户"
+                  itemCount: accounts.length +
+                      (_type == 'transfer' && !isFromAccount
+                          ? 0
+                          : 1), // 转入账户不显示"无账户"
                   itemBuilder: (context, index) {
                     if (index == 0 && (_type != 'transfer' || isFromAccount)) {
                       return ListTile(
@@ -786,7 +865,9 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
                         onTap: () => Navigator.of(context).pop(null),
                       );
                     }
-                    final accountIndex = _type == 'transfer' && !isFromAccount ? index : index - 1;
+                    final accountIndex = _type == 'transfer' && !isFromAccount
+                        ? index
+                        : index - 1;
                     final account = accounts[accountIndex];
                     return ListTile(
                       title: Text(account.name),
@@ -902,9 +983,11 @@ class _RecurringTransactionEditPageState extends ConsumerState<RecurringTransact
   Future<void> _deleteRecurringTransaction() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(AppLocalizations.of(context)!.commonDelete),
-        content: Text(AppLocalizations.of(context)!.recurringTransactionDeleteConfirm),
+        content: Text(
+          AppLocalizations.of(context)!.recurringTransactionDeleteConfirm,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

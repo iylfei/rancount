@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../styles/tokens.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../../providers/security_providers.dart';
-import '../../providers/theme_providers.dart';
 import '../../services/security/app_lock_service.dart';
 import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/biz.dart';
@@ -97,7 +96,7 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
   void _showTimeoutPicker() {
     final l10n = AppLocalizations.of(context);
     final currentTimeout = ref.read(appLockTimeoutProvider);
-    final primaryColor = ref.read(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     final options = [
       (0, l10n.appLockTimeoutImmediate),
@@ -106,7 +105,7 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
       (900, l10n.appLockTimeout15Min),
     ];
 
-    showModalBottomSheet(
+    showBeeBottomSheet(
       context: context,
       backgroundColor: BeeTokens.surfaceElevated(context),
       shape: const RoundedRectangleBorder(
@@ -172,7 +171,7 @@ class _AppLockSettingsPageState extends ConsumerState<AppLockSettingsPage> {
     final enabled = ref.watch(appLockEnabledProvider);
     final biometricEnabled = ref.watch(appLockBiometricEnabledProvider);
     final timeout = ref.watch(appLockTimeoutProvider);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       backgroundColor: BeeTokens.scaffoldBackground(context),

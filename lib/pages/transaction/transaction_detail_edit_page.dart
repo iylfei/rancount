@@ -1,3 +1,6 @@
+import 'package:beecount/widgets/ui/bee_sheet.dart';
+import '../../widgets/biz/transaction_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:drift/drift.dart' as d;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -85,8 +88,9 @@ class _TransactionDetailEditPageState
     final tags = await repo.getTagsForTransaction(_tx.id);
     final ids = tags.map((tag) => tag.id).toList();
     if (repo is LocalRepository && _tx.syncId != null) {
-      final overrides = await (repo.db.select(repo.db.transactionTagOverrides)
-            ..where((row) => row.transactionSyncId.equals(_tx.syncId!)))
+      final overrides = await (repo.db.select(
+        repo.db.transactionTagOverrides,
+      )..where((row) => row.transactionSyncId.equals(_tx.syncId!)))
           .get();
       for (final override in overrides) {
         ids.add(syntheticIdForSyncId(override.tagSyncId));
@@ -128,13 +132,15 @@ class _TransactionDetailEditPageState
       initialTime: TimeOfDay.fromDateTime(_date),
     );
     if (time == null || !mounted) return;
-    setState(() => _date = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        ));
+    setState(
+      () => _date = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      ),
+    );
   }
 
   Future<List<Account>> _availableAccounts() async {
@@ -155,44 +161,53 @@ class _TransactionDetailEditPageState
     final l10n = AppLocalizations.of(context);
     final accounts = await _availableAccounts();
     if (!mounted) return;
-    final selected = await showModalBottomSheet<Object>(
+    final selected = await showBeeBottomSheet<Object>(
       context: context,
       showDragHandle: true,
-      backgroundColor: BeeTokens.surfaceElevated(context),
-      builder: (sheetContext) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                destination
-                    ? l10n.exportCsvHeaderToAccount
-                    : l10n.transactionDetailAccount,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+      backgroundColor: LiquidTheme.isActive(context)
+          ? Colors.transparent
+          : BeeTokens.surfaceElevated(context),
+      builder: (sheetContext) => TransactionGlass(
+          prominent: true,
+          borderRadius: 30,
+          child: SafeArea(
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    destination
+                        ? l10n.exportCsvHeaderToAccount
+                        : l10n.transactionDetailAccount,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                if (!destination && !_isTransfer)
+                  ListTile(
+                    title: Text(l10n.accountNone),
+                    onTap: () => Navigator.pop(sheetContext, _noAccount),
+                  ),
+                for (final account in accounts)
+                  ListTile(
+                    leading: Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: Text(account.name),
+                    trailing:
+                        (destination ? _toAccount : _account)?.id == account.id
+                            ? Icon(
+                                Icons.check,
+                                color: Theme.of(context).colorScheme.primary,
+                              )
+                            : null,
+                    onTap: () => Navigator.pop(sheetContext, account),
+                  ),
+              ],
             ),
-            if (!destination && !_isTransfer)
-              ListTile(
-                title: Text(l10n.accountNone),
-                onTap: () => Navigator.pop(sheetContext, _noAccount),
-              ),
-            for (final account in accounts)
-              ListTile(
-                leading: Icon(Icons.account_balance_wallet_outlined,
-                    color: Theme.of(context).colorScheme.primary),
-                title: Text(account.name),
-                trailing:
-                    (destination ? _toAccount : _account)?.id == account.id
-                        ? Icon(Icons.check,
-                            color: Theme.of(context).colorScheme.primary)
-                        : null,
-                onTap: () => Navigator.pop(sheetContext, account),
-              ),
-          ],
-        ),
-      ),
+          )),
     );
     if (!mounted || selected == null) return;
     setState(() {
@@ -226,8 +241,9 @@ class _TransactionDetailEditPageState
     if (repo is! LocalRepository) return null;
     final ctx = await repo.db.loadLedgerPickerContext(_tx.ledgerId);
     if (ctx?.ledgerSyncId == null) return null;
-    final rows = await (repo.db.select(repo.db.sharedLedgerAccounts)
-          ..where((row) => row.ledgerSyncId.equals(ctx!.ledgerSyncId!)))
+    final rows = await (repo.db.select(
+      repo.db.sharedLedgerAccounts,
+    )..where((row) => row.ledgerSyncId.equals(ctx!.ledgerSyncId!)))
         .get();
     for (final row in rows) {
       if (syntheticIdForSyncId(row.syncId) == account.id) return row.syncId;
@@ -244,8 +260,9 @@ class _TransactionDetailEditPageState
       await repo.updateTransactionTags(transactionId: _tx.id, tagIds: normal);
     }
     if (repo is LocalRepository && _tx.syncId != null) {
-      await (repo.db.delete(repo.db.transactionTagOverrides)
-            ..where((row) => row.transactionSyncId.equals(_tx.syncId!)))
+      await (repo.db.delete(
+        repo.db.transactionTagOverrides,
+      )..where((row) => row.transactionSyncId.equals(_tx.syncId!)))
           .go();
       final synthetic = _tagIds.where((id) => id < 0).toSet();
       if (synthetic.isNotEmpty) {
@@ -333,7 +350,8 @@ class _TransactionDetailEditPageState
         happenedAt: _date,
         accountId: _accountChanged
             ? d.Value<int?>(
-                _account != null && _account!.id >= 0 ? _account!.id : null)
+                _account != null && _account!.id >= 0 ? _account!.id : null,
+              )
             : null,
         accountSyncIdOverride: accountOverride,
         toAccountSyncIdOverride:
@@ -344,8 +362,9 @@ class _TransactionDetailEditPageState
       if (_isTransfer && _toAccountChanged) {
         await repo.updateTransactionFields(
           id: _tx.id,
-          toAccountId:
-              d.Value<int?>(_toAccount!.id >= 0 ? _toAccount!.id : null),
+          toAccountId: d.Value<int?>(
+            _toAccount!.id >= 0 ? _toAccount!.id : null,
+          ),
           toAccountSyncIdOverride: toOverride,
           writeToAccountSyncIdOverride: true,
           writeAccountSyncIdOverride: false,
@@ -370,7 +389,7 @@ class _TransactionDetailEditPageState
     }
   }
 
-  Widget _card(BuildContext context, List<Widget> children) => Container(
+  Widget _card(BuildContext context, List<Widget> children) => TransactionPanel(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
@@ -382,8 +401,11 @@ class _TransactionDetailEditPageState
       );
 
   Widget _field(
-          BuildContext context, String label, TextEditingController controller,
-          {int maxLines = 1}) =>
+    BuildContext context,
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) =>
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 7),
         child: TextField(
@@ -401,17 +423,25 @@ class _TransactionDetailEditPageState
         ),
       );
 
-  Widget _choice(BuildContext context, IconData icon, String title,
-          String value, VoidCallback? onTap) =>
+  Widget _choice(
+    BuildContext context,
+    IconData icon,
+    String title,
+    String value,
+    VoidCallback? onTap,
+  ) =>
       ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
-        title: Text(title,
-            style: TextStyle(
-                color: BeeTokens.textSecondary(context), fontSize: 13)),
-        subtitle: Text(value,
-            style:
-                TextStyle(color: BeeTokens.textPrimary(context), fontSize: 16)),
+        title: Text(
+          title,
+          style:
+              TextStyle(color: BeeTokens.textSecondary(context), fontSize: 13),
+        ),
+        subtitle: Text(
+          value,
+          style: TextStyle(color: BeeTokens.textPrimary(context), fontSize: 16),
+        ),
         trailing: onTap == null ? null : const Icon(Icons.chevron_right),
         onTap: onTap,
       );
@@ -425,16 +455,22 @@ class _TransactionDetailEditPageState
         : _tx.type == 'income'
             ? l10n.categoryIncome
             : l10n.categoryExpense;
-    return Scaffold(
-      backgroundColor: BeeTokens.scaffoldBackground(context),
+    return TransactionScaffold(
+      backgroundColor: LiquidTheme.isActive(context)
+          ? Colors.transparent
+          : BeeTokens.scaffoldBackground(context),
       appBar: AppBar(
         title: Text(l10n.transactionEditTitle),
-        backgroundColor: BeeTokens.scaffoldBackground(context),
+        backgroundColor: LiquidTheme.isActive(context)
+            ? Colors.transparent
+            : BeeTokens.scaffoldBackground(context),
         actions: [
           TextButton(
             onPressed: _saving || _loadingTags ? null : _save,
-            child: Text(l10n.commonSave,
-                style: TextStyle(color: primary, fontWeight: FontWeight.w700)),
+            child: Text(
+              l10n.commonSave,
+              style: TextStyle(color: primary, fontWeight: FontWeight.w700),
+            ),
           ),
           const SizedBox(width: 8),
         ],
@@ -442,33 +478,38 @@ class _TransactionDetailEditPageState
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          Container(
+          TransactionPanel(
+            prominent: true,
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
               color: primary.withValues(
-                  alpha: BeeTokens.isDark(context) ? 0.18 : 0.09),
+                alpha: BeeTokens.isDark(context) ? 0.18 : 0.09,
+              ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(color: primary.withValues(alpha: 0.35)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(typeLabel,
-                    style:
-                        TextStyle(color: primary, fontWeight: FontWeight.w600)),
+                Text(
+                  typeLabel,
+                  style: TextStyle(color: primary, fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _amount,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                   ],
                   style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w700,
-                      color: BeeTokens.textPrimary(context)),
+                    fontSize: LiquidTheme.isActive(context) ? 40 : 34,
+                    fontWeight: FontWeight.w700,
+                    color: BeeTokens.textPrimary(context),
+                  ),
                   decoration: InputDecoration(
                     prefixText:
                         '${NumberFormat.simpleCurrency(name: _tx.currencyCode ?? 'CNY').currencySymbol}  ',
@@ -483,45 +524,51 @@ class _TransactionDetailEditPageState
           _card(context, [
             if (!_isTransfer && _tx.type != 'adjustment')
               _choice(
-                  context,
-                  Icons.category_outlined,
-                  l10n.transactionDetailCategory,
-                  _category?.name ?? l10n.commonUncategorized,
-                  _isRefund
-                      ? null
-                      : () async {
-                          final selected = await showCategorySelector(context,
-                              type: _tx.type,
-                              currentCategoryId: _category?.id,
-                              includeParentCategories: true);
-                          if (selected != null && mounted) {
-                            setState(() {
-                              _category = selected;
-                              _categoryChanged = true;
-                            });
-                          }
-                        }),
-            _choice(
                 context,
-                Icons.account_balance_wallet_outlined,
-                _isTransfer
-                    ? l10n.exportCsvHeaderFromAccount
-                    : l10n.transactionDetailAccount,
-                _account?.name ?? l10n.accountNone,
-                () => _pickAccount()),
+                Icons.category_outlined,
+                l10n.transactionDetailCategory,
+                _category?.name ?? l10n.commonUncategorized,
+                _isRefund
+                    ? null
+                    : () async {
+                        final selected = await showCategorySelector(
+                          context,
+                          type: _tx.type,
+                          currentCategoryId: _category?.id,
+                          includeParentCategories: true,
+                        );
+                        if (selected != null && mounted) {
+                          setState(() {
+                            _category = selected;
+                            _categoryChanged = true;
+                          });
+                        }
+                      },
+              ),
+            _choice(
+              context,
+              Icons.account_balance_wallet_outlined,
+              _isTransfer
+                  ? l10n.exportCsvHeaderFromAccount
+                  : l10n.transactionDetailAccount,
+              _account?.name ?? l10n.accountNone,
+              () => _pickAccount(),
+            ),
             if (_isTransfer)
               _choice(
-                  context,
-                  Icons.south_west_rounded,
-                  l10n.exportCsvHeaderToAccount,
-                  _toAccount?.name ?? l10n.accountNone,
-                  () => _pickAccount(destination: true)),
-            _choice(
                 context,
-                Icons.calendar_today_outlined,
-                l10n.transactionDetailTime,
-                DateFormat('yyyy-MM-dd HH:mm').format(_date),
-                _pickDate),
+                Icons.south_west_rounded,
+                l10n.exportCsvHeaderToAccount,
+                _toAccount?.name ?? l10n.accountNone,
+                () => _pickAccount(destination: true),
+              ),
+            _choice(
+              context,
+              Icons.calendar_today_outlined,
+              l10n.transactionDetailTime,
+              DateFormat('yyyy-MM-dd HH:mm').format(_date),
+              _pickDate,
+            ),
           ]),
           _card(context, [
             _field(context, l10n.transactionDetailProduct, _product),
@@ -531,25 +578,33 @@ class _TransactionDetailEditPageState
           ]),
           _card(context, [
             _choice(
-                context,
-                Icons.sell_outlined,
-                l10n.transactionDetailTags,
-                _loadingTags
-                    ? '…'
-                    : _tagNames.isEmpty
-                        ? l10n.commonEmpty
-                        : _tagNames.join(' · '),
-                _loadingTags ? null : _pickTags),
-            _choice(context, Icons.attach_file,
-                l10n.transactionDetailAttachments, l10n.commonEdit, () async {
-              await Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => AttachmentPreviewPage.fromTransaction(
-                  transactionId: _tx.id,
-                  allowAdd: true,
-                ),
-              ));
-              ref.read(attachmentListRefreshProvider.notifier).state++;
-            }),
+              context,
+              Icons.sell_outlined,
+              l10n.transactionDetailTags,
+              _loadingTags
+                  ? '…'
+                  : _tagNames.isEmpty
+                      ? l10n.commonEmpty
+                      : _tagNames.join(' · '),
+              _loadingTags ? null : _pickTags,
+            ),
+            _choice(
+              context,
+              Icons.attach_file,
+              l10n.transactionDetailAttachments,
+              l10n.commonEdit,
+              () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AttachmentPreviewPage.fromTransaction(
+                      transactionId: _tx.id,
+                      allowAdd: true,
+                    ),
+                  ),
+                );
+                ref.read(attachmentListRefreshProvider.notifier).state++;
+              },
+            ),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.txFlagExcludeFromStats),

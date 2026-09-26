@@ -1,3 +1,5 @@
+import '../../widgets/ui/liquid_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -98,7 +100,9 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     final showBiometric = _biometricAvailable && _biometricEnabled;
 
     return Scaffold(
@@ -108,9 +112,15 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
           children: [
             const Spacer(flex: 2),
             // Logo
-            BeeIcon(
-              color: primaryColor,
-              size: 64.0.scaled(context, ref),
+            GlassSurface(
+              borderRadius: 32,
+              padding: LiquidTheme.isActive(context)
+                  ? const EdgeInsets.all(20)
+                  : EdgeInsets.zero,
+              child: BeeIcon(
+                color: primaryColor,
+                size: 64.0.scaled(context, ref),
+              ),
             ),
             SizedBox(height: 24.0.scaled(context, ref)),
             // 标题
@@ -124,21 +134,18 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> {
             ),
             SizedBox(height: 32.0.scaled(context, ref)),
             // PIN 圆点
-            PinDotIndicator(
-              filledCount: _pin.length,
-              isError: _isError,
-            ),
+            PinDotIndicator(filledCount: _pin.length, isError: _isError),
             const Spacer(flex: 1),
             // 数字键盘
             Padding(
               padding: EdgeInsets.symmetric(
-                  horizontal: 40.0.scaled(context, ref)),
+                horizontal: 40.0.scaled(context, ref),
+              ),
               child: NumberPad(
                 onNumberTap: _onNumberTap,
                 onDelete: _onDelete,
                 showBiometric: showBiometric,
-                onBiometric:
-                    showBiometric ? _authenticateWithBiometrics : null,
+                onBiometric: showBiometric ? _authenticateWithBiometrics : null,
               ),
             ),
             SizedBox(height: 32.0.scaled(context, ref)),

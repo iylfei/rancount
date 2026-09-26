@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../styles/tokens.dart';
 import '../ui/feature_dot.dart';
+import '../../styles/liquid_theme.dart';
+import '../ui/liquid_glass.dart';
 
 class AppListTile extends StatelessWidget {
   final IconData leading;
@@ -32,12 +34,13 @@ class AppListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final liquid = LiquidTheme.isActive(context);
     final titleStyle = BeeTextTokens.title(context)
         .copyWith(color: BeeTokens.textPrimary(context)); // ⭐ 使用 Token
     final subStyle = BeeTextTokens.label(context)
         .copyWith(color: BeeTokens.textSecondary(context)); // ⭐ 使用 Token
     final tile = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: EdgeInsets.symmetric(vertical: liquid ? 12 : 6),
       child: Row(
         children: [
           _withDot(
@@ -50,7 +53,8 @@ class AppListTile extends StatelessWidget {
                         .colorScheme
                         .primary
                         .withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
+                    shape: liquid ? BoxShape.rectangle : BoxShape.circle,
+                    borderRadius: liquid ? BorderRadius.circular(12) : null,
                   ),
                   child: Icon(
                     leading,
@@ -83,6 +87,11 @@ class AppListTile extends StatelessWidget {
       ),
     );
 
+    if (liquid) {
+      return Opacity(opacity: enabled ? 1 : .5,
+        child: GlassPressable(enabled: enabled, selectionFeedback: true,
+          onTap: onTap, child: tile));
+    }
     return Opacity(
       opacity: enabled ? 1 : 0.5,
       child: InkWell(

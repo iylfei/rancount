@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -98,7 +99,7 @@ class UpdateDownloader {
           builder: (context) => StatefulBuilder(
             builder: (context, setState) {
               dialogSetState = setState;
-              return AlertDialog(
+              return BeeAlertDialog(
                 title: Text(AppLocalizations.of(context).updateDownloadTitle),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,

@@ -1,3 +1,4 @@
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,7 +27,9 @@ final class AgentBrandMark extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final primary = ref.watch(primaryColorProvider);
+    final primary = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
     final iconSize = size * 0.58;
     final mark = SizedBox.square(
       key: const ValueKey('agent-brand-mark-frame'),
@@ -68,10 +71,6 @@ final class AgentBrandMark extends ConsumerWidget {
       ),
     );
 
-    return Semantics(
-      label: semanticLabel,
-      image: true,
-      child: mark,
-    );
+    return Semantics(label: semanticLabel, image: true, child: mark);
   }
 }

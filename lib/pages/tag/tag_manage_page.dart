@@ -30,7 +30,7 @@ class _TagManagePageState extends ConsumerState<TagManagePage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tagsAsync = ref.watch(tagsWithStatsProvider);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       backgroundColor: BeeTokens.scaffoldBackground(context),
@@ -352,7 +352,7 @@ class _TagManagePageState extends ConsumerState<TagManagePage> {
       // 选择导入模式
       final mode = await showDialog<String>(
         context: context,
-        builder: (context) => AlertDialog(
+        builder: (context) => BeeAlertDialog(
           title: Text(l10n.tagImportModeTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -435,7 +435,7 @@ class _TagManagePageState extends ConsumerState<TagManagePage> {
     // 确认对话框
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.tagClearUnusedTitle),
         content: Text(l10n.tagClearUnusedMessage(unusedTags.length)),
         actions: [

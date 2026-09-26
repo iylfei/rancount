@@ -31,7 +31,7 @@ class LedgerSelectorDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.watch(repositoryProvider);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final l10n = AppLocalizations.of(context);
 
     return FutureBuilder<List<Ledger>>(

@@ -189,7 +189,7 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
     final input = TextEditingController(text: current.toStringAsFixed(2));
     final target = await showDialog<double>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: const Text('余额校准'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(
@@ -236,7 +236,7 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final statsAsync = ref.watch(accountStatsProvider(widget.account.id));
     final paginationState = ref.watch(accountTransactionsPaginatedProvider(
         (accountId: widget.account.id, flow: _listFlow)));
@@ -562,8 +562,8 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
     final result = await showDialog<double>(
       context: context,
       builder: (ctx) {
-        final primaryColor = ref.watch(primaryColorProvider);
-        return AlertDialog(
+        final primaryColor = Theme.of(context).colorScheme.primary;
+        return BeeAlertDialog(
           title: Text(isLiability
               ? l10n.valuationUpdateDebt
               : l10n.valuationUpdateValue),

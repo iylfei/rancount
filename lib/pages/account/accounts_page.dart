@@ -9,6 +9,7 @@ import '../../services/billing/post_processor.dart';
 import '../../services/currency/rate_math.dart';
 import '../../services/marketing/product_promos.dart';
 import '../../widgets/ui/ui.dart';
+import '../../widgets/ui/capsule_switcher.dart';
 import '../../widgets/biz/amount_text.dart';
 import '../../widgets/biz/format_money.dart';
 import '../../widgets/biz/section_card.dart';
@@ -16,6 +17,7 @@ import '../../widgets/biz/product_promo_card.dart';
 import '../../data/db.dart' as db;
 import '../../l10n/app_localizations.dart';
 import '../../styles/tokens.dart';
+import '../../styles/liquid_theme.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../../utils/account_type_utils.dart';
 import '../../utils/currencies.dart';
@@ -56,7 +58,12 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     return grouped;
   }
 
-  void _onReorder(String type, List<db.Account> groupAccounts, int oldIndex, int newIndex) {
+  void _onReorder(
+    String type,
+    List<db.Account> groupAccounts,
+    int oldIndex,
+    int newIndex,
+  ) {
     if (oldIndex < newIndex) newIndex -= 1;
     if (oldIndex == newIndex) return;
 
@@ -97,9 +104,11 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     final ledgerId = ref.watch(currentLedgerIdProvider);
     final accountsAsync = ref.watch(allAccountsStreamProvider);
     final accountFeatureAsync = ref.watch(accountFeatureEnabledProvider);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final allStatsAsync = ref.watch(allAccountStatsProvider);
-    final netWorthByCurrencyAsync = ref.watch(netWorthBreakdownByCurrencyProvider);
+    final netWorthByCurrencyAsync = ref.watch(
+      netWorthBreakdownByCurrencyProvider,
+    );
 
     // 资产构成数据
     final compositionAsync = ref.watch(assetCompositionProvider);
@@ -126,7 +135,12 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
               // (iOS 跳商店 / Android 弹窗)。
               _BeeAssetsHeaderEntry(),
               IconButton(
-                onPressed: () => _showSettingsSheet(context, ref, accountFeatureAsync, accountsAsync),
+                onPressed: () => _showSettingsSheet(
+                  context,
+                  ref,
+                  accountFeatureAsync,
+                  accountsAsync,
+                ),
                 icon: const Icon(Icons.settings_outlined),
                 tooltip: l10n.commonSettings,
               ),
@@ -142,11 +156,20 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
 
                 return ListView(
                   padding: EdgeInsets.only(
-                    left: 12.0.scaled(context, ref),
-                    right: 12.0.scaled(context, ref),
+                    left: (LiquidTheme.isActive(context) ? 16.0 : 12.0).scaled(
+                      context,
+                      ref,
+                    ),
+                    right: (LiquidTheme.isActive(context) ? 16.0 : 12.0).scaled(
+                      context,
+                      ref,
+                    ),
                     top: 8.0.scaled(context, ref),
                     bottom: widget.asTab
-                        ? 8.0.scaled(context, ref) + 56 + MediaQuery.of(context).padding.bottom + 24
+                        ? 8.0.scaled(context, ref) +
+                              56 +
+                              MediaQuery.of(context).padding.bottom +
+                              24
                         : 8.0.scaled(context, ref),
                   ),
                   children: [
@@ -172,7 +195,8 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                               ),
                               SizedBox(height: 24.0.scaled(context, ref)),
                               ElevatedButton.icon(
-                                onPressed: () => _addAccount(context, ref, ledgerId),
+                                onPressed: () =>
+                                    _addAccount(context, ref, ledgerId),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: primaryColor,
                                   foregroundColor: Colors.white,
@@ -187,7 +211,11 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                     else ...[
                       // 0. 净资产汇总 + 资产构成（合并卡片）
                       _buildNetWorthAndCompositionCard(
-                        context, ref, netWorthByCurrencyAsync, compositionAsync, primaryColor,
+                        context,
+                        ref,
+                        netWorthByCurrencyAsync,
+                        compositionAsync,
+                        primaryColor,
                       ),
 
                       // 2. 资产账户分组
@@ -220,25 +248,32 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
 
                       // 4. 其他未知类型(排除隐藏账户,账户隐藏 #240)
                       ...groups.keys
-                          .where((type) =>
-                              !accountTypeOrder.contains(type) &&
-                              groups[type]!.any((a) => !a.hidden))
+                          .where(
+                            (type) =>
+                                !accountTypeOrder.contains(type) &&
+                                groups[type]!.any((a) => !a.hidden),
+                          )
                           .map((type) {
-                        final groupList =
-                            groups[type]!.where((a) => !a.hidden).toList();
-                        return _AccountTypeGroup(
-                          type: type,
-                          accounts: groupList,
-                          primaryColor: primaryColor,
-                          allStats: allStatsAsync.valueOrNull,
-                          onReorder: (oldIndex, newIndex) =>
-                              _onReorder(type, groupList, oldIndex, newIndex),
-                          onTap: (account) =>
-                              _viewAccountDetail(context, ref, account),
-                          onEdit: (account) =>
-                              _editAccount(context, ref, account, ledgerId),
-                        );
-                      }),
+                            final groupList = groups[type]!
+                                .where((a) => !a.hidden)
+                                .toList();
+                            return _AccountTypeGroup(
+                              type: type,
+                              accounts: groupList,
+                              primaryColor: primaryColor,
+                              allStats: allStatsAsync.valueOrNull,
+                              onReorder: (oldIndex, newIndex) => _onReorder(
+                                type,
+                                groupList,
+                                oldIndex,
+                                newIndex,
+                              ),
+                              onTap: (account) =>
+                                  _viewAccountDetail(context, ref, account),
+                              onEdit: (account) =>
+                                  _editAccount(context, ref, account, ledgerId),
+                            );
+                          }),
 
                       // 5. 已隐藏账户分区(账户隐藏 #240,D2:主列表退场,
                       // 分区头小计与净资产卡差额对账)
@@ -258,9 +293,8 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(
-                child: Text('${l10n.commonError}: $err'),
-              ),
+              error: (err, stack) =>
+                  Center(child: Text('${l10n.commonError}: $err')),
             ),
           ),
         ],
@@ -272,7 +306,13 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
   Widget _buildNetWorthAndCompositionCard(
     BuildContext context,
     WidgetRef ref,
-    AsyncValue<Map<String, ({double totalAssets, double totalLiabilities, double netWorth})>> netWorthAsync,
+    AsyncValue<
+      Map<
+        String,
+        ({double totalAssets, double totalLiabilities, double netWorth})
+      >
+    >
+    netWorthAsync,
     AsyncValue<List<({String type, double totalBalance})>> compositionAsync,
     Color primaryColor,
   ) {
@@ -294,10 +334,13 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
           // 净资产部分
           netWorthAsync.when(
             skipLoadingOnReload: true,
-            data: (nwByCurrency) => _buildNetWorthContent(context, ref, nwByCurrency),
+            data: (nwByCurrency) =>
+                _buildNetWorthContent(context, ref, nwByCurrency),
             loading: () => SizedBox(
               height: 80.0.scaled(context, ref),
-              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             ),
             error: (_, __) => const SizedBox.shrink(),
           ),
@@ -305,41 +348,53 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
           // - showComposition=true（单币种 或 折算态）：可在「净值走势」「资产构成」间切换，记住偏好；
           // - showComposition=false（多币种非折算，构成无法合并）：只展示走势（净值裸加）。
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12.0.scaled(context, ref)),
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.0.scaled(context, ref),
+            ),
             child: Divider(height: 1, color: BeeTokens.divider(context)),
           ),
-          Builder(builder: (context) {
-            final view = showComposition
-                ? ref.watch(assetTrendViewProvider)
-                : AssetTrendView.trend;
-            return Column(
-              children: [
-                if (showComposition)
+          Builder(
+            builder: (context) {
+              final view = showComposition
+                  ? ref.watch(assetTrendViewProvider)
+                  : AssetTrendView.trend;
+              return Column(
+                children: [
+                  if (showComposition)
+                    Padding(
+                      padding: EdgeInsets.only(top: 10.0.scaled(context, ref)),
+                      child: _trendCompositionToggle(
+                        context,
+                        ref,
+                        view,
+                        primaryColor,
+                      ),
+                    ),
                   Padding(
-                    padding: EdgeInsets.only(top: 10.0.scaled(context, ref)),
-                    child:
-                        _trendCompositionToggle(context, ref, view, primaryColor),
+                    padding: EdgeInsets.all(12.0.scaled(context, ref)),
+                    child: view == AssetTrendView.composition
+                        ? effectiveCompositionAsync.when(
+                            skipLoadingOnReload: true,
+                            data: (data) => AssetCompositionChart(
+                              data: data,
+                              embedded: true,
+                            ),
+                            loading: () => SizedBox(
+                              height: 180.0.scaled(context, ref),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                            error: (_, __) => const SizedBox.shrink(),
+                          )
+                        : _buildNetWorthChartInline(context, ref),
                   ),
-                Padding(
-                  padding: EdgeInsets.all(12.0.scaled(context, ref)),
-                  child: view == AssetTrendView.composition
-                      ? effectiveCompositionAsync.when(
-                          skipLoadingOnReload: true,
-                          data: (data) =>
-                              AssetCompositionChart(data: data, embedded: true),
-                          loading: () => SizedBox(
-                            height: 180.0.scaled(context, ref),
-                            child: const Center(
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2)),
-                          ),
-                          error: (_, __) => const SizedBox.shrink(),
-                        )
-                      : _buildNetWorthChartInline(context, ref),
-                ),
-              ],
-            );
-          }),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
@@ -349,7 +404,11 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
   Widget _buildNetWorthContent(
     BuildContext context,
     WidgetRef ref,
-    Map<String, ({double totalAssets, double totalLiabilities, double netWorth})> nwByCurrency,
+    Map<
+      String,
+      ({double totalAssets, double totalLiabilities, double netWorth})
+    >
+    nwByCurrency,
   ) {
     final l10n = AppLocalizations.of(context);
     final useCompact = ref.watch(compactAmountProvider);
@@ -358,7 +417,12 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     final multiCurrencyActive = ref.watch(multiCurrencyActiveProvider);
     final converted = ref.watch(convertedNetWorthProvider).valueOrNull;
     if (multiCurrencyActive && converted != null) {
-      return _buildConvertedNetWorthContent(context, ref, converted, useCompact);
+      return _buildConvertedNetWorthContent(
+        context,
+        ref,
+        converted,
+        useCompact,
+      );
     }
 
     final isSingleCurrency = nwByCurrency.length <= 1;
@@ -385,7 +449,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
             showCurrency: false,
             useCompactFormat: useCompact,
             style: TextStyle(
-              fontSize: 28,
+              fontSize: LiquidTheme.isActive(context) ? 36 : 28,
               fontWeight: FontWeight.bold,
               color: singleNw.netWorth >= 0
                   ? BeeTokens.incomeColor(context, ref)
@@ -398,7 +462,9 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
             final currency = mapEntry.value.key;
             final nw = mapEntry.value.value;
             return Padding(
-              padding: EdgeInsets.only(top: isFirst ? 0 : 2.0.scaled(context, ref)),
+              padding: EdgeInsets.only(
+                top: isFirst ? 0 : 2.0.scaled(context, ref),
+              ),
               child: AmountText(
                 value: nw.netWorth,
                 signed: false,
@@ -460,10 +526,14 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                       ),
                       SizedBox(height: 2.0.scaled(context, ref)),
                       _buildMultiCurrencyAmountRow(
-                        context, ref,
+                        context,
+                        ref,
                         entries: nwByCurrency.entries
                             .where((e) => e.value.totalAssets != 0)
-                            .map((e) => (currency: e.key, value: e.value.totalAssets))
+                            .map(
+                              (e) =>
+                                  (currency: e.key, value: e.value.totalAssets),
+                            )
                             .toList(),
                         valueColor: BeeTokens.incomeColor(context, ref),
                         useCompact: useCompact,
@@ -471,10 +541,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                     ],
                   ),
                 ),
-                Container(
-                  width: 1,
-                  color: BeeTokens.divider(context),
-                ),
+                Container(width: 1, color: BeeTokens.divider(context)),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -488,10 +555,16 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                       ),
                       SizedBox(height: 2.0.scaled(context, ref)),
                       _buildMultiCurrencyAmountRow(
-                        context, ref,
+                        context,
+                        ref,
                         entries: nwByCurrency.entries
                             .where((e) => e.value.totalLiabilities != 0)
-                            .map((e) => (currency: e.key, value: e.value.totalLiabilities.abs()))
+                            .map(
+                              (e) => (
+                                currency: e.key,
+                                value: e.value.totalLiabilities.abs(),
+                              ),
+                            )
                             .toList(),
                         valueColor: BeeTokens.expenseColor(context, ref),
                         useCompact: useCompact,
@@ -515,9 +588,10 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     final now = trendTodayAnchor();
     final start = DateTime(now.year, now.month - 11, 1);
     final seriesAsync = ref.watch(
-        netWorthTrendSeriesProvider((startDate: start, endDate: now)));
+      netWorthTrendSeriesProvider((startDate: start, endDate: now)),
+    );
     final hide = ref.watch(hideAmountsProvider);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
     final l10n = AppLocalizations.of(context);
     return seriesAsync.maybeWhen(
       data: (series) {
@@ -526,15 +600,19 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
           return _inlineChartBox(
             context,
             ref,
-            Text(l10n.commonEmpty,
-                style: TextStyle(
-                    fontSize: 12, color: BeeTokens.textTertiary(context))),
+            Text(
+              l10n.commonEmpty,
+              style: TextStyle(
+                fontSize: 12,
+                color: BeeTokens.textTertiary(context),
+              ),
+            ),
           );
         }
         return InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NetWorthTrendPage()),
-          ),
+          onTap: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const NetWorthTrendPage())),
           borderRadius: BorderRadius.circular(8),
           child: SizedBox(
             height: 180.0.scaled(context, ref),
@@ -563,12 +641,19 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       error: (_, __) => _inlineChartBox(
         context,
         ref,
-        Text(l10n.commonError,
-            style: TextStyle(
-                fontSize: 12, color: BeeTokens.textTertiary(context))),
+        Text(
+          l10n.commonError,
+          style: TextStyle(
+            fontSize: 12,
+            color: BeeTokens.textTertiary(context),
+          ),
+        ),
       ),
-      orElse: () => _inlineChartBox(context, ref,
-          const Center(child: CircularProgressIndicator(strokeWidth: 2))),
+      orElse: () => _inlineChartBox(
+        context,
+        ref,
+        const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
     );
   }
 
@@ -579,9 +664,33 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       );
 
   /// 走势 / 构成 切换控件（主题色分段胶囊）。
-  Widget _trendCompositionToggle(BuildContext context, WidgetRef ref,
-      AssetTrendView view, Color primary) {
+  Widget _trendCompositionToggle(
+    BuildContext context,
+    WidgetRef ref,
+    AssetTrendView view,
+    Color primary,
+  ) {
     final l10n = AppLocalizations.of(context);
+    if (LiquidTheme.isActive(context)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: CapsuleSwitcher<AssetTrendView>(
+          selectedValue: view,
+          options: [
+            CapsuleOption(
+              value: AssetTrendView.trend,
+              label: l10n.netWorthTrendTitle,
+            ),
+            CapsuleOption(
+              value: AssetTrendView.composition,
+              label: l10n.assetComposition,
+            ),
+          ],
+          onChanged: (value) =>
+              ref.read(assetTrendViewProvider.notifier).select(value),
+        ),
+      );
+    }
     Widget seg(AssetTrendView v, String label) {
       final on = view == v;
       return GestureDetector(
@@ -589,20 +698,25 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: EdgeInsets.symmetric(
-              horizontal: 14.0.scaled(context, ref),
-              vertical: 6.0.scaled(context, ref)),
+            horizontal: 14.0.scaled(context, ref),
+            vertical: 6.0.scaled(context, ref),
+          ),
           decoration: BoxDecoration(
             color: on ? primary.withValues(alpha: 0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: on ? primary : BeeTokens.border(context), width: 1),
+              color: on ? primary : BeeTokens.border(context),
+              width: 1,
+            ),
           ),
-          child: Text(label,
-              style: TextStyle(
-                fontSize: 12,
-                color: on ? primary : BeeTokens.textSecondary(context),
-                fontWeight: on ? FontWeight.w600 : FontWeight.normal,
-              )),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: on ? primary : BeeTokens.textSecondary(context),
+              fontWeight: on ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
         ),
       );
     }
@@ -627,7 +741,8 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
   ) {
     final l10n = AppLocalizations.of(context);
     final base = ref.watch(baseCurrencyProvider).toUpperCase();
-    final nwByCurrency = ref.watch(netWorthBreakdownByCurrencyProvider).valueOrNull ?? const {};
+    final nwByCurrency =
+        ref.watch(netWorthBreakdownByCurrencyProvider).valueOrNull ?? const {};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -648,7 +763,13 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                 alignment: Alignment.centerRight,
                 child: InkWell(
                   onTap: () => _showNetWorthConversionDetail(
-                    context, ref, converted, nwByCurrency, base, useCompact),
+                    context,
+                    ref,
+                    converted,
+                    nwByCurrency,
+                    base,
+                    useCompact,
+                  ),
                   borderRadius: BorderRadius.circular(4.0.scaled(context, ref)),
                   child: Padding(
                     padding: EdgeInsets.symmetric(
@@ -750,8 +871,11 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     BuildContext context,
     WidgetRef ref,
     ConvertedNetWorth converted,
-    Map<String, ({double totalAssets, double totalLiabilities, double netWorth})>
-        nwByCurrency,
+    Map<
+      String,
+      ({double totalAssets, double totalLiabilities, double netWorth})
+    >
+    nwByCurrency,
     String base,
     bool useCompact,
   ) {
@@ -773,19 +897,21 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     final rd = converted.oldestRateDate != null
         ? DateTime.tryParse(converted.oldestRateDate!)
         : null;
-    final isStale = !hasMissing &&
+    final isStale =
+        !hasMissing &&
         rd != null &&
         DateTime.now().difference(rd) > const Duration(days: 7);
     final footer = InkWell(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const ExchangeRatePage()),
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const ExchangeRatePage())),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
         child: Text(
           hasMissing
               ? l10n.convertedPartialWarning(
-                  converted.missingCurrencies.join('/'))
+                  converted.missingCurrencies.join('/'),
+                )
               : l10n.convertedFootnote(converted.oldestRateDate ?? '-'),
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -831,7 +957,8 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
 
     return InkWell(
       onTap: () => _showGroupConversionDetail(
-        context, ref,
+        context,
+        ref,
         groupTitle: groupTitle,
         subtotalByCurrency: subtotalByCurrency,
         result: result,
@@ -890,7 +1017,12 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     WidgetRef ref, {
     required String groupTitle,
     required Map<String, double> subtotalByCurrency,
-    required ({double total, Map<String, double> convertedByCurrency, List<String> missingCurrencies}) result,
+    required ({
+      double total,
+      Map<String, double> convertedByCurrency,
+      List<String> missingCurrencies,
+    })
+    result,
     required String baseSymbol,
     required String base,
     required bool useCompact,
@@ -942,7 +1074,9 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
           for (int i = 0; i < entries.length; i++) ...[
             if (i > 0)
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4.0.scaled(context, ref)),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 4.0.scaled(context, ref),
+                ),
                 child: Text(
                   '·',
                   style: TextStyle(
@@ -979,14 +1113,16 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     required Color iconColor,
     required List<String> typeOrder,
     required Map<String, List<db.Account>> groups,
-    required Map<int, ({double balance, double expense, double income})>? allStats,
+    required Map<int, ({double balance, double expense, double income})>?
+    allStats,
     required Color primaryColor,
     required int ledgerId,
   }) {
     // 检查此分类下是否有在用(非隐藏)账户 —— 账户隐藏 #240:隐藏账户移入
     // 底部「已隐藏」分区(_HiddenAccountsSection),此处只看在用账户。
-    final hasAccounts = typeOrder.any((type) =>
-        groups.containsKey(type) && groups[type]!.any((a) => !a.hidden));
+    final hasAccounts = typeOrder.any(
+      (type) => groups.containsKey(type) && groups[type]!.any((a) => !a.hidden),
+    );
     if (!hasAccounts) return [];
 
     // 按币种分组计算小计(仅在用账户;隐藏账户的小计在「已隐藏」分区单独
@@ -1045,7 +1181,8 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                 child: Align(
                   alignment: Alignment.centerRight,
                   child: _buildGroupConvertedSubtotal(
-                    context, ref,
+                    context,
+                    ref,
                     groupTitle: title,
                     subtotalByCurrency: subtotalByCurrency,
                     rates: rates,
@@ -1070,7 +1207,8 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
             else
               Flexible(
                 child: _buildMultiCurrencyAmountRow(
-                  context, ref,
+                  context,
+                  ref,
                   entries: subtotalByCurrency.entries
                       .map((e) => (currency: e.key, value: e.value))
                       .toList(),
@@ -1083,23 +1221,24 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
       ),
       // 类型分组(排除隐藏账户,账户隐藏 #240)
       ...typeOrder
-          .where((type) =>
-              groups.containsKey(type) && groups[type]!.any((a) => !a.hidden))
+          .where(
+            (type) =>
+                groups.containsKey(type) && groups[type]!.any((a) => !a.hidden),
+          )
           .map((type) {
-        final groupList = groups[type]!.where((a) => !a.hidden).toList();
-        return _AccountTypeGroup(
-          type: type,
-          accounts: groupList,
-          primaryColor: primaryColor,
-          allStats: allStats,
-          onReorder: (oldIndex, newIndex) =>
-              _onReorder(type, groupList, oldIndex, newIndex),
-          onTap: (account) =>
-              _viewAccountDetail(context, ref, account),
-          onEdit: (account) =>
-              _editAccount(context, ref, account, ledgerId),
-        );
-      }),
+            final groupList = groups[type]!.where((a) => !a.hidden).toList();
+            return _AccountTypeGroup(
+              type: type,
+              accounts: groupList,
+              primaryColor: primaryColor,
+              allStats: allStats,
+              onReorder: (oldIndex, newIndex) =>
+                  _onReorder(type, groupList, oldIndex, newIndex),
+              onTap: (account) => _viewAccountDetail(context, ref, account),
+              onEdit: (account) =>
+                  _editAccount(context, ref, account, ledgerId),
+            );
+          }),
     ];
   }
 
@@ -1111,16 +1250,15 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     AsyncValue<List<db.Account>> accountsAsync,
   ) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.read(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     // 默认收/支账户选择器排除隐藏账户(账户隐藏 #240 §四):列表本身不出现,
     // 且若当前默认恰好指向隐藏账户,下方 _CompactDefaultAccount 找不到匹配项
     // 会自动显示「不设置」,兜底 E3。
-    final accounts =
-        (accountsAsync.asData?.value ?? const <db.Account>[])
-            .where((a) => !a.hidden)
-            .toList();
+    final accounts = (accountsAsync.asData?.value ?? const <db.Account>[])
+        .where((a) => !a.hidden)
+        .toList();
 
-    showModalBottomSheet(
+    showBeeBottomSheet(
       context: context,
       backgroundColor: BeeTokens.surfaceSheet(context),
       shape: const RoundedRectangleBorder(
@@ -1142,13 +1280,18 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: BeeTokens.textTertiary(context).withValues(alpha: 0.3),
+                      color: BeeTokens.textTertiary(
+                        context,
+                      ).withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                   // 标题
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Text(
                       l10n.commonSettings,
                       style: TextStyle(
@@ -1185,7 +1328,9 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                   // (多币种恒折算,与 Web 端对齐),这里只保留汇率管理入口。
                   Consumer(
                     builder: (context, ref, _) {
-                      final used = ref.watch(usedCurrenciesProvider).valueOrNull;
+                      final used = ref
+                          .watch(usedCurrenciesProvider)
+                          .valueOrNull;
                       if (used == null || used.length < 2) {
                         return const SizedBox.shrink();
                       }
@@ -1217,7 +1362,8 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                               Navigator.pop(sheetContext);
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                    builder: (_) => const ExchangeRatePage()),
+                                  builder: (_) => const ExchangeRatePage(),
+                                ),
                               );
                             },
                           ),
@@ -1259,7 +1405,11 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     );
   }
 
-  Future<void> _addAccount(BuildContext context, WidgetRef ref, int ledgerId) async {
+  Future<void> _addAccount(
+    BuildContext context,
+    WidgetRef ref,
+    int ledgerId,
+  ) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => AccountEditPage(ledgerId: ledgerId),
@@ -1273,14 +1423,16 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
     ref.read(statsRefreshProvider.notifier).state++;
   }
 
-  Future<void> _editAccount(BuildContext context, WidgetRef ref,
-      db.Account account, int ledgerId) async {
+  Future<void> _editAccount(
+    BuildContext context,
+    WidgetRef ref,
+    db.Account account,
+    int ledgerId,
+  ) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => AccountEditPage(
-          account: account,
-          ledgerId: ledgerId,
-        ),
+        builder: (context) =>
+            AccountEditPage(account: account, ledgerId: ledgerId),
       ),
     );
 
@@ -1288,7 +1440,10 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
   }
 
   void _viewAccountDetail(
-      BuildContext context, WidgetRef ref, db.Account account) {
+    BuildContext context,
+    WidgetRef ref,
+    db.Account account,
+  ) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => AccountDetailPage(account: account),
@@ -1299,7 +1454,10 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
   /// 「已隐藏」分区卡片上的「恢复」快捷入口(账户隐藏 #240)。恢复无需确认
   /// (低风险、可逆,产品设计 01 §3.2),即时生效并推送同步。
   Future<void> _restoreAccount(
-      BuildContext context, WidgetRef ref, db.Account account) async {
+    BuildContext context,
+    WidgetRef ref,
+    db.Account account,
+  ) async {
     final l10n = AppLocalizations.of(context);
     await ref.read(repositoryProvider).setAccountHidden(account.id, false);
 
@@ -1322,11 +1480,7 @@ class _StatCell extends ConsumerWidget {
   final double value;
   final Color? valueColor;
 
-  const _StatCell({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _StatCell({required this.label, required this.value, this.valueColor});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1368,10 +1522,7 @@ class _ApproxConvertedText extends ConsumerWidget {
     final hide = ref.watch(hideAmountsProvider);
     return Text(
       hide ? '≈ ****' : text,
-      style: TextStyle(
-        fontSize: 12,
-        color: BeeTokens.textTertiary(context),
-      ),
+      style: TextStyle(fontSize: 12, color: BeeTokens.textTertiary(context)),
     );
   }
 }
@@ -1477,7 +1628,8 @@ class _ConversionDetailRow extends ConsumerWidget {
           else if (entry.convertedValue != null)
             // abs:与同行原币 AmountText(signed:false) 的绝对值口径一致(负债不带负号)。
             _ApproxConvertedText(
-              text: '≈ $baseSymbol${entry.convertedValue!.abs().toStringAsFixed(2)}',
+              text:
+                  '≈ $baseSymbol${entry.convertedValue!.abs().toStringAsFixed(2)}',
             ),
         ],
       ),
@@ -1496,7 +1648,7 @@ void _showConversionDetailSheet(
   required bool useCompact,
   Widget? footer,
 }) {
-  showModalBottomSheet(
+  showBeeBottomSheet(
     context: context,
     backgroundColor: BeeTokens.surfaceSheet(context),
     shape: const RoundedRectangleBorder(
@@ -1513,8 +1665,9 @@ void _showConversionDetailSheet(
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: BeeTokens.textTertiary(sheetContext)
-                    .withValues(alpha: 0.3),
+                color: BeeTokens.textTertiary(
+                  sheetContext,
+                ).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1650,9 +1803,15 @@ class _AccountTypeGroupState extends ConsumerState<_AccountTypeGroup> {
       children: [
         // 类型标题栏（点击展开/折叠）
         GestureDetector(
-          onTap: () => setState(() => _expanded = !_expanded),
+          onTap: () {
+            if (LiquidTheme.isActive(context)) GlassFeedback.selection(context);
+            setState(() => _expanded = !_expanded);
+          },
           behavior: HitTestBehavior.opaque,
-          child: Padding(
+          child: Container(
+            constraints: LiquidTheme.isActive(context)
+                ? const BoxConstraints(minHeight: 48)
+                : null,
             padding: EdgeInsets.only(
               top: 12.0.scaled(context, ref),
               bottom: 6.0.scaled(context, ref),
@@ -1666,7 +1825,9 @@ class _AccountTypeGroupState extends ConsumerState<_AccountTypeGroup> {
                   height: 28.0.scaled(context, ref),
                   decoration: BoxDecoration(
                     color: typeColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(7.0.scaled(context, ref)),
+                    borderRadius: BorderRadius.circular(
+                      7.0.scaled(context, ref),
+                    ),
                   ),
                   child: Center(
                     child: AccountTypeIcon(
@@ -1692,8 +1853,12 @@ class _AccountTypeGroupState extends ConsumerState<_AccountTypeGroup> {
                     vertical: 1.0.scaled(context, ref),
                   ),
                   decoration: BoxDecoration(
-                    color: BeeTokens.textTertiary(context).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8.0.scaled(context, ref)),
+                    color: BeeTokens.textTertiary(
+                      context,
+                    ).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(
+                      8.0.scaled(context, ref),
+                    ),
                   ),
                   child: Text(
                     '${widget.accounts.length}',
@@ -1706,7 +1871,11 @@ class _AccountTypeGroupState extends ConsumerState<_AccountTypeGroup> {
                 const Spacer(),
                 AnimatedRotation(
                   turns: _expanded ? 0.25 : 0,
-                  duration: const Duration(milliseconds: 200),
+                  duration:
+                      LiquidTheme.isActive(context) &&
+                          !LiquidTheme.motionOf(context)
+                      ? Duration.zero
+                      : const Duration(milliseconds: 200),
                   child: Icon(
                     Icons.chevron_right,
                     size: 18.0.scaled(context, ref),
@@ -1795,16 +1964,24 @@ class _HiddenAccountsSectionState
     final totalText = hide
         ? '****'
         : _subtotalText(subtotalByCurrency, multiCurrencyActive, rates, base);
-    final summary =
-        l10n.accountHiddenSectionSummary(widget.accounts.length, totalText);
+    final summary = l10n.accountHiddenSectionSummary(
+      widget.accounts.length,
+      totalText,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: () => setState(() => _expanded = !_expanded),
+          onTap: () {
+            if (LiquidTheme.isActive(context)) GlassFeedback.selection(context);
+            setState(() => _expanded = !_expanded);
+          },
           behavior: HitTestBehavior.opaque,
-          child: Padding(
+          child: Container(
+            constraints: LiquidTheme.isActive(context)
+                ? const BoxConstraints(minHeight: 48)
+                : null,
             padding: EdgeInsets.only(
               top: 16.0.scaled(context, ref),
               bottom: 4.0.scaled(context, ref),
@@ -1813,9 +1990,11 @@ class _HiddenAccountsSectionState
             ),
             child: Row(
               children: [
-                Icon(Icons.visibility_off_outlined,
-                    size: 18.0.scaled(context, ref),
-                    color: BeeTokens.textTertiary(context)),
+                Icon(
+                  Icons.visibility_off_outlined,
+                  size: 18.0.scaled(context, ref),
+                  color: BeeTokens.textTertiary(context),
+                ),
                 SizedBox(width: 6.0.scaled(context, ref)),
                 Expanded(
                   child: Text(
@@ -1831,26 +2010,35 @@ class _HiddenAccountsSectionState
                 ),
                 AnimatedRotation(
                   turns: _expanded ? 0.25 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(Icons.chevron_right,
-                      size: 18.0.scaled(context, ref),
-                      color: BeeTokens.iconTertiary(context)),
+                  duration:
+                      LiquidTheme.isActive(context) &&
+                          (!LiquidTheme.of(context).animationsEnabled ||
+                              MediaQuery.disableAnimationsOf(context))
+                      ? Duration.zero
+                      : const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.chevron_right,
+                    size: 18.0.scaled(context, ref),
+                    color: BeeTokens.iconTertiary(context),
+                  ),
                 ),
               ],
             ),
           ),
         ),
         if (_expanded)
-          ...widget.accounts.map((account) => _AccountCard(
-                key: ValueKey('hidden_${account.id}'),
-                account: account,
-                primaryColor: widget.primaryColor,
-                typeColor: mutedColor,
-                stats: widget.allStats?[account.id],
-                onTap: () => widget.onTap(account),
-                onEdit: () => widget.onEdit(account),
-                onRestore: () => widget.onRestore(account),
-              )),
+          ...widget.accounts.map(
+            (account) => _AccountCard(
+              key: ValueKey('hidden_${account.id}'),
+              account: account,
+              primaryColor: widget.primaryColor,
+              typeColor: mutedColor,
+              stats: widget.allStats?[account.id],
+              onTap: () => widget.onTap(account),
+              onEdit: () => widget.onEdit(account),
+              onRestore: () => widget.onRestore(account),
+            ),
+          ),
       ],
     );
   }
@@ -1886,6 +2074,7 @@ class _AccountCard extends ConsumerWidget {
   final ({double balance, double expense, double income})? stats;
   final VoidCallback onTap;
   final VoidCallback onEdit;
+
   /// 「已隐藏」分区卡片的恢复回调(账户隐藏 #240)。非空时才渲染「已隐藏」
   /// 灰标 + 恢复按钮;在用卡片(account.hidden==false)不受影响。
   final VoidCallback? onRestore;
@@ -1905,165 +2094,236 @@ class _AccountCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final isDark = BeeTokens.isDark(context);
+    final liquid = LiquidTheme.isActive(context);
 
     return GestureDetector(
-      onTap: onTap,
-      onLongPress: onEdit,
-      child: Container(
-        margin: EdgeInsets.only(bottom: 8.0.scaled(context, ref)),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? [
-                    typeColor.withValues(alpha: 0.25),
-                    typeColor.withValues(alpha: 0.12),
-                  ]
-                : [typeColor, typeColor.withValues(alpha: 0.8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12.0.scaled(context, ref)),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: typeColor.withValues(alpha: 0.15),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+      onTap: () {
+        if (liquid) GlassFeedback.selection(context);
+        onTap();
+      },
+      onLongPress: () {
+        if (liquid) GlassFeedback.impact(context);
+        onEdit();
+      },
+      child: GlassPressEffect(
+        enabled: liquid,
+        scale: .985,
+        child: Container(
+          margin: EdgeInsets.only(bottom: 8.0.scaled(context, ref)),
+          decoration: liquid
+              ? BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF202B3B).withValues(alpha: .90)
+                      : Colors.white.withValues(alpha: .86),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: .10)
+                        : Colors.white,
                   ),
-                ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12.0.scaled(context, ref)),
-          child: Stack(
-            children: [
-              // 装饰圆圈
-              Positioned(
-                right: -20,
-                top: -20,
-                child: Container(
-                  width: 80.0.scaled(context, ref),
-                  height: 80.0.scaled(context, ref),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: typeColor.withValues(alpha: .04),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                )
+              : BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [
+                            typeColor.withValues(alpha: 0.25),
+                            typeColor.withValues(alpha: 0.12),
+                          ]
+                        : [typeColor, typeColor.withValues(alpha: 0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    12.0.scaled(context, ref),
+                  ),
+                  boxShadow: isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: typeColor.withValues(alpha: 0.15),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(
+              (liquid ? 24.0 : 12.0).scaled(context, ref),
+            ),
+            child: Stack(
+              children: [
+                // 装饰圆圈
+                Positioned(
+                  right: -20,
+                  top: -20,
+                  child: Container(
+                    width: 80.0.scaled(context, ref),
+                    height: 80.0.scaled(context, ref),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: liquid
+                          ? typeColor.withValues(alpha: .06)
+                          : Colors.white.withValues(alpha: isDark ? 0.05 : 0.1),
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 14.0.scaled(context, ref),
-                  vertical: 12.0.scaled(context, ref),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 顶部行：图标 + 名称 + 编辑
-                    Row(
-                      children: [
-                        Container(
-                          width: 32.0.scaled(context, ref),
-                          height: 32.0.scaled(context, ref),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: AccountTypeIcon(
-                              type: account.type,
-                              size: 18.0.scaled(context, ref),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 10.0.scaled(context, ref)),
-                        Expanded(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  account.name,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.white,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              SizedBox(width: 8.0.scaled(context, ref)),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 5.0.scaled(context, ref),
-                                  vertical: 1.0.scaled(context, ref),
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4.0.scaled(context, ref)),
-                                ),
-                                child: Text(
-                                  getCurrencyName(account.currency, context),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: isDark ? Colors.white.withValues(alpha: 0.8) : Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: onEdit,
-                          child: Container(
-                            padding: EdgeInsets.all(6.0.scaled(context, ref)),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: (liquid ? 18.0 : 14.0).scaled(context, ref),
+                    vertical: (liquid ? 16.0 : 12.0).scaled(context, ref),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 顶部行：图标 + 名称 + 编辑
+                      Row(
+                        children: [
+                          Container(
+                            width: 32.0.scaled(context, ref),
+                            height: 32.0.scaled(context, ref),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
+                              color: LiquidTheme.isActive(context)
+                                  ? typeColor.withValues(alpha: .10)
+                                  : Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              Icons.edit,
-                              color: isDark ? Colors.white.withValues(alpha: 0.8) : Colors.white,
-                              size: 14.0.scaled(context, ref),
+                            child: Center(
+                              child: AccountTypeIcon(
+                                type: account.type,
+                                color: liquid ? typeColor : null,
+                                size: 18.0.scaled(context, ref),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 10.0.scaled(context, ref)),
-                    // 已隐藏标签 + 恢复按钮(账户隐藏 #240,D2)
-                    if (account.hidden) ...[
-                      _buildHiddenBadgeRow(context, ref, l10n, isDark),
-                      SizedBox(height: 8.0.scaled(context, ref)),
-                    ],
-                    // 信用卡：进度条 + 额度信息
-                    if (account.type == 'credit_card' && stats != null)
-                      _buildCreditCardStats(context, ref, l10n, isDark)
-                    // 估值账户：仅显示当前估值
-                    else if (isValuationOnlyType(account.type) && stats != null)
-                      _buildValuationStats(context, ref, l10n, isDark)
-                    // 普通账户：余额/收入/支出
-                    else if (stats != null)
-                      _buildNormalStats(context, ref, l10n, isDark)
-                    else
-                      Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 4.0.scaled(context, ref)),
-                          child: const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              strokeWidth: 2,
+                          SizedBox(width: 10.0.scaled(context, ref)),
+                          Expanded(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    account.name,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: LiquidTheme.isActive(context)
+                                          ? BeeTokens.textPrimary(context)
+                                          : isDark
+                                          ? Colors.white.withValues(alpha: 0.9)
+                                          : Colors.white,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                SizedBox(width: 8.0.scaled(context, ref)),
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 5.0.scaled(context, ref),
+                                    vertical: 1.0.scaled(context, ref),
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: LiquidTheme.isActive(context)
+                                        ? typeColor.withValues(alpha: .10)
+                                        : Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(
+                                      4.0.scaled(context, ref),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    getCurrencyName(account.currency, context),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: LiquidTheme.isActive(context)
+                                          ? BeeTokens.textSecondary(context)
+                                          : isDark
+                                          ? Colors.white.withValues(alpha: 0.8)
+                                          : Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
+                          GestureDetector(
+                            onTap: () {
+                              if (liquid) GlassFeedback.impact(context);
+                              onEdit();
+                            },
+                            child: Container(
+                              constraints: liquid
+                                  ? const BoxConstraints(
+                                      minWidth: 48,
+                                      minHeight: 48,
+                                    )
+                                  : null,
+                              padding: EdgeInsets.all(6.0.scaled(context, ref)),
+                              decoration: BoxDecoration(
+                                color: LiquidTheme.isActive(context)
+                                    ? typeColor.withValues(alpha: .10)
+                                    : Colors.white.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.edit,
+                                color: LiquidTheme.isActive(context)
+                                    ? BeeTokens.textSecondary(context)
+                                    : isDark
+                                    ? Colors.white.withValues(alpha: 0.8)
+                                    : Colors.white,
+                                size: 14.0.scaled(context, ref),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                  ],
+                      SizedBox(height: 10.0.scaled(context, ref)),
+                      // 已隐藏标签 + 恢复按钮(账户隐藏 #240,D2)
+                      if (account.hidden) ...[
+                        _buildHiddenBadgeRow(context, ref, l10n, isDark),
+                        SizedBox(height: 8.0.scaled(context, ref)),
+                      ],
+                      // 信用卡：进度条 + 额度信息
+                      if (account.type == 'credit_card' && stats != null)
+                        _buildCreditCardStats(context, ref, l10n, isDark)
+                      // 估值账户：仅显示当前估值
+                      else if (isValuationOnlyType(account.type) &&
+                          stats != null)
+                        _buildValuationStats(context, ref, l10n, isDark)
+                      // 普通账户：余额/收入/支出
+                      else if (stats != null)
+                        _buildNormalStats(context, ref, l10n, isDark)
+                      else
+                        Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: 4.0.scaled(context, ref),
+                            ),
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  liquid ? primaryColor : Colors.white,
+                                ),
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -2072,8 +2332,16 @@ class _AccountCard extends ConsumerWidget {
 
   /// 「已隐藏」灰标 + 恢复按钮(账户隐藏 #240)。仅 account.hidden==true 时被调用。
   Widget _buildHiddenBadgeRow(
-      BuildContext context, WidgetRef ref, AppLocalizations l10n, bool isDark) {
-    final textColor = isDark ? Colors.white.withValues(alpha: 0.9) : Colors.white;
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    final textColor = LiquidTheme.isActive(context)
+        ? BeeTokens.textPrimary(context)
+        : isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : Colors.white;
     return Row(
       children: [
         Container(
@@ -2097,8 +2365,14 @@ class _AccountCard extends ConsumerWidget {
         const Spacer(),
         if (onRestore != null)
           GestureDetector(
-            onTap: onRestore,
+            onTap: () {
+              if (LiquidTheme.isActive(context)) GlassFeedback.impact(context);
+              onRestore?.call();
+            },
             child: Container(
+              constraints: LiquidTheme.isActive(context)
+                  ? const BoxConstraints(minHeight: 48)
+                  : null,
               padding: EdgeInsets.symmetric(
                 horizontal: 10.0.scaled(context, ref),
                 vertical: 4.0.scaled(context, ref),
@@ -2110,8 +2384,11 @@ class _AccountCard extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.replay,
-                      size: 12.0.scaled(context, ref), color: textColor),
+                  Icon(
+                    Icons.replay,
+                    size: 12.0.scaled(context, ref),
+                    color: textColor,
+                  ),
                   SizedBox(width: 4.0.scaled(context, ref)),
                   Text(
                     l10n.accountRestore,
@@ -2129,9 +2406,22 @@ class _AccountCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildNormalStats(BuildContext context, WidgetRef ref, AppLocalizations l10n, bool isDark) {
-    final textColor = isDark ? Colors.white.withValues(alpha: 0.9) : Colors.white;
-    final labelColor = isDark ? Colors.white.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.8);
+  Widget _buildNormalStats(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    final textColor = LiquidTheme.isActive(context)
+        ? BeeTokens.textPrimary(context)
+        : isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : Colors.white;
+    final labelColor = LiquidTheme.isActive(context)
+        ? BeeTokens.textSecondary(context)
+        : isDark
+        ? Colors.white.withValues(alpha: 0.6)
+        : Colors.white.withValues(alpha: 0.8);
 
     return Row(
       children: [
@@ -2148,7 +2438,9 @@ class _AccountCard extends ConsumerWidget {
         Container(
           width: 1,
           height: 24.0.scaled(context, ref),
-          color: Colors.white.withValues(alpha: 0.2),
+          color: LiquidTheme.isActive(context)
+              ? typeColor.withValues(alpha: .10)
+              : Colors.white.withValues(alpha: 0.2),
         ),
         Expanded(
           child: _CardStat(
@@ -2163,7 +2455,9 @@ class _AccountCard extends ConsumerWidget {
         Container(
           width: 1,
           height: 24.0.scaled(context, ref),
-          color: Colors.white.withValues(alpha: 0.2),
+          color: LiquidTheme.isActive(context)
+              ? typeColor.withValues(alpha: .10)
+              : Colors.white.withValues(alpha: 0.2),
         ),
         Expanded(
           child: _CardStat(
@@ -2179,12 +2473,27 @@ class _AccountCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildValuationStats(BuildContext context, WidgetRef ref, AppLocalizations l10n, bool isDark) {
-    final textColor = isDark ? Colors.white.withValues(alpha: 0.9) : Colors.white;
-    final labelColor = isDark ? Colors.white.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.8);
+  Widget _buildValuationStats(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    final textColor = LiquidTheme.isActive(context)
+        ? BeeTokens.textPrimary(context)
+        : isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : Colors.white;
+    final labelColor = LiquidTheme.isActive(context)
+        ? BeeTokens.textSecondary(context)
+        : isDark
+        ? Colors.white.withValues(alpha: 0.6)
+        : Colors.white.withValues(alpha: 0.8);
     final isLiability = isLiabilityType(account.type);
     final displayValue = isLiability ? stats!.balance.abs() : stats!.balance;
-    final label = isLiability ? l10n.valuationCurrentDebt : l10n.valuationCurrentValue;
+    final label = isLiability
+        ? l10n.valuationCurrentDebt
+        : l10n.valuationCurrentValue;
 
     return Row(
       children: [
@@ -2193,13 +2502,7 @@ class _AccountCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: labelColor,
-                ),
-              ),
+              Text(label, style: TextStyle(fontSize: 11, color: labelColor)),
               SizedBox(height: 2.0.scaled(context, ref)),
               AmountText(
                 value: displayValue,
@@ -2228,10 +2531,7 @@ class _AccountCard extends ConsumerWidget {
               SizedBox(height: 2.0.scaled(context, ref)),
               Text(
                 '${account.updatedAt!.month.toString().padLeft(2, '0')}-${account.updatedAt!.day.toString().padLeft(2, '0')}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: labelColor,
-                ),
+                style: TextStyle(fontSize: 11, color: labelColor),
               ),
             ],
           ),
@@ -2239,10 +2539,23 @@ class _AccountCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildCreditCardStats(BuildContext context, WidgetRef ref, AppLocalizations l10n, bool isDark) {
+  Widget _buildCreditCardStats(
+    BuildContext context,
+    WidgetRef ref,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
     final used = stats!.balance < 0 ? -stats!.balance : 0.0;
-    final textColor = isDark ? Colors.white.withValues(alpha: 0.9) : Colors.white;
-    final labelColor = isDark ? Colors.white.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.8);
+    final textColor = LiquidTheme.isActive(context)
+        ? BeeTokens.textPrimary(context)
+        : isDark
+        ? Colors.white.withValues(alpha: 0.9)
+        : Colors.white;
+    final labelColor = LiquidTheme.isActive(context)
+        ? BeeTokens.textSecondary(context)
+        : isDark
+        ? Colors.white.withValues(alpha: 0.6)
+        : Colors.white.withValues(alpha: 0.8);
 
     // 信用卡按 type 判定;无额度时仅显示当前欠款,不再 fallthrough 到收入/支出卡
     final creditLimit = account.creditLimit;
@@ -2260,7 +2573,9 @@ class _AccountCard extends ConsumerWidget {
       );
     }
 
-    final usageRate = creditLimit > 0 ? (used / creditLimit).clamp(0.0, 1.0) : 0.0;
+    final usageRate = creditLimit > 0
+        ? (used / creditLimit).clamp(0.0, 1.0)
+        : 0.0;
     return Column(
       children: [
         // 进度条
@@ -2270,7 +2585,9 @@ class _AccountCard extends ConsumerWidget {
             value: usageRate,
             backgroundColor: Colors.white.withValues(alpha: 0.2),
             valueColor: AlwaysStoppedAnimation<Color>(
-              Colors.white.withValues(alpha: 0.8),
+              LiquidTheme.isActive(context)
+                  ? typeColor
+                  : Colors.white.withValues(alpha: 0.8),
             ),
             minHeight: 4.0.scaled(context, ref),
           ),
@@ -2291,7 +2608,9 @@ class _AccountCard extends ConsumerWidget {
             Container(
               width: 1,
               height: 24.0.scaled(context, ref),
-              color: Colors.white.withValues(alpha: 0.2),
+              color: LiquidTheme.isActive(context)
+                  ? typeColor.withValues(alpha: .10)
+                  : Colors.white.withValues(alpha: 0.2),
             ),
             Expanded(
               child: _CardStat(
@@ -2306,7 +2625,9 @@ class _AccountCard extends ConsumerWidget {
             Container(
               width: 1,
               height: 24.0.scaled(context, ref),
-              color: Colors.white.withValues(alpha: 0.2),
+              color: LiquidTheme.isActive(context)
+                  ? typeColor.withValues(alpha: .10)
+                  : Colors.white.withValues(alpha: 0.2),
             ),
             Expanded(
               child: _CardStat(
@@ -2332,6 +2653,7 @@ class _CardStat extends StatelessWidget {
   final Color textColor;
   final Color labelColor;
   final WidgetRef ref;
+
   /// 账户的货币代码 — 用来锁住 formatBalance 的格式;不传则 fallback 到账本货币。
   final String? currencyCode;
 
@@ -2361,13 +2683,7 @@ class _CardStat extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: labelColor,
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 11, color: labelColor)),
       ],
     );
   }
@@ -2397,7 +2713,9 @@ class _CompactDefaultAccount extends ConsumerWidget {
       data: (defaultAccountId) {
         db.Account? defaultAccount;
         if (defaultAccountId != null) {
-          defaultAccount = accounts.where((a) => a.id == defaultAccountId).firstOrNull;
+          defaultAccount = accounts
+              .where((a) => a.id == defaultAccountId)
+              .firstOrNull;
         }
 
         final title = isIncome
@@ -2444,37 +2762,60 @@ class _CompactDefaultAccount extends ConsumerWidget {
     );
   }
 
-  void _showPicker(BuildContext context, WidgetRef ref, List<db.Account> accounts, int? currentDefaultId) {
+  void _showPicker(
+    BuildContext context,
+    WidgetRef ref,
+    List<db.Account> accounts,
+    int? currentDefaultId,
+  ) {
     final l10n = AppLocalizations.of(context);
     final isIncome = type == 'income';
-    final title = isIncome ? l10n.accountDefaultIncomeTitle : l10n.accountDefaultExpenseTitle;
+    final title = isIncome
+        ? l10n.accountDefaultIncomeTitle
+        : l10n.accountDefaultExpenseTitle;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         backgroundColor: BeeTokens.surfaceElevated(context),
-        title: Text(title, style: TextStyle(color: BeeTokens.textPrimary(context))),
+        title: Text(
+          title,
+          style: TextStyle(color: BeeTokens.textPrimary(context)),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
                 dense: true,
-                leading: Icon(Icons.block, color: BeeTokens.iconSecondary(context)),
+                leading: Icon(
+                  Icons.block,
+                  color: BeeTokens.iconSecondary(context),
+                ),
                 title: Text(
                   l10n.accountDefaultNone,
                   style: TextStyle(
-                    color: currentDefaultId == null ? primaryColor : BeeTokens.textPrimary(context),
-                    fontWeight: currentDefaultId == null ? FontWeight.w600 : FontWeight.normal,
+                    color: currentDefaultId == null
+                        ? primaryColor
+                        : BeeTokens.textPrimary(context),
+                    fontWeight: currentDefaultId == null
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
-                trailing: currentDefaultId == null ? Icon(Icons.check, color: primaryColor) : null,
+                trailing: currentDefaultId == null
+                    ? Icon(Icons.check, color: primaryColor)
+                    : null,
                 onTap: () async {
                   if (isIncome) {
-                    await ref.read(defaultAccountSetterProvider).setDefaultIncomeAccountId(null);
+                    await ref
+                        .read(defaultAccountSetterProvider)
+                        .setDefaultIncomeAccountId(null);
                     ref.invalidate(defaultIncomeAccountIdProvider);
                   } else {
-                    await ref.read(defaultAccountSetterProvider).setDefaultExpenseAccountId(null);
+                    await ref
+                        .read(defaultAccountSetterProvider)
+                        .setDefaultExpenseAccountId(null);
                     ref.invalidate(defaultExpenseAccountIdProvider);
                   }
                   if (context.mounted) Navigator.pop(context);
@@ -2484,24 +2825,31 @@ class _CompactDefaultAccount extends ConsumerWidget {
                 final isSelected = account.id == currentDefaultId;
                 return ListTile(
                   dense: true,
-                  leading: AccountTypeIcon(
-                    type: account.type,
-                    size: 24,
-                  ),
+                  leading: AccountTypeIcon(type: account.type, size: 24),
                   title: Text(
                     account.name,
                     style: TextStyle(
-                      color: isSelected ? primaryColor : BeeTokens.textPrimary(context),
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected
+                          ? primaryColor
+                          : BeeTokens.textPrimary(context),
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
-                  trailing: isSelected ? Icon(Icons.check, color: primaryColor) : null,
+                  trailing: isSelected
+                      ? Icon(Icons.check, color: primaryColor)
+                      : null,
                   onTap: () async {
                     if (isIncome) {
-                      await ref.read(defaultAccountSetterProvider).setDefaultIncomeAccountId(account.id);
+                      await ref
+                          .read(defaultAccountSetterProvider)
+                          .setDefaultIncomeAccountId(account.id);
                       ref.invalidate(defaultIncomeAccountIdProvider);
                     } else {
-                      await ref.read(defaultAccountSetterProvider).setDefaultExpenseAccountId(account.id);
+                      await ref
+                          .read(defaultAccountSetterProvider)
+                          .setDefaultExpenseAccountId(account.id);
                       ref.invalidate(defaultExpenseAccountIdProvider);
                     }
                     if (context.mounted) Navigator.pop(context);
@@ -2537,4 +2885,3 @@ class _BeeAssetsHeaderEntry extends StatelessWidget {
     );
   }
 }
-

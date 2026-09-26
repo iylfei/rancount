@@ -1,15 +1,17 @@
+library;
+
+
 /// 重构后的账本列表页面
 ///
 /// 集成本地账本 + 远程账本管理
-library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_cloud_sync/flutter_cloud_sync.dart' show CloudBackendType;
+import 'package:flutter_cloud_sync/flutter_cloud_sync.dart'
+    show CloudBackendType;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../providers.dart';
-import '../../providers/currency_providers.dart';
 import '../../models/ledger_display_item.dart';
 import '../../cloud/transactions_sync_manager.dart';
 import '../../cloud/sync_service.dart';
@@ -66,7 +68,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
     // 监听导入进度，当导入完成时自动刷新账本列表和同步状态
     ref.listen<ImportProgress>(importProgressProvider, (previous, next) {
       // 检测到导入完成（从运行中变为完成状态）
-      if (previous?.running == true && next.isJustCompleted && next.ledgerId != null) {
+      if (previous?.running == true &&
+          next.isJustCompleted &&
+          next.ledgerId != null) {
         print('🟢 [LedgersPage] 检测到导入完成: ledgerId=${next.ledgerId}');
         // 触发同步状态刷新和账本列表刷新
         PostProcessor.sync(ref, ledgerId: next.ledgerId!);
@@ -93,7 +97,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                 onPressed: () {
                   ref.read(ledgerListRefreshProvider.notifier).state++;
                 },
-                icon: Icon(Icons.refresh, color: BeeTokens.textPrimary(context)),
+                icon: Icon(
+                  Icons.refresh,
+                  color: BeeTokens.textPrimary(context),
+                ),
               ),
             ],
           ),
@@ -183,16 +190,14 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
     Object? remoteError,
   }) {
     // 共享账本是 BeeCount Cloud 独有能力(server 端的成员管理 / WS fan-out
-     // 都在 BeeCount Cloud 后端),非 BeeCount Cloud 用户(local / WebDAV /
-     // S3 / Supabase 等)就算扫码也走不通,按钮藏起来避免误导。
+    // 都在 BeeCount Cloud 后端),非 BeeCount Cloud 用户(local / WebDAV /
+    // S3 / Supabase 等)就算扫码也走不通,按钮藏起来避免误导。
     final cloudConfigAsync = ref.watch(activeCloudConfigProvider);
     final isBeeCountCloud =
         cloudConfigAsync.valueOrNull?.type == CloudBackendType.beecountCloud;
 
     return ListView(
-      padding: EdgeInsets.symmetric(
-        vertical: 8.0.scaled(context, ref),
-      ),
+      padding: EdgeInsets.symmetric(vertical: 8.0.scaled(context, ref)),
       children: [
         // §7 共享账本入口 — 跟 web 端 LedgersSection 顶部"加入共享账本"
         // 按钮一致,放在列表顶部,比 header 角落 icon 显眼。
@@ -228,28 +233,32 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
             title: AppLocalizations.of(context).ledgersLocal,
             trailing: localLedgers.length.toString(),
           ),
-          ...localLedgers.map((ledger) => LedgerCard(
-                ledger: ledger,
-                selected: !ledger.isRemoteOnly && ledger.id == currentId,
-                onTap: () => _handleLocalLedgerTap(ledger),
-                onLongPress: () => _showLocalLedgerActions(context, ledger),
-                onMore: () => _showLocalLedgerActions(context, ledger),
-              )),
+          ...localLedgers.map(
+            (ledger) => LedgerCard(
+              ledger: ledger,
+              selected: !ledger.isRemoteOnly && ledger.id == currentId,
+              onTap: () => _handleLocalLedgerTap(ledger),
+              onLongPress: () => _showLocalLedgerActions(context, ledger),
+              onMore: () => _showLocalLedgerActions(context, ledger),
+            ),
+          ),
         ],
 
         // 远程账本区域（仅在加载中或有远程账本时显示）
-        if (remoteLoading || remoteLedgers.isNotEmpty || remoteError != null) ...[
+        if (remoteLoading ||
+            remoteLedgers.isNotEmpty ||
+            remoteError != null) ...[
           SizedBox(height: 16.0.scaled(context, ref)),
           _SectionHeader(
             title: AppLocalizations.of(context).ledgersRemote,
-            trailing: remoteLoading
-                ? null
-                : remoteLedgers.length.toString(),
+            trailing: remoteLoading ? null : remoteLedgers.length.toString(),
             action: remoteLedgers.isNotEmpty
                 ? TextButton.icon(
                     icon: const Icon(Icons.cloud_download, size: 18),
                     label: Text(AppLocalizations.of(context).ledgersRestoreAll),
-                    onPressed: _isRestoring ? null : () => _handleBatchRestore(context),
+                    onPressed: _isRestoring
+                        ? null
+                        : () => _handleBatchRestore(context),
                   )
                 : null,
           ),
@@ -257,10 +266,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
           // 远程账本加载状态
           if (remoteLoading)
             Padding(
-              padding: EdgeInsets.symmetric(vertical: 24.0.scaled(context, ref)),
-              child: const Center(
-                child: CircularProgressIndicator(),
+              padding: EdgeInsets.symmetric(
+                vertical: 24.0.scaled(context, ref),
               ),
+              child: const Center(child: CircularProgressIndicator()),
             )
           else if (remoteError != null)
             Padding(
@@ -273,12 +282,14 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
               ),
             )
           else
-            ...remoteLedgers.map((ledger) => LedgerCard(
-                  ledger: ledger,
-                  onTap: () => _handleRemoteLedgerTap(context, ledger),
-                  onLongPress: () => _showRemoteLedgerActions(context, ledger),
-                  onMore: () => _showRemoteLedgerActions(context, ledger),
-                )),
+            ...remoteLedgers.map(
+              (ledger) => LedgerCard(
+                ledger: ledger,
+                onTap: () => _handleRemoteLedgerTap(context, ledger),
+                onLongPress: () => _showRemoteLedgerActions(context, ledger),
+                onMore: () => _showRemoteLedgerActions(context, ledger),
+              ),
+            ),
         ],
 
         SizedBox(height: 60.0.scaled(context, ref)),
@@ -301,44 +312,48 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
     return Stack(
       children: [
         ListView(
-          padding: EdgeInsets.symmetric(
-            vertical: 8.0.scaled(context, ref),
-          ),
+          padding: EdgeInsets.symmetric(vertical: 8.0.scaled(context, ref)),
           children: [
-                    // 账本区域
-                    if (localLedgers.isNotEmpty) ...[
-                      _SectionHeader(
-                        title: AppLocalizations.of(context).ledgersLocal,
-                        trailing: localLedgers.length.toString(),
-                      ),
-                      ...localLedgers.map((ledger) => LedgerCard(
-                            ledger: ledger,
-                            selected: !ledger.isRemoteOnly && ledger.id == currentId,
-                            onTap: () => _handleLocalLedgerTap(ledger),
-                            onLongPress: () => _showLocalLedgerActions(context, ledger),
-                            onMore: () => _showLocalLedgerActions(context, ledger),
-                          )),
-                    ],
+            // 账本区域
+            if (localLedgers.isNotEmpty) ...[
+              _SectionHeader(
+                title: AppLocalizations.of(context).ledgersLocal,
+                trailing: localLedgers.length.toString(),
+              ),
+              ...localLedgers.map(
+                (ledger) => LedgerCard(
+                  ledger: ledger,
+                  selected: !ledger.isRemoteOnly && ledger.id == currentId,
+                  onTap: () => _handleLocalLedgerTap(ledger),
+                  onLongPress: () => _showLocalLedgerActions(context, ledger),
+                  onMore: () => _showLocalLedgerActions(context, ledger),
+                ),
+              ),
+            ],
 
-                    // 远程账本区域
-                    if (remoteLedgers.isNotEmpty) ...[
-                      SizedBox(height: 16.0.scaled(context, ref)),
-                      _SectionHeader(
-                        title: AppLocalizations.of(context).ledgersRemote,
-                        trailing: remoteLedgers.length.toString(),
-                        action: TextButton.icon(
-                          icon: const Icon(Icons.cloud_download, size: 18),
-                          label: Text(AppLocalizations.of(context).ledgersRestoreAll),
-                          onPressed: _isRestoring ? null : () => _handleBatchRestore(context),
-                        ),
-                      ),
-                      ...remoteLedgers.map((ledger) => LedgerCard(
-                            ledger: ledger,
-                            onTap: () => _handleRemoteLedgerTap(context, ledger),
-                            onLongPress: () => _showRemoteLedgerActions(context, ledger),
-                            onMore: () => _showRemoteLedgerActions(context, ledger),
-                          )),
-                    ],
+            // 远程账本区域
+            if (remoteLedgers.isNotEmpty) ...[
+              SizedBox(height: 16.0.scaled(context, ref)),
+              _SectionHeader(
+                title: AppLocalizations.of(context).ledgersRemote,
+                trailing: remoteLedgers.length.toString(),
+                action: TextButton.icon(
+                  icon: const Icon(Icons.cloud_download, size: 18),
+                  label: Text(AppLocalizations.of(context).ledgersRestoreAll),
+                  onPressed: _isRestoring
+                      ? null
+                      : () => _handleBatchRestore(context),
+                ),
+              ),
+              ...remoteLedgers.map(
+                (ledger) => LedgerCard(
+                  ledger: ledger,
+                  onTap: () => _handleRemoteLedgerTap(context, ledger),
+                  onLongPress: () => _showRemoteLedgerActions(context, ledger),
+                  onMore: () => _showRemoteLedgerActions(context, ledger),
+                ),
+              ),
+            ],
 
             SizedBox(height: 60.0.scaled(context, ref)),
           ],
@@ -349,9 +364,7 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
           Positioned.fill(
             child: Container(
               color: BeeTokens.surfaceElevated(context).withValues(alpha: 0.7),
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
           ),
       ],
@@ -375,15 +388,25 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
     ref.read(currentLedgerIdProvider.notifier).state = ledger.id;
     // 清除缓存的交易数据，确保切换后刷新
     ref.invalidate(cachedTransactionsWithCategoryProvider);
-    showToast(context, AppLocalizations.of(context).ledgersSwitched(translateLedgerName(context, ledger.name)));
+    showToast(
+      context,
+      AppLocalizations.of(
+        context,
+      ).ledgersSwitched(translateLedgerName(context, ledger.name)),
+    );
   }
 
   /// 处理远程账本点击 - 下载
-  Future<void> _handleRemoteLedgerTap(BuildContext context, LedgerDisplayItem ledger) async {
+  Future<void> _handleRemoteLedgerTap(
+    BuildContext context,
+    LedgerDisplayItem ledger,
+  ) async {
     final confirmed = await AppDialog.confirm<bool>(
       context,
       title: AppLocalizations.of(context).ledgersDownloadTitle,
-      message: AppLocalizations.of(context).ledgersDownloadMessage(translateLedgerName(context, ledger.name)),
+      message: AppLocalizations.of(
+        context,
+      ).ledgersDownloadMessage(translateLedgerName(context, ledger.name)),
     );
 
     if (confirmed != true || !mounted) return;
@@ -421,7 +444,12 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       ref.read(statsRefreshProvider.notifier).state++;
       ref.read(syncStatusRefreshProvider.notifier).state++;
 
-      showToast(context, AppLocalizations.of(context).ledgersDownloadSuccess(translateLedgerName(context, ledger.name)));
+      showToast(
+        context,
+        AppLocalizations.of(
+          context,
+        ).ledgersDownloadSuccess(translateLedgerName(context, ledger.name)),
+      );
     } catch (e) {
       if (!mounted) return;
       await AppDialog.error(
@@ -433,7 +461,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
   }
 
   /// 显示本地账本操作菜单
-  Future<void> _showLocalLedgerActions(BuildContext context, LedgerDisplayItem ledger) async {
+  Future<void> _showLocalLedgerActions(
+    BuildContext context,
+    LedgerDisplayItem ledger,
+  ) async {
     // v24 共享账本权限矩阵(详见 .docs/shared-ledger/01-product-design.md §6):
     // - Owner / 单人账本:edit / clear / deleteLocal / delete + members 全部可用
     // - Editor(共享账本 + myRole != owner):仅 members(看成员/退出),
@@ -442,14 +473,15 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
     // 共享账本/成员管理是 BeeCount Cloud 独有能力,非 BeeCount Cloud 模式
     // (local / WebDAV / S3 / Supabase 等)直接隐藏这些入口。
     final cloudConfig = ref.read(activeCloudConfigProvider).valueOrNull;
-    final isBeeCountCloud =
-        cloudConfig?.type == CloudBackendType.beecountCloud;
+    final isBeeCountCloud = cloudConfig?.type == CloudBackendType.beecountCloud;
     final action = await showDialog<String>(
       context: context,
       builder: (dctx) {
         final primary = Theme.of(dctx).colorScheme.primary;
         return SimpleDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(AppLocalizations.of(context).ledgersActions),
           children: [
             if (isOwner)
@@ -507,8 +539,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                     children: [
                       Icon(Icons.insert_chart_outlined, color: primary),
                       const SizedBox(width: 8),
-                      Text(AppLocalizations.of(context)
-                          .sharedMembersStatsTitle),
+                      Text(
+                        AppLocalizations.of(context).sharedMembersStatsTitle,
+                      ),
                     ],
                   ),
                 ),
@@ -543,7 +576,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                 onPressed: () => Navigator.pop(dctx, 'delete'),
                 child: Row(
                   children: [
-                    const Icon(Icons.delete_forever_outlined, color: Colors.redAccent),
+                    const Icon(
+                      Icons.delete_forever_outlined,
+                      color: Colors.redAccent,
+                    ),
                     const SizedBox(width: 8),
                     Text(AppLocalizations.of(context).ledgersDelete),
                   ],
@@ -567,9 +603,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
         ref.invalidate(currentLedgerProvider);
       }
       if (mounted) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const BudgetPage()),
-        );
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const BudgetPage()));
       }
     } else if (action == 'members') {
       // 跳转成员管理 — 需要 ledger.syncId(server external_id)。本地仅 ledger
@@ -577,32 +613,44 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       final row = await ref.read(repositoryProvider).getLedgerById(ledger.id);
       final syncId = row?.syncId;
       if (syncId == null || syncId.isEmpty) {
-        if (mounted) showToast(context, AppLocalizations.of(context).sharedRequiresCloudSync);
+        if (mounted)
+          showToast(
+            context,
+            AppLocalizations.of(context).sharedRequiresCloudSync,
+          );
         return;
       }
       if (mounted) {
-        await Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => MemberListPage(
-            ledgerExternalId: syncId,
-            ledgerName: ledger.name,
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => MemberListPage(
+              ledgerExternalId: syncId,
+              ledgerName: ledger.name,
+            ),
           ),
-        ));
+        );
       }
     } else if (action == 'memberStats') {
       // 跟成员管理同源:取 ledger.syncId 再跳 MemberStatsPage。
       final row = await ref.read(repositoryProvider).getLedgerById(ledger.id);
       final syncId = row?.syncId;
       if (syncId == null || syncId.isEmpty) {
-        if (mounted) showToast(context, AppLocalizations.of(context).sharedRequiresCloudSync);
+        if (mounted)
+          showToast(
+            context,
+            AppLocalizations.of(context).sharedRequiresCloudSync,
+          );
         return;
       }
       if (mounted) {
-        await Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => MemberStatsPage(
-            ledgerExternalId: syncId,
-            ledgerName: ledger.name,
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => MemberStatsPage(
+              ledgerExternalId: syncId,
+              ledgerName: ledger.name,
+            ),
           ),
-        ));
+        );
       }
     } else if (action == 'clear') {
       await _handleClearLedger(context, ledger);
@@ -614,13 +662,18 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
   }
 
   /// 显示远程账本操作菜单
-  Future<void> _showRemoteLedgerActions(BuildContext context, LedgerDisplayItem ledger) async {
+  Future<void> _showRemoteLedgerActions(
+    BuildContext context,
+    LedgerDisplayItem ledger,
+  ) async {
     final action = await showDialog<String>(
       context: context,
       builder: (dctx) {
         final primary = Theme.of(dctx).colorScheme.primary;
         return SimpleDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(AppLocalizations.of(context).ledgersActions),
           children: [
             SimpleDialogOption(
@@ -637,7 +690,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
               onPressed: () => Navigator.pop(dctx, 'delete'),
               child: Row(
                 children: [
-                  const Icon(Icons.delete_forever_outlined, color: Colors.redAccent),
+                  const Icon(
+                    Icons.delete_forever_outlined,
+                    color: Colors.redAccent,
+                  ),
                   const SizedBox(width: 8),
                   Text(AppLocalizations.of(context).ledgersDeleteRemote),
                 ],
@@ -658,7 +714,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
   }
 
   /// 编辑账本
-  Future<void> _handleEditLedger(BuildContext context, LedgerDisplayItem ledger) async {
+  Future<void> _handleEditLedger(
+    BuildContext context,
+    LedgerDisplayItem ledger,
+  ) async {
     final repo = ref.read(repositoryProvider);
     final ledgerData = await repo.getLedgerById(ledger.id);
 
@@ -687,7 +746,7 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       final l10n = AppLocalizations.of(this.context);
       final confirmed = await showDialog<bool>(
         context: this.context,
-        builder: (dctx) => AlertDialog(
+        builder: (dctx) => BeeAlertDialog(
           title: Text(l10n.ledgerBaseCurrencyLabel),
           content: Text(
             '${l10n.ledgerCurrencyChangeRecalcHint}\n'
@@ -722,14 +781,21 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       // 的全部外币(无账户币种不在 usedCurrencies 里)。拉取失败也继续——
       // 缺汇率的笔退化 =amount,由 L11 横幅兜底,绝不保留旧口径错值。
       final foreign = await repo.getLedgerForeignCurrencies(ledger.id);
-      await refreshExchangeRatesFromUi(ref,
-          force: true, extraQuotes: {...foreign, ledgerData.currency.toUpperCase()});
+      await refreshExchangeRatesFromUi(
+        ref,
+        force: true,
+        extraQuotes: {...foreign, ledgerData.currency.toUpperCase()},
+      );
       // 全量重算(逐笔记 change,L13);缺汇率的笔留待 L11 横幅
       final n = await repo.recalcNativeAmountsForLedger(
-          ledger.id, result.currency);
+        ledger.id,
+        result.currency,
+      );
       if (mounted && n > 0) {
-        showToast(this.context,
-            AppLocalizations.of(this.context).recalcForeignTxDone(n));
+        showToast(
+          this.context,
+          AppLocalizations.of(this.context).recalcForeignTxDone(n),
+        );
       }
     }
 
@@ -784,12 +850,17 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
   }
 
   /// 清空账本（删除所有账单，保留账本）
-  Future<void> _handleClearLedger(BuildContext context, LedgerDisplayItem ledger) async {
+  Future<void> _handleClearLedger(
+    BuildContext context,
+    LedgerDisplayItem ledger,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final confirmed = await AppDialog.confirm<bool>(
       context,
       title: l10n.ledgersClearTitle,
-      message: l10n.ledgersClearMessage(translateLedgerName(context, ledger.name)),
+      message: l10n.ledgersClearMessage(
+        translateLedgerName(context, ledger.name),
+      ),
     );
 
     if (confirmed != true || !mounted) return;
@@ -798,8 +869,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       final repo = ref.read(repositoryProvider);
 
       // 删账单前先收集该账本附件 fileName(删行后就查不到了)
-      final attachmentFiles =
-          await repo.getAttachmentFileNamesByLedger(ledger.id);
+      final attachmentFiles = await repo.getAttachmentFileNamesByLedger(
+        ledger.id,
+      );
       // 删除该账本的所有账单(批量删行不删物理文件)
       await repo.clearLedgerTransactions(ledger.id);
       // 删行后精准清理这些附件的物理文件(引用计数)
@@ -819,16 +891,15 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       showToast(context, l10n.ledgersClearSuccess);
     } catch (e) {
       if (!mounted) return;
-      await AppDialog.error(
-        context,
-        title: l10n.commonFailed,
-        message: '$e',
-      );
+      await AppDialog.error(context, title: l10n.commonFailed, message: '$e');
     }
   }
 
   /// 仅删除本地账本（保留云端备份）
-  Future<void> _handleDeleteLocalLedgerOnly(BuildContext context, LedgerDisplayItem ledger) async {
+  Future<void> _handleDeleteLocalLedgerOnly(
+    BuildContext context,
+    LedgerDisplayItem ledger,
+  ) async {
     final l10n = AppLocalizations.of(context);
 
     final repo = ref.read(repositoryProvider);
@@ -837,7 +908,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
     final confirmed = await AppDialog.confirm<bool>(
       context,
       title: l10n.ledgersDeleteLocalTitle,
-      message: l10n.ledgersDeleteLocalMessage(translateLedgerName(context, ledger.name)),
+      message: l10n.ledgersDeleteLocalMessage(
+        translateLedgerName(context, ledger.name),
+      ),
     );
 
     if (confirmed != true || !mounted) return;
@@ -849,8 +922,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       // (currentLedgerProvider 查不到 ledger 返 null,首页胶囊回到「+ 新建账本」
       // 引导用户重新创建,符合"允许删完所有账本"的语义)。
       if (current == ledger.id) {
-        final remainAfterDelete =
-            allLedgers.where((l) => l.id != ledger.id).toList();
+        final remainAfterDelete = allLedgers
+            .where((l) => l.id != ledger.id)
+            .toList();
         if (remainAfterDelete.isNotEmpty) {
           ref.read(currentLedgerIdProvider.notifier).state =
               remainAfterDelete.first.id;
@@ -858,8 +932,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       }
 
       // 删账本前先收集其附件 fileName(删行后查不到)
-      final attachmentFiles =
-          await repo.getAttachmentFileNamesByLedger(ledger.id);
+      final attachmentFiles = await repo.getAttachmentFileNamesByLedger(
+        ledger.id,
+      );
       // 只删除本地账本，不删除云端备份
       await repo.deleteLedger(ledger.id);
       await _cleanupLedgerAttachmentFiles(attachmentFiles);
@@ -875,16 +950,15 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       showToast(context, l10n.ledgersDeleteLocalSuccess);
     } catch (e) {
       if (!mounted) return;
-      await AppDialog.error(
-        context,
-        title: l10n.commonFailed,
-        message: '$e',
-      );
+      await AppDialog.error(context, title: l10n.commonFailed, message: '$e');
     }
   }
 
   /// 删除本地账本
-  Future<void> _handleDeleteLocalLedger(BuildContext context, LedgerDisplayItem ledger) async {
+  Future<void> _handleDeleteLocalLedger(
+    BuildContext context,
+    LedgerDisplayItem ledger,
+  ) async {
     final l10n = AppLocalizations.of(context);
 
     final repo = ref.read(repositoryProvider);
@@ -906,8 +980,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       // 如果删除的是当前账本,有其他账本就切一下;没有就让 currentLedger 落空
       // (首页胶囊会回到「+ 新建账本」引导,允许删完所有账本)
       if (current == deletedLedgerId) {
-        final remainAfterDelete =
-            allLedgers.where((l) => l.id != deletedLedgerId).toList();
+        final remainAfterDelete = allLedgers
+            .where((l) => l.id != deletedLedgerId)
+            .toList();
         if (remainAfterDelete.isNotEmpty) {
           ref.read(currentLedgerIdProvider.notifier).state =
               remainAfterDelete.first.id;
@@ -927,8 +1002,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       // 删除本地账本(repo.deleteLedger 内部会捕获 syncId,登记
       // ledger_snapshot:delete + 级联 transaction:delete + budget:delete change)
       // 删账本前先收集其附件 fileName(删行后查不到)
-      final attachmentFiles =
-          await repo.getAttachmentFileNamesByLedger(deletedLedgerId);
+      final attachmentFiles = await repo.getAttachmentFileNamesByLedger(
+        deletedLedgerId,
+      );
       await repo.deleteLedger(deletedLedgerId);
       await _cleanupLedgerAttachmentFiles(attachmentFiles);
 
@@ -962,11 +1038,16 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
   }
 
   /// 删除远程账本
-  Future<void> _handleDeleteRemoteLedger(BuildContext context, LedgerDisplayItem ledger) async {
+  Future<void> _handleDeleteRemoteLedger(
+    BuildContext context,
+    LedgerDisplayItem ledger,
+  ) async {
     final confirmed = await AppDialog.confirm<bool>(
       context,
       title: AppLocalizations.of(context).ledgersDeleteRemoteConfirm,
-      message: AppLocalizations.of(context).ledgersDeleteRemoteMessage(translateLedgerName(context, ledger.name)),
+      message: AppLocalizations.of(
+        context,
+      ).ledgersDeleteRemoteMessage(translateLedgerName(context, ledger.name)),
     );
 
     if (confirmed != true || !mounted) return;
@@ -979,13 +1060,18 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
         throw Exception('Cloud sync not available');
       }
 
-      await syncService.deleteRemoteLedger(remotePath: 'ledger_${ledger.id}.json');
+      await syncService.deleteRemoteLedger(
+        remotePath: 'ledger_${ledger.id}.json',
+      );
 
       if (!mounted) return;
 
       ref.read(ledgerListRefreshProvider.notifier).state++;
 
-      showToast(context, AppLocalizations.of(context).ledgersDeleteRemoteSuccess);
+      showToast(
+        context,
+        AppLocalizations.of(context).ledgersDeleteRemoteSuccess,
+      );
     } catch (e) {
       if (!mounted) return;
       await AppDialog.error(
@@ -1005,7 +1091,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
     final confirmed = await AppDialog.confirm<bool>(
       context,
       title: AppLocalizations.of(context).ledgersRestoreAllTitle,
-      message: AppLocalizations.of(context).ledgersRestoreAllMessage(remoteLedgers.length),
+      message: AppLocalizations.of(
+        context,
+      ).ledgersRestoreAllMessage(remoteLedgers.length),
     );
 
     if (confirmed != true || !mounted) return;
@@ -1053,10 +1141,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       await AppDialog.info(
         context,
         title: AppLocalizations.of(context).ledgersRestoreComplete,
-        message: AppLocalizations.of(context).ledgersRestoreResult(
-          success,
-          failed,
-        ),
+        message: AppLocalizations.of(
+          context,
+        ).ledgersRestoreResult(success, failed),
       );
     } catch (e) {
       setState(() => _isRestoring = false);
@@ -1090,7 +1177,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       // 创建弹窗里也能选起始日:createLedger 不收该参数,创建后补写
       if (result.monthStartDay != 1) {
         await repo.updateLedger(
-            id: newLedgerId, monthStartDay: result.monthStartDay);
+          id: newLedgerId,
+          monthStartDay: result.monthStartDay,
+        );
       }
 
       // 空账本场景(welcome 未勾默认账本 / 老用户导入配置不含账本)进入此页
@@ -1124,7 +1213,8 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
   }
 
   /// 账本编辑对话框
-  Future<({String name, String currency, int monthStartDay})?> _showLedgerEditorDialog(
+  Future<({String name, String currency, int monthStartDay})?>
+  _showLedgerEditorDialog(
     BuildContext context, {
     String? title,
     String? initialName,
@@ -1140,100 +1230,120 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       context: context,
       builder: (ctx) {
         final primary = Theme.of(ctx).colorScheme.primary;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        return BeeAlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          content: StatefulBuilder(builder: (ctx, setState) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title ?? AppLocalizations.of(ctx).ledgersEdit,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: nameCtrl,
-                  decoration: InputDecoration(
-                    labelText: AppLocalizations.of(ctx).ledgersName,
+          content: StatefulBuilder(
+            builder: (ctx, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title ?? AppLocalizations.of(ctx).ledgersEdit,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  // v30 语义升级:账本 currency = 「账本本位币」(统计折算目标),
-                  // 与资产页的用户级「主币种」是两个概念,label 用本位币避免混淆。
-                  title: Text(AppLocalizations.of(ctx).ledgerBaseCurrencyLabel),
-                  subtitle: Text(displayCurrency(currency, context)),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () async {
-                    final picked = await _showCurrencyPicker(ctx, initial: currency);
-                    if (picked != null) {
-                      setState(() => currency = picked);
-                    }
-                  },
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(AppLocalizations.of(ctx).ledgersMonthStartDay),
-                  subtitle: Text(monthStartDay <= 1
-                      ? AppLocalizations.of(ctx).ledgersMonthStartDayNatural
-                      : AppLocalizations.of(ctx)
-                          .ledgersMonthStartDayValue(monthStartDay)),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () async {
-                    final picked = await _showMonthStartDayPicker(ctx,
-                        initial: monthStartDay);
-                    if (picked != null) {
-                      setState(() => monthStartDay = picked);
-                    }
-                  },
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: primary,
-                        side: BorderSide(color: primary),
-                      ),
-                      child: Text(AppLocalizations.of(ctx).commonCancel),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(ctx).ledgersName,
                     ),
-                    const SizedBox(width: 12),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: Text(
-                        title == AppLocalizations.of(ctx).ledgersNew
-                            ? AppLocalizations.of(ctx).ledgersCreate
-                            : AppLocalizations.of(ctx).commonSave,
-                      ),
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    // v30 语义升级:账本 currency = 「账本本位币」(统计折算目标),
+                    // 与资产页的用户级「主币种」是两个概念,label 用本位币避免混淆。
+                    title: Text(
+                      AppLocalizations.of(ctx).ledgerBaseCurrencyLabel,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-            );
-          }),
+                    subtitle: Text(displayCurrency(currency, context)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      final picked = await _showCurrencyPicker(
+                        ctx,
+                        initial: currency,
+                      );
+                      if (picked != null) {
+                        setState(() => currency = picked);
+                      }
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(AppLocalizations.of(ctx).ledgersMonthStartDay),
+                    subtitle: Text(
+                      monthStartDay <= 1
+                          ? AppLocalizations.of(ctx).ledgersMonthStartDayNatural
+                          : AppLocalizations.of(
+                              ctx,
+                            ).ledgersMonthStartDayValue(monthStartDay),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () async {
+                      final picked = await _showMonthStartDayPicker(
+                        ctx,
+                        initial: monthStartDay,
+                      );
+                      if (picked != null) {
+                        setState(() => monthStartDay = picked);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: primary,
+                          side: BorderSide(color: primary),
+                        ),
+                        child: Text(AppLocalizations.of(ctx).commonCancel),
+                      ),
+                      const SizedBox(width: 12),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(
+                          title == AppLocalizations.of(ctx).ledgersNew
+                              ? AppLocalizations.of(ctx).ledgersCreate
+                              : AppLocalizations.of(ctx).commonSave,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              );
+            },
+          ),
         );
       },
     );
 
     if (ok == true && nameCtrl.text.trim().isNotEmpty) {
-      return (name: nameCtrl.text.trim(), currency: currency, monthStartDay: monthStartDay);
+      return (
+        name: nameCtrl.text.trim(),
+        currency: currency,
+        monthStartDay: monthStartDay,
+      );
     }
 
     return null;
   }
 
   /// 28宫格月起始日选择器
-  Future<int?> _showMonthStartDayPicker(BuildContext context,
-      {required int initial}) {
-    return showModalBottomSheet<int>(
+  Future<int?> _showMonthStartDayPicker(
+    BuildContext context, {
+    required int initial,
+  }) {
+    return showBeeBottomSheet<int>(
       context: context,
       backgroundColor: BeeTokens.surfaceElevated(context),
       shape: const RoundedRectangleBorder(
@@ -1248,14 +1358,17 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(AppLocalizations.of(ctx).ledgersMonthStartDay,
-                    style: Theme.of(ctx).textTheme.titleMedium),
+                Text(
+                  AppLocalizations.of(ctx).ledgersMonthStartDay,
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 4),
-                Text(AppLocalizations.of(ctx).ledgersMonthStartDayHint,
-                    style: Theme.of(ctx)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: BeeTokens.textTertiary(ctx))),
+                Text(
+                  AppLocalizations.of(ctx).ledgersMonthStartDayHint,
+                  style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                    color: BeeTokens.textTertiary(ctx),
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
@@ -1276,14 +1389,19 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                               ? primary.withValues(alpha: 0.12)
                               : Colors.transparent,
                           border: Border.all(
-                              color:
-                                  isSelected ? primary : BeeTokens.divider(ctx)),
+                            color: isSelected
+                                ? primary
+                                : BeeTokens.divider(ctx),
+                          ),
                         ),
-                        child: Text('$day',
-                            style: TextStyle(
-                                color: isSelected
-                                    ? primary
-                                    : BeeTokens.textPrimary(ctx))),
+                        child: Text(
+                          '$day',
+                          style: TextStyle(
+                            color: isSelected
+                                ? primary
+                                : BeeTokens.textPrimary(ctx),
+                          ),
+                        ),
                       ),
                     );
                   }),
@@ -1297,8 +1415,11 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
   }
 
   /// 货币选择器
-  Future<String?> _showCurrencyPicker(BuildContext context, {String? initial}) async {
-    return showModalBottomSheet<String>(
+  Future<String?> _showCurrencyPicker(
+    BuildContext context, {
+    String? initial,
+  }) async {
+    return showBeeBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: BeeTokens.surfaceElevated(context),
@@ -1308,76 +1429,86 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
       builder: (bctx) {
         String query = '';
         String? selected = initial;
-        return StatefulBuilder(builder: (sctx, setState) {
-          final filtered = getCurrencies(context).where((c) {
-            final q = query.trim();
-            if (q.isEmpty) return true;
-            final uq = q.toUpperCase();
-            return c.code.contains(uq) || c.name.contains(q);
-          }).toList();
+        return StatefulBuilder(
+          builder: (sctx, setState) {
+            final filtered = getCurrencies(context).where((c) {
+              final q = query.trim();
+              if (q.isEmpty) return true;
+              final uq = q.toUpperCase();
+              return c.code.contains(uq) || c.name.contains(q);
+            }).toList();
 
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 12,
-              bottom: 16 + MediaQuery.of(bctx).viewInsets.bottom,
-            ),
-            child: SizedBox(
-              height: 420,
-              child: Column(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 8),
-                    decoration: BoxDecoration(
-                      color: BeeTokens.textTertiary(context).withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  Text(
-                    AppLocalizations.of(bctx).ledgersSelectCurrency,
-                    style: Theme.of(bctx).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.search),
-                      hintText: AppLocalizations.of(bctx).ledgersSearchCurrency,
-                    ),
-                    onChanged: (v) => setState(() => query = v),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: filtered.length,
-                      itemBuilder: (_, i) {
-                        final c = filtered[i];
-                        final sel = c.code == selected;
-                        return ListTile(
-                          title: Text('${c.name} (${c.code})'),
-                          trailing: sel
-                              ? Icon(Icons.check, color: BeeTokens.textPrimary(context))
-                              : null,
-                          onTap: () => Navigator.pop(bctx, c.code),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 12,
+                bottom: 16 + MediaQuery.of(bctx).viewInsets.bottom,
               ),
-            ),
-          );
-        });
+              child: SizedBox(
+                height: 420,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: BeeTokens.textTertiary(
+                          context,
+                        ).withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    Text(
+                      AppLocalizations.of(bctx).ledgersSelectCurrency,
+                      style: Theme.of(bctx).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.search),
+                        hintText: AppLocalizations.of(
+                          bctx,
+                        ).ledgersSearchCurrency,
+                      ),
+                      onChanged: (v) => setState(() => query = v),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: filtered.length,
+                        itemBuilder: (_, i) {
+                          final c = filtered[i];
+                          final sel = c.code == selected;
+                          return ListTile(
+                            title: Text('${c.name} (${c.code})'),
+                            trailing: sel
+                                ? Icon(
+                                    Icons.check,
+                                    color: BeeTokens.textPrimary(context),
+                                  )
+                                : null,
+                            onTap: () => Navigator.pop(bctx, c.code),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }
 
   /// 显示冲突解决对话框
-  Future<void> _showConflictResolutionDialog(BuildContext context, LedgerDisplayItem ledger) async {
-    
-
+  Future<void> _showConflictResolutionDialog(
+    BuildContext context,
+    LedgerDisplayItem ledger,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final syncService = ref.read(syncServiceProvider);
 
@@ -1396,8 +1527,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
           builder: (stateContext, setState) {
             bool isProcessing = false;
 
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            return BeeAlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Row(
                 children: [
                   const Icon(Icons.warning, color: Colors.red, size: 28),
@@ -1412,7 +1545,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                   children: [
                     Text(
                       l10n.ledgersConflictMessage,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 16),
 
@@ -1427,7 +1563,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            l10n.ledgersConflictLocalInfo(syncStatus.localCount),
+                            l10n.ledgersConflictLocalInfo(
+                              syncStatus.localCount,
+                            ),
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 4),
@@ -1435,7 +1573,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                             l10n.ledgersConflictLocalFingerprint(
                               syncStatus.localFingerprint.substring(0, 8),
                             ),
-                            style: const TextStyle(fontSize: 12, color: Colors.black54),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
                           ),
                         ],
                       ),
@@ -1444,7 +1585,8 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                     const SizedBox(height: 12),
 
                     // 云端信息
-                    if (syncStatus.cloudFingerprint != null && syncStatus.cloudExportedAt != null)
+                    if (syncStatus.cloudFingerprint != null &&
+                        syncStatus.cloudExportedAt != null)
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -1455,22 +1597,34 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              l10n.ledgersConflictRemoteInfo(syncStatus.cloudCount ?? 0),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              l10n.ledgersConflictRemoteInfo(
+                                syncStatus.cloudCount ?? 0,
+                              ),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               l10n.ledgersConflictRemoteUpdated(
-                                dateFormat.format(syncStatus.cloudExportedAt!.toLocal()),
+                                dateFormat.format(
+                                  syncStatus.cloudExportedAt!.toLocal(),
+                                ),
                               ),
-                              style: const TextStyle(fontSize: 12, color: Colors.black54),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               l10n.ledgersConflictRemoteFingerprint(
                                 syncStatus.cloudFingerprint!.substring(0, 8),
                               ),
-                              style: const TextStyle(fontSize: 12, color: Colors.black54),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                              ),
                             ),
                           ],
                         ),
@@ -1498,9 +1652,10 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                       setState(() => isProcessing = true);
                       try {
                         showToast(context, l10n.ledgersConflictDownloading);
-                        final result = await syncService.downloadAndRestoreToCurrentLedger(
-                          ledgerId: ledger.id,
-                        );
+                        final result = await syncService
+                            .downloadAndRestoreToCurrentLedger(
+                              ledgerId: ledger.id,
+                            );
 
                         if (stateContext.mounted) {
                           Navigator.pop(dialogContext);
@@ -1543,7 +1698,9 @@ class _LedgersPageNewState extends ConsumerState<LedgersPageNew> {
                       setState(() => isProcessing = true);
                       try {
                         showToast(context, l10n.ledgersConflictUploading);
-                        await syncService.uploadCurrentLedger(ledgerId: ledger.id);
+                        await syncService.uploadCurrentLedger(
+                          ledgerId: ledger.id,
+                        );
 
                         if (stateContext.mounted) {
                           Navigator.pop(dialogContext);
@@ -1592,11 +1749,7 @@ class _SectionHeader extends ConsumerWidget {
   final String? trailing;
   final Widget? action;
 
-  const _SectionHeader({
-    required this.title,
-    this.trailing,
-    this.action,
-  });
+  const _SectionHeader({required this.title, this.trailing, this.action});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

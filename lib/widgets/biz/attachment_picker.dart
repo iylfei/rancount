@@ -1,3 +1,5 @@
+import 'transaction_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -32,7 +34,8 @@ class AttachmentPicker extends ConsumerStatefulWidget {
   final bool readOnly;
 
   /// 点击附件的回调
-  final Function(List<TransactionAttachment> attachments, int index)? onAttachmentTap;
+  final Function(List<TransactionAttachment> attachments, int index)?
+      onAttachmentTap;
 
   const AttachmentPicker({
     super.key,
@@ -71,10 +74,13 @@ class _AttachmentPickerState extends ConsumerState<AttachmentPicker> {
 
     // 如果有transactionId，从数据库获取附件
     if (widget.transactionId != null) {
-      final attachmentsAsync = ref.watch(transactionAttachmentsProvider(widget.transactionId!));
+      final attachmentsAsync = ref.watch(
+        transactionAttachmentsProvider(widget.transactionId!),
+      );
 
       return attachmentsAsync.when(
-        data: (attachments) => _buildContent(context, attachments, _pendingFiles),
+        data: (attachments) =>
+            _buildContent(context, attachments, _pendingFiles),
         loading: () => _buildLoading(),
         error: (e, s) => _buildError(l10n),
       );
@@ -148,7 +154,9 @@ class _AttachmentPickerState extends ConsumerState<AttachmentPicker> {
               attachment: attachments[index],
               size: itemSize,
               onTap: () => _openPreview(attachments, index),
-              onDelete: widget.readOnly ? null : () => _deleteAttachment(attachments[index]),
+              onDelete: widget.readOnly
+                  ? null
+                  : () => _deleteAttachment(attachments[index]),
             );
           }
           // 待上传的文件
@@ -157,7 +165,9 @@ class _AttachmentPickerState extends ConsumerState<AttachmentPicker> {
             return _PendingFileThumbnail(
               file: pendingFiles[pendingIndex],
               size: itemSize,
-              onDelete: widget.readOnly ? null : () => _removePendingFile(pendingIndex),
+              onDelete: widget.readOnly
+                  ? null
+                  : () => _removePendingFile(pendingIndex),
             );
           }
           // 添加按钮
@@ -172,44 +182,51 @@ class _AttachmentPickerState extends ConsumerState<AttachmentPicker> {
 
   /// 无附件时的空状态（简洁的添加入口）
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
-    return GestureDetector(
-      onTap: () => _showAddOptions(context, l10n),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: BeeTokens.surfaceInput(context),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.image_outlined,
-              size: 18,
-              color: BeeTokens.iconSecondary(context),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                l10n.attachmentAdd,
-                style: TextStyle(
-                  color: BeeTokens.textTertiary(context),
-                  fontSize: 14,
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: GestureDetector(
+        onTap: () {
+          if (LiquidTheme.isActive(context)) {
+            GlassFeedback.selection(context);
+          }
+          _showAddOptions(context, l10n);
+        },
+        child: TransactionPanel(
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: LiquidTheme.isActive(context) ? 14 : 10,
+          ),
+          decoration: BoxDecoration(
+            color: BeeTokens.surfaceInput(context),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.image_outlined,
+                size: 18,
+                color: BeeTokens.iconSecondary(context),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.attachmentAdd,
+                  style: TextStyle(
+                    color: BeeTokens.textTertiary(context),
+                    fontSize: 14,
+                  ),
                 ),
               ),
-            ),
-            Icon(
-              Icons.add,
-              size: 18,
-              color: BeeTokens.iconTertiary(context),
-            ),
-          ],
+              Icon(Icons.add, size: 18, color: BeeTokens.iconTertiary(context)),
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _showAddOptions(BuildContext context, AppLocalizations l10n) {
-    showModalBottomSheet(
+    showBeeBottomSheet(
       context: context,
       builder: (_) => SafeArea(
         child: Column(
@@ -262,7 +279,10 @@ class _AttachmentPickerState extends ConsumerState<AttachmentPicker> {
   Future<void> _pickFromGallery() async {
     final service = ref.read(attachmentServiceProvider);
     final currentCount = widget.transactionId != null
-        ? (await ref.read(repositoryProvider).getAttachmentsByTransaction(widget.transactionId!)).length
+        ? (await ref
+                .read(repositoryProvider)
+                .getAttachmentsByTransaction(widget.transactionId!))
+            .length
         : 0;
     final pendingCount = _pendingFiles.length;
     final remaining = widget.maxCount - currentCount - pendingCount;
@@ -339,77 +359,93 @@ class _AttachmentThumbnail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final borderRadius = 10.scaled(context, ref);
-    final deleteButtonSize = 18.scaled(context, ref);
+    final borderRadius = (LiquidTheme.isActive(context) ? 18.0 : 10.0).scaled(
+      context,
+      ref,
+    );
+    final deleteButtonSize =
+        (LiquidTheme.isActive(context) ? 24.0 : 18.0).scaled(context, ref);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              color: BeeTokens.surface(context),
-              borderRadius: BorderRadius.circular(borderRadius),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(borderRadius),
-              child: FutureBuilder<String?>(
-                future: ref.read(attachmentServiceProvider).getThumbnailPath(attachment.fileName),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data != null) {
-                    return Image.file(
-                      File(snapshot.data!),
-                      fit: BoxFit.cover,
-                      width: size,
-                      height: size,
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: BeeTokens.surface(context),
+                borderRadius: BorderRadius.circular(borderRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(borderRadius),
+                child: FutureBuilder<String?>(
+                  future: ref
+                      .read(attachmentServiceProvider)
+                      .getThumbnailPath(attachment.fileName),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return Image.file(
+                        File(snapshot.data!),
+                        fit: BoxFit.cover,
+                        width: size,
+                        height: size,
+                      );
+                    }
+                    return Center(
+                      child: Icon(
+                        Icons.image_outlined,
+                        color: BeeTokens.iconTertiary(context),
+                        size: 24.scaled(context, ref),
+                      ),
                     );
-                  }
-                  return Center(
-                    child: Icon(
-                      Icons.image_outlined,
-                      color: BeeTokens.iconTertiary(context),
-                      size: 24.scaled(context, ref),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          if (onDelete != null)
-            Positioned(
-              top: -4,
-              right: -4,
-              child: GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  onDelete?.call();
-                },
-                child: Container(
-                  width: deleteButtonSize,
-                  height: deleteButtonSize,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.7),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 12.scaled(context, ref),
-                  ),
+                  },
                 ),
               ),
             ),
-        ],
+            if (onDelete != null)
+              Positioned(
+                top: -4,
+                right: -4,
+                child: GlassPressEffect(
+                  enabled: LiquidTheme.isActive(context),
+                  child: GestureDetector(
+                    onTap: () {
+                      if (LiquidTheme.isActive(context)) {
+                        GlassFeedback.impact(context);
+                      } else {
+                        HapticFeedback.lightImpact();
+                      }
+                      onDelete?.call();
+                    },
+                    child: Container(
+                      width: deleteButtonSize,
+                      height: deleteButtonSize,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 12.scaled(context, ref),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -429,8 +465,12 @@ class _PendingFileThumbnail extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final borderRadius = 10.scaled(context, ref);
-    final deleteButtonSize = 18.scaled(context, ref);
+    final borderRadius = (LiquidTheme.isActive(context) ? 18.0 : 10.0).scaled(
+      context,
+      ref,
+    );
+    final deleteButtonSize =
+        (LiquidTheme.isActive(context) ? 24.0 : 18.0).scaled(context, ref);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -454,12 +494,7 @@ class _PendingFileThumbnail extends ConsumerWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Image.file(
-                  file,
-                  fit: BoxFit.cover,
-                  width: size,
-                  height: size,
-                ),
+                Image.file(file, fit: BoxFit.cover, width: size, height: size),
                 // 待上传的半透明遮罩
                 Container(
                   color: Colors.black.withValues(alpha: 0.2),
@@ -479,22 +514,29 @@ class _PendingFileThumbnail extends ConsumerWidget {
           Positioned(
             top: -4,
             right: -4,
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                onDelete?.call();
-              },
-              child: Container(
-                width: deleteButtonSize,
-                height: deleteButtonSize,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.close,
-                  color: Colors.white,
-                  size: 12.scaled(context, ref),
+            child: GlassPressEffect(
+              enabled: LiquidTheme.isActive(context),
+              child: GestureDetector(
+                onTap: () {
+                  if (LiquidTheme.isActive(context)) {
+                    GlassFeedback.impact(context);
+                  } else {
+                    HapticFeedback.lightImpact();
+                  }
+                  onDelete?.call();
+                },
+                child: Container(
+                  width: deleteButtonSize,
+                  height: deleteButtonSize,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 12.scaled(context, ref),
+                  ),
                 ),
               ),
             ),
@@ -509,36 +551,43 @@ class _AddButtonCompact extends ConsumerWidget {
   final double size;
   final VoidCallback onTap;
 
-  const _AddButtonCompact({
-    required this.size,
-    required this.onTap,
-  });
+  const _AddButtonCompact({required this.size, required this.onTap});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final borderRadius = 10.scaled(context, ref);
+    final borderRadius = (LiquidTheme.isActive(context) ? 18.0 : 10.0).scaled(
+      context,
+      ref,
+    );
 
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: BeeTokens.surfaceInput(context),
-          borderRadius: BorderRadius.circular(borderRadius),
-          border: Border.all(
-            color: BeeTokens.border(context),
-            width: 1,
-            style: BorderStyle.solid,
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: GestureDetector(
+        onTap: () {
+          if (LiquidTheme.isActive(context)) {
+            GlassFeedback.selection(context);
+          } else {
+            HapticFeedback.selectionClick();
+          }
+          onTap();
+        },
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: BeeTokens.surfaceInput(context),
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(
+              color: BeeTokens.border(context),
+              width: 1,
+              style: BorderStyle.solid,
+            ),
           ),
-        ),
-        child: Icon(
-          Icons.add,
-          color: BeeTokens.iconSecondary(context),
-          size: 24.scaled(context, ref),
+          child: Icon(
+            Icons.add,
+            color: BeeTokens.iconSecondary(context),
+            size: 24.scaled(context, ref),
+          ),
         ),
       ),
     );

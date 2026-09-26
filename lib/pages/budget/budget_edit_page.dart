@@ -359,7 +359,7 @@ class _BudgetEditPageState extends ConsumerState<BudgetEditPage> {
 
     if (!mounted) return;
 
-    final selected = await showModalBottomSheet<Category>(
+    final selected = await showBeeBottomSheet<Category>(
       context: context,
       isScrollControlled: true,
       backgroundColor: BeeTokens.surface(context),
@@ -512,7 +512,7 @@ class _BudgetEditPageState extends ConsumerState<BudgetEditPage> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.commonDelete),
         content: Text(l10n.budgetDeleteConfirm),
         actions: [

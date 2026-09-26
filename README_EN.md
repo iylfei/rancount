@@ -7,7 +7,7 @@
 ![Release](https://img.shields.io/github/v/release/TNT-Likely/BeeCount?label=latest&color=green)
 ![Downloads](https://img.shields.io/github/downloads/TNT-Likely/BeeCount/total?color=blue)
 ![Last commit](https://img.shields.io/github/last-commit/TNT-Likely/BeeCount)
-![Flutter](https://img.shields.io/badge/Flutter-3.27%2B-02569B?logo=flutter)
+![Flutter](https://img.shields.io/badge/Flutter-3.32.8%2B-02569B?logo=flutter)
 
 **Your Data, Your Control — Open Source Accounting App**
 
@@ -221,7 +221,7 @@ Full Docker Compose deployment, backup system, PWA, and ops details live in the 
 
 ### Tech Stack
 
-- **Flutter 3.27+** · Cross-platform UI framework
+- **Flutter 3.32.8+** · Cross-platform UI framework
 - **Riverpod** · State management
 - **Drift (SQLite)** · Local database ORM
 - **Supabase / Self-hosted BeeCount Cloud / WebDAV / S3** · Multi-option cloud sync

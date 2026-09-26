@@ -1,3 +1,6 @@
+import 'transaction_glass.dart';
+import '../../styles/liquid_theme.dart';
+import '../ui/liquid_glass.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +23,10 @@ class PinDotIndicator extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = transactionPrimary(
+      context,
+      ref.watch(primaryColorProvider),
+    );
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -32,7 +38,10 @@ class PinDotIndicator extends ConsumerWidget {
             : (filled ? primaryColor : BeeTokens.border(context));
 
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration:
+              LiquidTheme.isActive(context) && !LiquidTheme.motionOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 150),
           margin: EdgeInsets.symmetric(horizontal: 10.0.scaled(context, ref)),
           width: dotSize,
           height: dotSize,
@@ -84,9 +93,11 @@ class NumberPad extends ConsumerWidget {
                   context,
                   ref,
                   child: showBiometric
-                      ? Icon(Icons.fingerprint,
+                      ? Icon(
+                          Icons.fingerprint,
                           size: 28.0.scaled(context, ref),
-                          color: BeeTokens.textPrimary(context))
+                          color: BeeTokens.textPrimary(context),
+                        )
                       : const SizedBox.shrink(),
                   onTap: showBiometric ? onBiometric : null,
                 );
@@ -95,9 +106,11 @@ class NumberPad extends ConsumerWidget {
                 return _buildKeyButton(
                   context,
                   ref,
-                  child: Icon(Icons.backspace_outlined,
-                      size: 24.0.scaled(context, ref),
-                      color: BeeTokens.textPrimary(context)),
+                  child: Icon(
+                    Icons.backspace_outlined,
+                    size: 24.0.scaled(context, ref),
+                    color: BeeTokens.textPrimary(context),
+                  ),
                   onTap: onDelete,
                 );
               }
@@ -128,24 +141,43 @@ class NumberPad extends ConsumerWidget {
     VoidCallback? onTap,
   }) {
     final size = 72.0.scaled(context, ref);
-    return GestureDetector(
-      onTap: () {
-        if (onTap != null) {
-          HapticFeedback.lightImpact();
-          onTap();
-        }
-      },
-      child: Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: onTap != null
-              ? BeeTokens.surfaceSecondary(context)
-              : Colors.transparent,
+    if (LiquidTheme.isActive(context)) {
+      if (onTap == null) return SizedBox.square(dimension: size);
+      return GlassPressable(
+        onTap: onTap,
+        child: TransactionPanel(
+          width: size,
+          height: size,
+          borderRadius: 25,
+          child: Center(child: child),
         ),
-        child: child,
+      );
+    }
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: GestureDetector(
+        onTap: () {
+          if (onTap != null) {
+            if (LiquidTheme.isActive(context)) {
+              GlassFeedback.impact(context);
+            } else {
+              HapticFeedback.lightImpact();
+            }
+            onTap();
+          }
+        },
+        child: Container(
+          width: size,
+          height: size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: onTap != null
+                ? BeeTokens.surfaceSecondary(context)
+                : Colors.transparent,
+          ),
+          child: child,
+        ),
       ),
     );
   }

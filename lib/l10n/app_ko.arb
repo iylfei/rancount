@@ -2192,5 +2192,19 @@
   "txFlagExcludeFromStatsHint": "통계에서는 제외되지만 잔액에는 계속 반영됩니다",
   "txFlagExcludeFromBudgetHint": "예산에는 반영되지 않습니다",
   "txFlagExcludedTag": "제외됨",
-  "txFlagBudgetExcludedTag": "예산 제외"
+  "txFlagBudgetExcludedTag": "예산 제외",
+  "appearanceVisualStyle": "인터페이스 스타일",
+  "appearanceLiquidGlass": "리퀴드 글래스",
+  "appearanceClassic": "클래식",
+  "appearanceLiquidDescription": "투명한 소재 · 부드러운 반응",
+  "appearanceClassicDescription": "기존 색상과 스킨",
+  "appearanceGlassEffects": "글래스 효과",
+  "appearanceGlassAutomatic": "자동",
+  "appearanceGlassSimplified": "간소화",
+  "appearanceInterfaceAnimations": "인터페이스 애니메이션",
+  "appearanceMotionDescription": "시스템의 동작 줄이기 설정을 따릅니다",
+  "appearanceHaptics": "햅틱 피드백",
+  "appearanceHapticsDescription": "조작할 때 가벼운 진동을 제공합니다",
+  "appearanceGlassAutomaticDescription": "기기가 지원하면 굴절 효과를 표시합니다",
+  "appearanceGlassSimplifiedDescription": "부드러운 투명 효과로 렌더링 부하를 줄입니다"
 }

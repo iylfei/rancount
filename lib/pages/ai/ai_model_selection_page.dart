@@ -1,3 +1,4 @@
+import '../../styles/liquid_theme.dart';
 import 'package:beecount/utils/ui_scale_extensions.dart';
 import 'package:beecount/widgets/biz/section_card.dart';
 import 'package:beecount/widgets/ui/ui.dart';
@@ -15,7 +16,8 @@ class AIModelSelectionPage extends ConsumerStatefulWidget {
   const AIModelSelectionPage({super.key});
 
   @override
-  ConsumerState<AIModelSelectionPage> createState() => _AIModelSelectionPageState();
+  ConsumerState<AIModelSelectionPage> createState() =>
+      _AIModelSelectionPageState();
 }
 
 class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
@@ -34,11 +36,11 @@ class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
 
     setState(() {
       _glmModel = prefs.getString(AIConstants.keyGlmModel) ?? _glmModel;
-      _glmVisionModel = prefs.getString(AIConstants.keyGlmVisionModel) ?? _glmVisionModel;
+      _glmVisionModel =
+          prefs.getString(AIConstants.keyGlmVisionModel) ?? _glmVisionModel;
       _loading = false;
     });
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -49,13 +51,8 @@ class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
         backgroundColor: BeeTokens.scaffoldBackground(context),
         body: Column(
           children: [
-            PrimaryHeader(
-              title: l10n.aiSettingsTitle,
-              showBack: true,
-            ),
-            const Expanded(
-              child: Center(child: CircularProgressIndicator()),
-            ),
+            PrimaryHeader(title: l10n.aiSettingsTitle, showBack: true),
+            const Expanded(child: Center(child: CircularProgressIndicator())),
           ],
         ),
       );
@@ -80,7 +77,7 @@ class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
                 // AI模型选择
                 _buildModelSection(),
 
-                SizedBox(height: 8.0.scaled(context, ref))
+                SizedBox(height: 8.0.scaled(context, ref)),
               ],
             ),
           ),
@@ -88,8 +85,6 @@ class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
       ),
     );
   }
-
-
 
   /// 获取文本模型的显示名称
   String _getModelDisplayName(String modelId, AppLocalizations l10n) {
@@ -118,11 +113,13 @@ class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
   /// 显示文本模型选择弹窗
   void _showModelDialog() {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.read(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.read(primaryColorProvider));
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: Text(l10n.aiModelTitle),
         titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -163,11 +160,13 @@ class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
   /// 显示视觉模型选择弹窗
   void _showVisionModelDialog() {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.read(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.read(primaryColorProvider));
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: Text(l10n.aiVisionModelTitle),
         titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -231,10 +230,7 @@ class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(
-          fontSize: 12,
-          color: BeeTokens.textSecondary(context),
-        ),
+        style: TextStyle(fontSize: 12, color: BeeTokens.textSecondary(context)),
       ),
       trailing: isSelected
           ? Icon(Icons.check_circle, color: primaryColor)
@@ -275,7 +271,9 @@ class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
           ListTile(
             leading: Icon(
               Icons.chat_outlined,
-              color: ref.watch(primaryColorProvider),
+              color: (LiquidTheme.isActive(context)
+                  ? Theme.of(context).colorScheme.primary
+                  : ref.watch(primaryColorProvider)),
             ),
             title: Text(
               l10n.aiModelTitle,
@@ -289,7 +287,9 @@ class _AIModelSelectionPageState extends ConsumerState<AIModelSelectionPage> {
           ListTile(
             leading: Icon(
               Icons.image_search,
-              color: ref.watch(primaryColorProvider),
+              color: (LiquidTheme.isActive(context)
+                  ? Theme.of(context).colorScheme.primary
+                  : ref.watch(primaryColorProvider)),
             ),
             title: Text(
               l10n.aiVisionModelTitle,

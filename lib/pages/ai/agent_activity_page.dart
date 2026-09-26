@@ -1,3 +1,5 @@
+import '../../widgets/ui/liquid_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -105,50 +107,58 @@ final class _ActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final status = _statusPresentation(context, l10n, activity.run.status);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: BeeTokens.surface(context),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: BeeTokens.isDark(context) ? null : BeeShadows.card,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  activity.run.userMessage ?? '—',
-                  style: BeeTextTokens.strongTitle(context),
-                ),
+    return GlassSurface(
+      prominent: false,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: LiquidTheme.isActive(context)
+            ? null
+            : BoxDecoration(
+                color: BeeTokens.surface(context),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: BeeTokens.isDark(context) ? null : BeeShadows.card,
               ),
-              const SizedBox(width: 12),
-              _StatusPill(label: status.label, color: status.color),
-            ],
-          ),
-          if (activity.run.errorMessage case final message?) ...[
-            const SizedBox(height: 8),
-            Text(message, style: BeeTextTokens.label(context)),
-          ],
-          if (activity.toolCalls.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text(l10n.agentActivityTools, style: BeeTextTokens.label(context)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                for (final call in activity.toolCalls)
-                  _ToolPill(
-                    label: AgentToolPresentation.label(l10n, call.toolName),
-                    status: call.status,
-                    callId: call.callId,
+                Expanded(
+                  child: Text(
+                    activity.run.userMessage ?? '—',
+                    style: BeeTextTokens.strongTitle(context),
                   ),
+                ),
+                const SizedBox(width: 12),
+                _StatusPill(label: status.label, color: status.color),
               ],
             ),
+            if (activity.run.errorMessage case final message?) ...[
+              const SizedBox(height: 8),
+              Text(message, style: BeeTextTokens.label(context)),
+            ],
+            if (activity.toolCalls.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                l10n.agentActivityTools,
+                style: BeeTextTokens.label(context),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final call in activity.toolCalls)
+                    _ToolPill(
+                      label: AgentToolPresentation.label(l10n, call.toolName),
+                      status: call.status,
+                      callId: call.callId,
+                    ),
+                ],
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -157,25 +167,21 @@ final class _ActivityCard extends StatelessWidget {
     BuildContext context,
     AppLocalizations l10n,
     String status,
-  ) =>
-      switch (status) {
-        'completed' => (
-            label: l10n.agentActivityCompleted,
-            color: BeeTokens.success(context),
-          ),
-        'cancelled' => (
-            label: l10n.agentActivityCancelled,
-            color: BeeTokens.warning(context),
-          ),
-        'failed' => (
-            label: l10n.agentActivityFailed,
-            color: BeeTokens.error(context),
-          ),
-        _ => (
-            label: l10n.agentActivityRunning,
-            color: BeeTokens.info(context),
-          ),
-      };
+  ) => switch (status) {
+    'completed' => (
+      label: l10n.agentActivityCompleted,
+      color: BeeTokens.success(context),
+    ),
+    'cancelled' => (
+      label: l10n.agentActivityCancelled,
+      color: BeeTokens.warning(context),
+    ),
+    'failed' => (
+      label: l10n.agentActivityFailed,
+      color: BeeTokens.error(context),
+    ),
+    _ => (label: l10n.agentActivityRunning, color: BeeTokens.info(context)),
+  };
 }
 
 final class _ActivityInfoCard extends StatelessWidget {
@@ -185,22 +191,27 @@ final class _ActivityInfoCard extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: BeeTokens.surfaceSecondary(context),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: BeeTokens.divider(context)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: BeeTokens.textSecondary(context)),
-            const SizedBox(width: 12),
-            Expanded(child: Text(text, style: BeeTextTokens.body(context))),
-          ],
-        ),
-      );
+  Widget build(BuildContext context) => GlassSurface(
+    prominent: false,
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: LiquidTheme.isActive(context)
+          ? null
+          : BoxDecoration(
+              color: BeeTokens.surfaceSecondary(context),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: BeeTokens.divider(context)),
+            ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: BeeTokens.textSecondary(context)),
+          const SizedBox(width: 12),
+          Expanded(child: Text(text, style: BeeTextTokens.body(context))),
+        ],
+      ),
+    ),
+  );
 }
 
 final class _StatusPill extends StatelessWidget {
@@ -211,16 +222,16 @@ final class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(99),
-        ),
-        child: Text(
-          label,
-          style: BeeTextTokens.label(context).copyWith(color: color),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Text(
+      label,
+      style: BeeTextTokens.label(context).copyWith(color: color),
+    ),
+  );
 }
 
 final class _ToolPill extends StatelessWidget {
@@ -239,8 +250,8 @@ final class _ToolPill extends StatelessWidget {
     final color = status == 'completed'
         ? BeeTokens.success(context)
         : status == 'denied'
-            ? BeeTokens.warning(context)
-            : BeeTokens.textSecondary(context);
+        ? BeeTokens.warning(context)
+        : BeeTokens.textSecondary(context);
     final statusLabel = switch (status) {
       'completed' => AppLocalizations.of(context).agentActivityToolCompleted,
       'denied' => AppLocalizations.of(context).agentActivityToolDenied,
@@ -256,8 +267,10 @@ final class _ToolPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label,
-              style: BeeTextTokens.label(context).copyWith(color: color)),
+          Text(
+            label,
+            style: BeeTextTokens.label(context).copyWith(color: color),
+          ),
           Text(
             ' · ',
             style: BeeTextTokens.label(context).copyWith(color: color),

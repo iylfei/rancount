@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
 import 'package:flutter/material.dart';
 
 import '../../agent/permission/agent_authorization_gate.dart';
@@ -40,7 +41,7 @@ final class _AgentToolAuthorizationDialog extends StatelessWidget {
       request.toolName,
       request.arguments,
     );
-    return AlertDialog(
+    return BeeAlertDialog(
       title: Text(l10n.agentAuthorizationTitle),
       content: SingleChildScrollView(
         child: Column(

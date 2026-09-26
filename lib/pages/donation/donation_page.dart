@@ -10,7 +10,6 @@ import '../../services/payment/donation_service.dart';
 import '../../services/system/logger_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/ui_scale_extensions.dart';
-import '../../providers/theme_providers.dart';
 
 /// 打赏页面
 ///
@@ -121,7 +120,7 @@ class _DonationPageState extends ConsumerState<DonationPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Row(
           children: [
             Icon(
@@ -140,7 +139,7 @@ class _DonationPageState extends ConsumerState<DonationPage> {
             child: Text(
               l10n.commonConfirm,
               style: TextStyle(
-                color: ref.watch(primaryColorProvider),
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
@@ -204,7 +203,7 @@ class _DonationPageState extends ConsumerState<DonationPage> {
                                       Icon(
                                         Icons.info_outline,
                                         size: 20.0.scaled(context, ref),
-                                        color: ref.watch(primaryColorProvider),
+                                        color: Theme.of(context).colorScheme.primary,
                                       ),
                                       SizedBox(width: 8.0.scaled(context, ref)),
                                       Text(
@@ -297,7 +296,7 @@ class _ProductTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final emoji = _getProductEmoji(product.id);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return InkWell(
       onTap: isPurchasing ? null : onTap,

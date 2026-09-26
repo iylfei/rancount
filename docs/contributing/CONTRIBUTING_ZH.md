@@ -255,7 +255,7 @@ git push origin feature/your-feature-name
 
 ### 系统要求
 
-- **Flutter SDK**: 3.27.0 或更高版本
+- **Flutter SDK**: 3.32.8（版本固定在 `.fvmrc`）
 - **Dart SDK**: 3.6.0 或更高版本
 - **IDE**: VS Code 或 Android Studio（推荐安装 Flutter 插件）
 - **操作系统**: macOS, Linux, 或 Windows

@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // wheel_date_picker exported via ui barrel
 import '../../widgets/biz/biz.dart';
 import '../../styles/tokens.dart';
+import '../../styles/liquid_theme.dart';
+import 'widgets/liquid_analytics_summary.dart';
+import 'widgets/liquid_main_section.dart';
 import '../../providers.dart';
 import '../../widgets/ui/ui.dart';
 import '../../widgets/charts/line_chart.dart';
@@ -53,8 +56,11 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
         maxDate: DateTime.now(),
       );
       if (res != null) {
-        ref.read(selectedMonthProvider.notifier).state =
-            DateTime(res.year, 1, 1);
+        ref.read(selectedMonthProvider.notifier).state = DateTime(
+          res.year,
+          1,
+          1,
+        );
       }
     }
     // all视角不显示选择器
@@ -77,8 +83,11 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              Icon(Icons.currency_exchange,
-                  size: 16, color: ref.watch(primaryColorProvider)),
+              Icon(
+                Icons.currency_exchange,
+                size: 16,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -90,8 +99,10 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
               ),
               TextButton(
                 onPressed: () => _runRecalcForeignTx(count),
-                child: Text(l10n.recalcForeignTxAction,
-                    style: TextStyle(fontSize: 12)),
+                child: Text(
+                  l10n.recalcForeignTxAction,
+                  style: TextStyle(fontSize: 12),
+                ),
               ),
             ],
           ),
@@ -124,7 +135,7 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dctx) => AlertDialog(
+      builder: (dctx) => BeeAlertDialog(
         title: Text(l10n.recalcForeignTxAction),
         content: Text(l10n.recalcSyncCountHint(count)),
         actions: [
@@ -319,10 +330,10 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
     if (incomeData is List<({DateTime day, double total})> &&
         expenseData is List<({DateTime day, double total})>) {
       final Map<DateTime, double> incomeMap = {
-        for (var e in incomeData) e.day: e.total
+        for (var e in incomeData) e.day: e.total,
       };
       final Map<DateTime, double> expenseMap = {
-        for (var e in expenseData) e.day: e.total
+        for (var e in expenseData) e.day: e.total,
       };
       final allDays = {...incomeMap.keys, ...expenseMap.keys}.toList()..sort();
       return allDays.map((day) {
@@ -334,10 +345,10 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
     if (incomeData is List<({DateTime month, double total})> &&
         expenseData is List<({DateTime month, double total})>) {
       final Map<DateTime, double> incomeMap = {
-        for (var e in incomeData) e.month: e.total
+        for (var e in incomeData) e.month: e.total,
       };
       final Map<DateTime, double> expenseMap = {
-        for (var e in expenseData) e.month: e.total
+        for (var e in expenseData) e.month: e.total,
       };
       final allMonths = {...incomeMap.keys, ...expenseMap.keys}.toList()
         ..sort();
@@ -350,10 +361,10 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
     if (incomeData is List<({int year, double total})> &&
         expenseData is List<({int year, double total})>) {
       final Map<int, double> incomeMap = {
-        for (var e in incomeData) e.year: e.total
+        for (var e in incomeData) e.year: e.total,
       };
       final Map<int, double> expenseMap = {
-        for (var e in expenseData) e.year: e.total
+        for (var e in expenseData) e.year: e.total,
       };
       final allYears = {...incomeMap.keys, ...expenseMap.keys}.toList()..sort();
       return allYears.map((year) {
@@ -384,6 +395,7 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
     final repo = ref.watch(repositoryProvider);
     final ledgerId = ref.watch(currentLedgerIdProvider);
     final selMonth = ref.watch(selectedMonthProvider);
+    final liquid = LiquidTheme.isActive(context);
     // 统计刷新 tick：当有新增/编辑/删除时我们会 +1，这里监听以触发重建和重新拉取
     ref.watch(statsRefreshProvider);
 
@@ -424,31 +436,56 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
       // 结余模式：同时获取收入和支出数据
       if (_scope == 'month') {
         incomeSeriesFuture = repo.totalsByDay(
-            ledgerId: ledgerId, type: 'income', start: start, end: end);
+          ledgerId: ledgerId,
+          type: 'income',
+          start: start,
+          end: end,
+        );
         expenseSeriesFuture = repo.totalsByDay(
-            ledgerId: ledgerId, type: 'expense', start: start, end: end);
+          ledgerId: ledgerId,
+          type: 'expense',
+          start: start,
+          end: end,
+        );
         seriesFuture = Future.value([]); // 占位
       } else if (_scope == 'year') {
         incomeSeriesFuture = repo.totalsByMonth(
-            ledgerId: ledgerId, type: 'income', year: selMonth.year);
+          ledgerId: ledgerId,
+          type: 'income',
+          year: selMonth.year,
+        );
         expenseSeriesFuture = repo.totalsByMonth(
-            ledgerId: ledgerId, type: 'expense', year: selMonth.year);
+          ledgerId: ledgerId,
+          type: 'expense',
+          year: selMonth.year,
+        );
         seriesFuture = Future.value([]);
       } else {
-        incomeSeriesFuture =
-            repo.totalsByYearSeries(ledgerId: ledgerId, type: 'income');
-        expenseSeriesFuture =
-            repo.totalsByYearSeries(ledgerId: ledgerId, type: 'expense');
+        incomeSeriesFuture = repo.totalsByYearSeries(
+          ledgerId: ledgerId,
+          type: 'income',
+        );
+        expenseSeriesFuture = repo.totalsByYearSeries(
+          ledgerId: ledgerId,
+          type: 'expense',
+        );
         seriesFuture = Future.value([]);
       }
     } else {
       // 收入或支出模式
       seriesFuture = _scope == 'month'
           ? repo.totalsByDay(
-              ledgerId: ledgerId, type: _type, start: start, end: end)
+              ledgerId: ledgerId,
+              type: _type,
+              start: start,
+              end: end,
+            )
           : _scope == 'year'
               ? repo.totalsByMonth(
-                  ledgerId: ledgerId, type: _type, year: selMonth.year)
+                  ledgerId: ledgerId,
+                  type: _type,
+                  year: selMonth.year,
+                )
               : repo.totalsByYearSeries(ledgerId: ledgerId, type: _type);
     }
 
@@ -456,19 +493,28 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
       body: Column(
         children: [
           PrimaryHeader(
-            title: _currentPeriodLabel(_scope, selMonth, context),
-            leadingIcon: Icons.bar_chart_outlined,
+            title: liquid
+                ? AppLocalizations.of(context).tabInsights
+                : _currentPeriodLabel(_scope, selMonth, context),
+            leadingIcon: liquid ? null : Icons.bar_chart_outlined,
             leadingPlain: true,
             compact: true,
-            showTitleSection: false,
+            showTitleSection: liquid,
             content: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              padding: EdgeInsets.symmetric(
+                horizontal: liquid ? 16 : 8,
+                vertical: 6,
+              ),
               child: Row(
                 children: [
-                  Icon(Icons.bar_chart_outlined,
-                      color: BeeTokens.textPrimary(context)),
-                  const SizedBox(width: 8),
-                  InkWell(
+                  if (!liquid) ...[
+                    Icon(
+                      Icons.bar_chart_outlined,
+                      color: BeeTokens.textPrimary(context),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  LiquidMainFilter(
                     onTap: _scope != 'all' ? _showPeriodPicker : null,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -487,7 +533,7 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  InkWell(
+                  LiquidMainFilter(
                     onTap: _showTypeMenu,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -511,12 +557,17 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                   const Spacer(),
                   // 分享按钮
                   IconButton(
-                    icon: Icon(Icons.share,
-                        color: BeeTokens.textPrimary(context)),
+                    icon: Icon(
+                      Icons.share,
+                      color: BeeTokens.textPrimary(context),
+                    ),
                     onPressed: () async {
                       final ledgerId = ref.read(currentLedgerIdProvider);
                       if (ledgerId == 0) {
-                        showToast(context, AppLocalizations.of(context).sharePosterNoLedger);
+                        showToast(
+                          context,
+                          AppLocalizations.of(context).sharePosterNoLedger,
+                        );
                         return;
                       }
 
@@ -536,12 +587,16 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                                   height: 50,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 3,
-                                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation(
+                                      Colors.white,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 20),
                                 Text(
-                                  AppLocalizations.of(context).mineShareGenerating,
+                                  AppLocalizations.of(
+                                    context,
+                                  ).mineShareGenerating,
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 16,
@@ -588,8 +643,10 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                       } catch (e) {
                         if (context.mounted) {
                           Navigator.of(context).pop(); // 关闭加载对话框
-                          showToast(context,
-                              '${AppLocalizations.of(context).commonError}: $e');
+                          showToast(
+                            context,
+                            '${AppLocalizations.of(context).commonError}: $e',
+                          );
                         }
                       }
                     },
@@ -628,11 +685,30 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
             child: FutureBuilder(
               key: ValueKey('analytics_$_type'),
               future: _type == 'balance'
-                  ? _loadBalanceData(repo, ledgerId, start, end, seriesFuture,
-                      incomeSeriesFuture!, expenseSeriesFuture!)
+                  ? _loadBalanceData(
+                      repo,
+                      ledgerId,
+                      start,
+                      end,
+                      seriesFuture,
+                      incomeSeriesFuture!,
+                      expenseSeriesFuture!,
+                    )
                   : _loadCategoryData(
-                      repo, ledgerId, _type, start, end, seriesFuture),
+                      repo,
+                      ledgerId,
+                      _type,
+                      start,
+                      end,
+                      seriesFuture,
+                    ),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return AppEmpty(
+                    text: AppLocalizations.of(context).commonError,
+                    subtext: snapshot.error.toString(),
+                  );
+                }
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
@@ -640,8 +716,20 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
 
                 // 在balance模式下，需要计算结余数据
                 dynamic seriesRaw;
-                List<({int? id, String name, db.Category? category, double total, List<({int id, db.Category category, String name, double total})> subCategories})>
-                    catData;
+                List<
+                    ({
+                      int? id,
+                      String name,
+                      db.Category? category,
+                      double total,
+                      List<
+                          ({
+                            int id,
+                            db.Category category,
+                            String name,
+                            double total,
+                          })> subCategories,
+                    })> catData;
                 int txCount;
                 double sum;
 
@@ -655,7 +743,19 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
 
                   // 分类数据显示支出分类（但结余模式下不显示排行榜）
                   catData = list[0] as List<
-                      ({int? id, String name, db.Category? category, double total, List<({int id, db.Category category, String name, double total})> subCategories})>;
+                      ({
+                        int? id,
+                        String name,
+                        db.Category? category,
+                        double total,
+                        List<
+                            ({
+                              int id,
+                              db.Category category,
+                              String name,
+                              double total,
+                            })> subCategories,
+                      })>;
 
                   // 获取收入和支出的交易数量
                   final expenseCount = list[2] as int;
@@ -668,7 +768,19 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                   sum = incomeSum - expenseSum;
                 } else {
                   catData = list[0] as List<
-                      ({int? id, String name, db.Category? category, double total, List<({int id, db.Category category, String name, double total})> subCategories})>;
+                      ({
+                        int? id,
+                        String name,
+                        db.Category? category,
+                        double total,
+                        List<
+                            ({
+                              int id,
+                              db.Category category,
+                              String name,
+                              double total,
+                            })> subCategories,
+                      })>;
                   seriesRaw = list[1];
                   txCount = list[2] as int;
                   sum = catData.fold<double>(0, (a, b) => a + b.total);
@@ -711,22 +823,26 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                       children: [
                         AppEmpty(
                           text: AppLocalizations.of(context).commonEmpty,
-                          subtext: AppLocalizations.of(context)
-                              .analyticsNoDataSubtext,
+                          subtext: AppLocalizations.of(
+                            context,
+                          ).analyticsNoDataSubtext,
                         ),
                         const SizedBox(height: 12),
                         Align(
                           alignment: Alignment.center,
                           child: OutlinedButton.icon(
                             icon: const Icon(Icons.swap_horiz),
-                            label: Text(AppLocalizations.of(context)
-                                .analyticsSwitchTo(_type == "expense"
+                            label: Text(
+                              AppLocalizations.of(context).analyticsSwitchTo(
+                                _type == "expense"
                                     ? AppLocalizations.of(context).homeIncome
                                     : _type == "income"
                                         ? AppLocalizations.of(context)
                                             .homeBalance
                                         : AppLocalizations.of(context)
-                                            .homeExpense)),
+                                            .homeExpense,
+                              ),
+                            ),
                             onPressed: _cycleTypeForward,
                           ),
                         ),
@@ -735,19 +851,21 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.info_outline,
-                                  size: 14,
-                                  color: BeeTokens.textSecondary(context)),
+                              Icon(
+                                Icons.info_outline,
+                                size: 14,
+                                color: BeeTokens.textSecondary(context),
+                              ),
                               const SizedBox(width: 6),
                               Text(
-                                  AppLocalizations.of(context)
-                                      .analyticsTipHeader,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
-                                      ?.copyWith(
-                                          color: BeeTokens.textSecondary(
-                                              context))),
+                                AppLocalizations.of(context).analyticsTipHeader,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: BeeTokens.textSecondary(context),
+                                    ),
+                              ),
                             ],
                           ),
                       ],
@@ -809,8 +927,11 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                   if (filteredSeriesRaw
                       is List<({DateTime month, double total})>) {
                     return filteredSeriesRaw
-                        .map((e) => AppLocalizations.of(context).homeMonth(
-                            e.month.month.toString().padLeft(2, '0')))
+                        .map(
+                          (e) => AppLocalizations.of(
+                            context,
+                          ).homeMonth(e.month.month.toString().padLeft(2, '0')),
+                        )
                         .toList(growable: false);
                   }
                   if (filteredSeriesRaw is List<({int year, double total})>) {
@@ -830,8 +951,9 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                     highlightIndex = today.day - 1; // 从 0 开始
                     if (highlightIndex >= 0 &&
                         highlightIndex < xLabels.length) {
-                      xLabels[highlightIndex] =
-                          AppLocalizations.of(context).analyticsToday;
+                      xLabels[highlightIndex] = AppLocalizations.of(
+                        context,
+                      ).analyticsToday;
                     }
                   }
                 }
@@ -867,56 +989,69 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      AnalyticsSummary(
-                        scope: _scope,
-                        isExpense: _type == 'expense',
-                        isBalance: _type == 'balance',
-                        total: sum,
-                        avg: computeSeriesAverage(filteredSeriesRaw),
-                        expenseColor: Theme.of(context).colorScheme.primary,
-                        incomeColor: Theme.of(context).colorScheme.primary,
-                      ),
+                      if (liquid)
+                        LiquidAnalyticsSummary(
+                          scope: _scope,
+                          type: _type,
+                          total: sum,
+                          average: computeSeriesAverage(filteredSeriesRaw),
+                        )
+                      else
+                        AnalyticsSummary(
+                          scope: _scope,
+                          isExpense: _type == 'expense',
+                          isBalance: _type == 'balance',
+                          total: sum,
+                          avg: computeSeriesAverage(filteredSeriesRaw),
+                          expenseColor: Theme.of(context).colorScheme.primary,
+                          incomeColor: Theme.of(context).colorScheme.primary,
+                        ),
                       const SizedBox(height: 12),
-                      SizedBox(
-                        height: 240,
-                        child: LineChart(
-                          values: values,
-                          xLabels: xLabels,
-                          highlightIndex: highlightIndex,
-                          hideAmounts: hide,
-                          themeColor: Theme.of(context).colorScheme.primary,
-                          // 使用统一图表令牌
-                          lineWidth: BeeChartTokens.lineWidth,
-                          dotRadius: BeeChartTokens.dotRadius,
-                          cornerRadius: BeeChartTokens.cornerRadius,
-                          xLabelFontSize: BeeChartTokens.xLabelFontSize,
-                          yLabelFontSize: BeeChartTokens.yLabelFontSize,
-                          onSwipeLeft: () {
-                            // 根据scope切换周期
-                            _onChartSwipeLeft();
-                            setState(() => _chartSwiped = true);
-                          },
-                          onSwipeRight: () {
-                            // 根据scope切换周期
-                            _onChartSwipeRight();
-                            setState(() => _chartSwiped = true);
-                          },
-                          showHint: !chartDismissed,
-                          hintText:
-                              AppLocalizations.of(context).analyticsSwipeHint,
-                          onCloseHint: () async {
-                            final setter =
-                                ref.read(analyticsHintsSetterProvider);
-                            await setter.dismissChart();
-                            if (mounted) {
-                              setState(() => _localChartDismissed = true);
-                            }
-                          },
-                          whiteBg: !BeeTokens.isDark(context),
-                          isDark: BeeTokens.isDark(context),
-                          showGrid: false,
-                          showDots: true,
-                          annotate: true,
+                      LiquidContentCard(
+                        padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+                        child: SizedBox(
+                          height: 240,
+                          child: LineChart(
+                            values: values,
+                            xLabels: xLabels,
+                            highlightIndex: highlightIndex,
+                            hideAmounts: hide,
+                            themeColor: Theme.of(context).colorScheme.primary,
+                            // 使用统一图表令牌
+                            lineWidth: BeeChartTokens.lineWidth,
+                            dotRadius: BeeChartTokens.dotRadius,
+                            cornerRadius: BeeChartTokens.cornerRadius,
+                            xLabelFontSize: BeeChartTokens.xLabelFontSize,
+                            yLabelFontSize: BeeChartTokens.yLabelFontSize,
+                            onSwipeLeft: () {
+                              // 根据scope切换周期
+                              _onChartSwipeLeft();
+                              setState(() => _chartSwiped = true);
+                            },
+                            onSwipeRight: () {
+                              // 根据scope切换周期
+                              _onChartSwipeRight();
+                              setState(() => _chartSwiped = true);
+                            },
+                            showHint: !chartDismissed,
+                            hintText: AppLocalizations.of(
+                              context,
+                            ).analyticsSwipeHint,
+                            onCloseHint: () async {
+                              final setter = ref.read(
+                                analyticsHintsSetterProvider,
+                              );
+                              await setter.dismissChart();
+                              if (mounted) {
+                                setState(() => _localChartDismissed = true);
+                              }
+                            },
+                            whiteBg: !liquid && !BeeTokens.isDark(context),
+                            isDark: BeeTokens.isDark(context),
+                            showGrid: false,
+                            showDots: true,
+                            annotate: true,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -925,16 +1060,18 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                         Row(
                           children: [
                             Text(
-                              AppLocalizations.of(context)
-                                  .analyticsCategoryRanking,
+                              AppLocalizations.of(
+                                context,
+                              ).analyticsCategoryRanking,
                               style: BeeTextTokens.title(context),
                             ),
                             const Spacer(),
                             // 饼图/列表切换按钮
                             if (catData.isNotEmpty && sum > 0)
-                              GestureDetector(
-                                onTap: () =>
-                                    setState(() => _showPieChart = !_showPieChart),
+                              LiquidMainFilter(
+                                onTap: () => setState(
+                                  () => _showPieChart = !_showPieChart,
+                                ),
                                 child: Icon(
                                   _showPieChart
                                       ? Icons.format_list_bulleted
@@ -947,45 +1084,54 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                             if (!headerDismissed)
                               InkWell(
                                 onTap: () async {
-                                  final setter =
-                                      ref.read(analyticsHintsSetterProvider);
+                                  final setter = ref.read(
+                                    analyticsHintsSetterProvider,
+                                  );
                                   await setter.dismissHeader();
                                   if (mounted) {
                                     setState(
-                                        () => _localHeaderDismissed = true);
+                                      () => _localHeaderDismissed = true,
+                                    );
                                   }
                                 },
                                 child: Row(
                                   children: [
-                                    Icon(Icons.swipe,
-                                        size: 14,
-                                        color:
-                                            BeeTokens.textSecondary(context)),
+                                    Icon(
+                                      Icons.swipe,
+                                      size: 14,
+                                      color: BeeTokens.textSecondary(context),
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
-                                        AppLocalizations.of(context)
-                                            .analyticsSwipeToSwitch,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                                color: BeeTokens.textSecondary(
-                                                    context))),
+                                      AppLocalizations.of(
+                                        context,
+                                      ).analyticsSwipeToSwitch,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: BeeTokens.textSecondary(
+                                              context,
+                                            ),
+                                          ),
+                                    ),
                                     const SizedBox(width: 4),
-                                    Icon(Icons.close,
-                                        size: 14,
-                                        color: BeeTokens.textTertiary(context)),
+                                    Icon(
+                                      Icons.close,
+                                      size: 14,
+                                      color: BeeTokens.textTertiary(context),
+                                    ),
                                   ],
                                 ),
                               ),
                           ],
                         ),
                       if (_type != 'balance') const SizedBox(height: 8),
-                      if (_type != 'balance' && _showPieChart && catData.isNotEmpty && sum > 0)
-                        CategoryPieChart(
-                          data: catData,
-                          sum: sum,
-                        ),
+                      if (_type != 'balance' &&
+                          _showPieChart &&
+                          catData.isNotEmpty &&
+                          sum > 0)
+                        CategoryPieChart(data: catData, sum: sum),
                       if (_type != 'balance' && !_showPieChart)
                         for (final item in catData)
                           CategoryRankRow(
@@ -1002,13 +1148,18 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
                             subCategories: item.subCategories,
                           ),
                       // 底部留白，避免被悬浮 Tab 栏遮挡
-                      SizedBox(height: 56 + 12 + MediaQuery.of(context).viewPadding.bottom + 16),
+                      SizedBox(
+                        height: 56 +
+                            12 +
+                            MediaQuery.of(context).viewPadding.bottom +
+                            16,
+                      ),
                     ],
                   ),
                 );
               },
             ),
-          )
+          ),
         ],
       ),
     );
@@ -1021,7 +1172,10 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
 // 旧的自定义年月选择器已移除，统一使用 showWheelDatePicker。
 
 String _currentPeriodLabel(
-    String scope, DateTime selMonth, BuildContext context) {
+  String scope,
+  DateTime selMonth,
+  BuildContext context,
+) {
   switch (scope) {
     case 'year':
       return '${selMonth.year}';
@@ -1044,10 +1198,18 @@ Future<List<dynamic>> _loadCategoryData(
 ) async {
   final results = await Future.wait<dynamic>([
     repo.totalsByCategoryWithHierarchy(
-        ledgerId: ledgerId, type: type, start: start, end: end),
+      ledgerId: ledgerId,
+      type: type,
+      start: start,
+      end: end,
+    ),
     seriesFuture,
     repo.countByTypeInRange(
-        ledgerId: ledgerId, type: type, start: start, end: end),
+      ledgerId: ledgerId,
+      type: type,
+      start: start,
+      end: end,
+    ),
     repo.getSharedSyntheticCategoriesForLedger(ledgerId),
   ]);
 
@@ -1058,11 +1220,14 @@ Future<List<dynamic>> _loadCategoryData(
         String? icon,
         int? parentId,
         int level,
-        double total
+        double total,
       })>;
   final sharedSynthetic = results[3] as Map<int, db.Category>;
-  final aggregated =
-      await _aggregateTopLevelCategories(hierarchyData, repo, sharedSynthetic);
+  final aggregated = await _aggregateTopLevelCategories(
+    hierarchyData,
+    repo,
+    sharedSynthetic,
+  );
 
   return [aggregated, results[1], results[2]];
 }
@@ -1079,14 +1244,26 @@ Future<List<dynamic>> _loadBalanceData(
 ) async {
   final results = await Future.wait<dynamic>([
     repo.totalsByCategoryWithHierarchy(
-        ledgerId: ledgerId, type: 'expense', start: start, end: end),
+      ledgerId: ledgerId,
+      type: 'expense',
+      start: start,
+      end: end,
+    ),
     seriesFuture,
     repo.countByTypeInRange(
-        ledgerId: ledgerId, type: 'expense', start: start, end: end),
+      ledgerId: ledgerId,
+      type: 'expense',
+      start: start,
+      end: end,
+    ),
     incomeSeriesFuture,
     expenseSeriesFuture,
     repo.countByTypeInRange(
-        ledgerId: ledgerId, type: 'income', start: start, end: end),
+      ledgerId: ledgerId,
+      type: 'income',
+      start: start,
+      end: end,
+    ),
     repo.getSharedSyntheticCategoriesForLedger(ledgerId),
   ]);
 
@@ -1097,11 +1274,14 @@ Future<List<dynamic>> _loadBalanceData(
         String? icon,
         int? parentId,
         int level,
-        double total
+        double total,
       })>;
   final sharedSynthetic = results[6] as Map<int, db.Category>;
-  final aggregated =
-      await _aggregateTopLevelCategories(hierarchyData, repo, sharedSynthetic);
+  final aggregated = await _aggregateTopLevelCategories(
+    hierarchyData,
+    repo,
+    sharedSynthetic,
+  );
 
   return [
     aggregated,
@@ -1109,25 +1289,39 @@ Future<List<dynamic>> _loadBalanceData(
     results[2],
     results[3],
     results[4],
-    results[5]
+    results[5],
   ];
 }
 
 // 聚合一级分类数据（将二级分类金额聚合到一级分类）
-Future<List<({int? id, String name, db.Category? category, double total, List<({int id, db.Category category, String name, double total})> subCategories})>>
-    _aggregateTopLevelCategories(
-        List<
-                ({
-                  int? id,
-                  String name,
-                  String? icon,
-                  int? parentId,
-                  int level,
-                  double total
-                })>
-            hierarchyData,
-        dynamic repo,
-        Map<int, db.Category> sharedSynthetic) async {
+Future<
+    List<
+        ({
+          int? id,
+          String name,
+          db.Category? category,
+          double total,
+          List<
+              ({
+                int id,
+                db.Category category,
+                String name,
+                double total
+              })> subCategories,
+        })>> _aggregateTopLevelCategories(
+  List<
+          ({
+            int? id,
+            String name,
+            String? icon,
+            int? parentId,
+            int level,
+            double total,
+          })>
+      hierarchyData,
+  dynamic repo,
+  Map<int, db.Category> sharedSynthetic,
+) async {
   // 1. 先收集所有一级分类的完整信息
   // §7 共享账本:Editor 的 tx 用 SharedLedger* 表(synthetic 负 id),
   // 主表 getCategoryById 查不到。topLevelNames/Icons 兜底从 hierarchyData
@@ -1187,17 +1381,24 @@ Future<List<({int? id, String name, db.Category? category, double total, List<({
 
   // 4. 聚合金额，同时收集子分类明细
   final topLevelMap = <int?, double>{};
-  final subCategoriesMap = <int?, List<({int id, db.Category category, String name, double total})>>{};
+  final subCategoriesMap = <int?,
+      List<({int id, db.Category category, String name, double total})>>{};
 
   for (final item in hierarchyData) {
     if (item.level == 1) {
       // 一级分类：累加金额
-      topLevelMap.update(item.id, (v) => v + item.total,
-          ifAbsent: () => item.total);
+      topLevelMap.update(
+        item.id,
+        (v) => v + item.total,
+        ifAbsent: () => item.total,
+      );
     } else if (item.level == 2 && item.parentId != null) {
       // 二级分类：累加到父分类
-      topLevelMap.update(item.parentId, (v) => v + item.total,
-          ifAbsent: () => item.total);
+      topLevelMap.update(
+        item.parentId,
+        (v) => v + item.total,
+        ifAbsent: () => item.total,
+      );
       // 收集子分类明细 — §7 共享账本:负 id 的 L2 走 sharedSynthetic
       // fallback,主表 getCategoryById 查不到。这样点击一级分类才能展开
       // SharedLedger* 的子分类,点击子分类才能进 CategoryDetailPage。
@@ -1230,7 +1431,8 @@ Future<List<({int? id, String name, db.Category? category, double total, List<({
   final result = topLevelMap.entries.map((e) {
     final id = e.key;
     final total = e.value;
-    final subs = subCategoriesMap[id] ?? <({int id, db.Category category, String name, double total})>[];
+    final subs = subCategoriesMap[id] ??
+        <({int id, db.Category category, String name, double total})>[];
 
     // 获取一级分类信息
     if (id != null && topLevelInfo.containsKey(id)) {

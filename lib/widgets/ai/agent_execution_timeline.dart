@@ -1,3 +1,5 @@
+import '../../widgets/ui/liquid_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -5,12 +7,7 @@ import '../../pages/ai/agent_tool_presentation.dart';
 import '../../styles/tokens.dart';
 import 'agent_markdown_text.dart';
 
-enum AgentExecutionStepStatus {
-  waiting,
-  running,
-  completed,
-  failed,
-}
+enum AgentExecutionStepStatus { waiting, running, completed, failed }
 
 /// 一次工具调用在前台对话中的安全展示模型。
 ///
@@ -94,67 +91,73 @@ final class AgentExecutionTimeline extends StatelessWidget {
             AgentToolPresentation.label(l10n, runningStep.toolName),
           )
         : waitingStep != null
-            ? l10n.agentPermissionWaiting
-            : l10n.aiChatThinking;
+        ? l10n.agentPermissionWaiting
+        : l10n.aiChatThinking;
     final showSpinner =
         runningStep != null || (isStreaming && waitingStep == null);
-    return Container(
-      key: const ValueKey('agent-execution-timeline'),
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: BeeTokens.surfaceSecondary(context),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: BeeTokens.border(context)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (isStreaming || steps.isNotEmpty)
-            Row(
-              children: [
-                Icon(
-                  Icons.route_rounded,
-                  size: 17,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 7),
-                Text(
-                  phaseText,
-                  key: const ValueKey('agent-execution-phase'),
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                if (showSpinner) ...[
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 13,
-                    height: 13,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.8,
-                      color: Theme.of(context).colorScheme.primary,
+    return GlassSurface(
+      prominent: false,
+      borderRadius: 20,
+      child: Container(
+        key: const ValueKey('agent-execution-timeline'),
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        decoration: LiquidTheme.isActive(context)
+            ? null
+            : BoxDecoration(
+                color: BeeTokens.surfaceSecondary(context),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: BeeTokens.border(context)),
+              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isStreaming || steps.isNotEmpty)
+              Row(
+                children: [
+                  Icon(
+                    Icons.route_rounded,
+                    size: 17,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    phaseText,
+                    key: const ValueKey('agent-execution-phase'),
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
+                  if (showSpinner) ...[
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 13,
+                      height: 13,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.8,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          for (var index = 0; index < steps.length; index++) ...[
-            if (index == 0) const SizedBox(height: 8),
-            _StepView(step: steps[index], l10n: l10n),
-          ],
-          if (text.isNotEmpty) ...[
-            if (steps.isNotEmpty) const SizedBox(height: 10),
-            AgentMarkdownText(
-              data: streamingText!,
-              style: TextStyle(
-                color: BeeTokens.textPrimary(context),
-                fontSize: 14,
-                height: 1.5,
               ),
-            ),
+            for (var index = 0; index < steps.length; index++) ...[
+              if (index == 0) const SizedBox(height: 8),
+              _StepView(step: steps[index], l10n: l10n),
+            ],
+            if (text.isNotEmpty) ...[
+              if (steps.isNotEmpty) const SizedBox(height: 10),
+              AgentMarkdownText(
+                data: streamingText!,
+                style: TextStyle(
+                  color: BeeTokens.textPrimary(context),
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -183,21 +186,21 @@ class _StepView extends StatelessWidget {
 
     final (IconData icon, Color color) = switch (step.status) {
       AgentExecutionStepStatus.waiting => (
-          Icons.hourglass_top_rounded,
-          Colors.orange,
-        ),
+        Icons.hourglass_top_rounded,
+        Colors.orange,
+      ),
       AgentExecutionStepStatus.running => (
-          Icons.sync_rounded,
-          Theme.of(context).colorScheme.primary,
-        ),
+        Icons.sync_rounded,
+        Theme.of(context).colorScheme.primary,
+      ),
       AgentExecutionStepStatus.completed => (
-          Icons.check_circle_rounded,
-          Colors.green,
-        ),
+        Icons.check_circle_rounded,
+        Colors.green,
+      ),
       AgentExecutionStepStatus.failed => (
-          Icons.error_rounded,
-          Theme.of(context).colorScheme.error,
-        ),
+        Icons.error_rounded,
+        Theme.of(context).colorScheme.error,
+      ),
     };
 
     return Padding(
@@ -216,9 +219,9 @@ class _StepView extends StatelessWidget {
               children: [
                 Text(
                   statusText,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 if (safeArgs.isNotEmpty) ...[
                   const SizedBox(height: 3),
@@ -238,9 +241,9 @@ class _StepView extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: BeeTokens.textSecondary(context),
-                          height: 1.35,
-                        ),
+                      color: BeeTokens.textSecondary(context),
+                      height: 1.35,
+                    ),
                   ),
                 ],
                 if (step.error != null && step.error!.trim().isNotEmpty) ...[
@@ -250,8 +253,8 @@ class _StepView extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
               ],

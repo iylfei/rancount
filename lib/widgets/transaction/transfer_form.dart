@@ -1,3 +1,5 @@
+import '../biz/transaction_glass.dart';
+import '../../styles/liquid_theme.dart';
 import 'package:drift/drift.dart' as d;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -109,12 +111,14 @@ class _TransferFormState extends ConsumerState<TransferForm> {
     if (accountId >= 0) return null;
     final repo = ref.read(repositoryProvider);
     if (repo is! LocalRepository) return null;
-    final ledger = await (repo.db.select(repo.db.ledgers)
-          ..where((l) => l.id.equals(ledgerId)))
+    final ledger = await (repo.db.select(
+      repo.db.ledgers,
+    )..where((l) => l.id.equals(ledgerId)))
         .getSingleOrNull();
     if (ledger?.syncId == null) return null;
-    final rows = await (repo.db.select(repo.db.sharedLedgerAccounts)
-          ..where((t) => t.ledgerSyncId.equals(ledger!.syncId!)))
+    final rows = await (repo.db.select(
+      repo.db.sharedLedgerAccounts,
+    )..where((t) => t.ledgerSyncId.equals(ledger!.syncId!)))
         .get();
     for (final r in rows) {
       if (syntheticIdForSyncId(r.syncId) == accountId) return r.syncId;
@@ -149,10 +153,12 @@ class _TransferFormState extends ConsumerState<TransferForm> {
 
     if (!mounted) return;
 
-    await showModalBottomSheet(
+    await showBeeBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: BeeTokens.surfaceSheet(context),
+      backgroundColor: LiquidTheme.isActive(context)
+          ? Colors.transparent
+          : BeeTokens.surfaceSheet(context),
       builder: (context) => AmountEditorSheet(
         categoryName: l10n.transferTitle,
         initialDate: widget.initialDate ?? DateTime.now(),
@@ -166,14 +172,15 @@ class _TransferFormState extends ConsumerState<TransferForm> {
         onSubmit: (result) async {
           final attachmentService = ref.read(attachmentServiceProvider);
           // 获取虚拟转账分类ID
-          final transferCategory = await ref.read(transferCategoryProvider.future);
+          final transferCategory = await ref.read(
+            transferCategoryProvider.future,
+          );
           final transferCategoryId = transferCategory.id;
 
           // §7 共享账本:Editor picker 给的是 synthetic Account(负数 id)。
           // 写本地 Drift 时 accountId / toAccountId 留 null,override 字段
           // 走 Owner 的 syncId;push 序列化时按 override 输出 payload。
-          final isSyntheticFrom =
-              _fromAccountId != null && _fromAccountId! < 0;
+          final isSyntheticFrom = _fromAccountId != null && _fromAccountId! < 0;
           final isSyntheticTo = _toAccountId != null && _toAccountId! < 0;
           final fromAccountForAdd = isSyntheticFrom ? null : _fromAccountId;
           final toAccountForAdd = isSyntheticTo ? null : _toAccountId;
@@ -206,7 +213,9 @@ class _TransferFormState extends ConsumerState<TransferForm> {
               );
               // 共享账本:回填编辑人,UI 头像组立即展示
               await TxAuthorService.markEdited(
-                  ref, widget.editingTransactionId!);
+                ref,
+                widget.editingTransactionId!,
+              );
               // 更新标签
               if (result.tagIds.isNotEmpty) {
                 await repo.updateTransactionTags(
@@ -217,7 +226,9 @@ class _TransferFormState extends ConsumerState<TransferForm> {
                 ref.read(tagListRefreshProvider.notifier).state++;
               } else {
                 // 编辑模式：如果没有选择标签，清除原有标签
-                await repo.removeAllTagsFromTransaction(widget.editingTransactionId!);
+                await repo.removeAllTagsFromTransaction(
+                  widget.editingTransactionId!,
+                );
                 ref.read(tagListRefreshProvider.notifier).state++;
               }
 
@@ -348,7 +359,10 @@ class _TransferFormState extends ConsumerState<TransferForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = transactionPrimary(
+      context,
+      ref.watch(primaryColorProvider),
+    );
     final currentLedgerAsync = ref.watch(currentLedgerProvider);
     final currentCurrency = currentLedgerAsync.asData?.value?.currency ?? 'CNY';
     // WS shared_resource_change 推 Owner 账户更新后 rebuild,重查 SharedLedger
@@ -374,10 +388,12 @@ class _TransferFormState extends ConsumerState<TransferForm> {
         // 见 _loadFilteredAccounts)直接放行,不重复校验币种/类型,避免刚补回
         // 又被这里的过滤吃掉(跟 AccountSelector 的钉住语义一致)。
         final accounts = allAccounts
-            .where((account) =>
-                account.hidden ||
-                (account.currency == currentCurrency &&
-                    isTradableType(account.type)))
+            .where(
+              (account) =>
+                  account.hidden ||
+                  (account.currency == currentCurrency &&
+                      isTradableType(account.type)),
+            )
             .toList();
 
         if (accounts.isEmpty) {
@@ -417,11 +433,7 @@ class _TransferFormState extends ConsumerState<TransferForm> {
               const SizedBox(height: 24),
               // 转账箭头
               Center(
-                child: Icon(
-                  Icons.arrow_downward,
-                  color: primary,
-                  size: 32,
-                ),
+                child: Icon(Icons.arrow_downward, color: primary, size: 32),
               ),
               const SizedBox(height: 24),
               // 转入账户标题
@@ -447,22 +459,40 @@ class _TransferFormState extends ConsumerState<TransferForm> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 0.85,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: LiquidTheme.isActive(context) ? 2 : 4,
+        childAspectRatio: LiquidTheme.isActive(context) ? 1.75 : 0.85,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
       ),
       itemCount: accounts.length,
       itemBuilder: (context, index) {
         final account = accounts[index];
-        final isSelected = isFrom
-            ? _fromAccountId == account.id
-            : _toAccountId == account.id;
+        final isSelected =
+            isFrom ? _fromAccountId == account.id : _toAccountId == account.id;
 
         return _buildAccountCard(account, isSelected, isFrom, primary);
       },
     );
+  }
+
+  Future<void> _selectTransferAccount(Account account, bool isFrom) async {
+    setState(() {
+      if (isFrom) {
+        _fromAccountId = account.id;
+        // 如果转入账户已选择且与转出账户相同，则清空转入账户
+        if (_toAccountId == account.id) {
+          _toAccountId = null;
+        }
+      } else {
+        _toAccountId = account.id;
+      }
+    });
+
+    // 如果两个账户都已选择，自动弹出金额输入弹窗
+    if (_fromAccountId != null && _toAccountId != null) {
+      await _openAmountSheet();
+    }
   }
 
   Widget _buildAccountCard(
@@ -471,85 +501,125 @@ class _TransferFormState extends ConsumerState<TransferForm> {
     bool isFrom,
     Color primary,
   ) {
-    return InkWell(
-      onTap: () async {
-        setState(() {
-          if (isFrom) {
-            _fromAccountId = account.id;
-            // 如果转入账户已选择且与转出账户相同，则清空转入账户
-            if (_toAccountId == account.id) {
-              _toAccountId = null;
-            }
-          } else {
-            _toAccountId = account.id;
-          }
-        });
-
-        // 如果两个账户都已选择，自动弹出金额输入弹窗
-        if (_fromAccountId != null && _toAccountId != null) {
-          await _openAmountSheet();
-        }
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        decoration: BoxDecoration(
-          // 未选中跟随页面底色(亮色白/暗黑纯黑),避免暗黑模式下突兀的白卡片
-          color: isSelected
-              ? primary.withValues(alpha: 0.1)
-              : BeeTokens.surfaceSheet(context),
-          border: Border.all(
-            color: isSelected ? primary : BeeTokens.borderStrong(context),
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AccountTypeIcon(
-              type: account.type,
-              size: 32,
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+    if (LiquidTheme.isActive(context)) {
+      return Semantics(
+        selected: isSelected,
+        button: true,
+        child: GlassPressable(
+          selectionFeedback: true,
+          onTap: () => _selectTransferAccount(account, isFrom),
+          child: TransactionPanel(
+            borderRadius: 22,
+            child: AnimatedContainer(
+              duration: LiquidTheme.motionOf(context)
+                  ? const Duration(milliseconds: 180)
+                  : Duration.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isSelected ? primary.withValues(alpha: .12) : null,
+                borderRadius: BorderRadius.circular(22),
+                border: isSelected
+                    ? Border.all(
+                        color: primary.withValues(alpha: .6),
+                        width: 1.4,
+                      )
+                    : null,
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 账户隐藏(#240)E1 钉住:account.hidden 只可能在编辑历史
-                  // 转账、该账户被补回候选时为 true(其余隐藏账户已被过滤,
-                  // 不会出现在候选里),借该字段直接打灰标。
-                  if (account.hidden) ...[
-                    Icon(
-                      Icons.visibility_off,
-                      size: 10,
-                      color: BeeTokens.textTertiary(context),
-                    ),
-                    const SizedBox(width: 2),
-                  ],
-                  Flexible(
+                  AccountTypeIcon(type: account.type, size: 28),
+                  const SizedBox(width: 10),
+                  Expanded(
                     child: Text(
                       account.name,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.normal,
-                        color: isSelected
-                            ? primary
-                            : BeeTokens.textPrimary(context),
-                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: account.hidden
+                            ? BeeTokens.textTertiary(context)
+                            : BeeTokens.textPrimary(context),
+                      ),
                     ),
                   ),
+                  if (account.hidden)
+                    Icon(
+                      Icons.visibility_off_outlined,
+                      size: 14,
+                      color: BeeTokens.textTertiary(context),
+                    ),
+                  if (isSelected) ...[
+                    const SizedBox(width: 4),
+                    Icon(Icons.check_circle_rounded, size: 17, color: primary),
+                  ],
                 ],
               ),
             ),
-          ],
+          ),
+        ),
+      );
+    }
+    return GlassPressEffect(
+      enabled: LiquidTheme.isActive(context),
+      child: InkWell(
+        onTap: () => _selectTransferAccount(account, isFrom),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          decoration: BoxDecoration(
+            // 未选中跟随页面底色(亮色白/暗黑纯黑),避免暗黑模式下突兀的白卡片
+            color: isSelected
+                ? primary.withValues(alpha: 0.1)
+                : BeeTokens.surfaceSheet(context),
+            border: Border.all(
+              color: isSelected ? primary : BeeTokens.borderStrong(context),
+              width: isSelected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AccountTypeIcon(type: account.type, size: 32),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // 账户隐藏(#240)E1 钉住:account.hidden 只可能在编辑历史
+                    // 转账、该账户被补回候选时为 true(其余隐藏账户已被过滤,
+                    // 不会出现在候选里),借该字段直接打灰标。
+                    if (account.hidden) ...[
+                      Icon(
+                        Icons.visibility_off,
+                        size: 10,
+                        color: BeeTokens.textTertiary(context),
+                      ),
+                      const SizedBox(width: 2),
+                    ],
+                    Flexible(
+                      child: Text(
+                        account.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isSelected
+                              ? primary
+                              : BeeTokens.textPrimary(context),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-
 }

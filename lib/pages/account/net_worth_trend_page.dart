@@ -59,7 +59,7 @@ class _NetWorthTrendPageState extends ConsumerState<NetWorthTrendPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primary = ref.watch(primaryColorProvider);
+    final primary = Theme.of(context).colorScheme.primary;
     final hide = ref.watch(hideAmountsProvider);
     final earliest = ref.watch(earliestTransactionDateProvider).valueOrNull;
     final dates = _rangeDates(earliest);

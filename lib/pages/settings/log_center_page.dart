@@ -9,7 +9,6 @@ import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/section_card.dart';
 import '../../styles/tokens.dart';
 import '../../utils/ui_scale_extensions.dart';
-import '../../providers/theme_providers.dart';
 import '../../l10n/app_localizations.dart';
 
 /// 日志中心页面
@@ -77,7 +76,7 @@ class _LogCenterPageState extends ConsumerState<LogCenterPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     final filteredLogs = _filteredLogs;
 
     return Scaffold(
@@ -307,7 +306,7 @@ class _LogCenterPageState extends ConsumerState<LogCenterPage> {
     final l10n = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.logCenterClearConfirmTitle),
         content: Text(l10n.logCenterClearConfirmMessage),
         actions: [
@@ -464,7 +463,7 @@ class _LogEntryCard extends ConsumerWidget {
   void _showLogDetail(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text('[${log.tag}]'),
         content: SingleChildScrollView(
           child: Column(

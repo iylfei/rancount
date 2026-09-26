@@ -6,7 +6,6 @@ import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/biz.dart';
 import '../../styles/tokens.dart';
 import '../../providers/smart_billing_providers.dart';
-import '../../providers/theme_providers.dart';
 import '../../providers/voice_billing_providers.dart';
 import '../ai/ai_settings_page.dart';
 import '../automation/auto_billing_settings_page.dart';
@@ -31,7 +30,7 @@ class SmartBillingPage extends ConsumerWidget {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Row(
           children: [
             Icon(Icons.info_outline,
@@ -159,10 +158,10 @@ class SmartBillingPage extends ConsumerWidget {
     VoiceTriggerMode current,
   ) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.read(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) => BeeAlertDialog(
         title: Text(l10n.smartBillingVoiceTrigger),
         contentPadding: const EdgeInsets.symmetric(vertical: 8),
         content: Column(
@@ -386,7 +385,7 @@ class SmartBillingPage extends ConsumerWidget {
                         subtitle: l10n.smartBillingAutoTagsDesc,
                         trailing: Switch.adaptive(
                           value: ref.watch(smartBillingAutoTagsProvider),
-                          activeColor: ref.watch(primaryColorProvider),
+                          activeColor: Theme.of(context).colorScheme.primary,
                           onChanged: (value) {
                             ref
                                 .read(smartBillingAutoTagsProvider.notifier)
@@ -402,7 +401,7 @@ class SmartBillingPage extends ConsumerWidget {
                         subtitle: l10n.smartBillingAutoAttachmentDesc,
                         trailing: Switch.adaptive(
                           value: ref.watch(smartBillingAutoAttachmentProvider),
-                          activeColor: ref.watch(primaryColorProvider),
+                          activeColor: Theme.of(context).colorScheme.primary,
                           onChanged: (value) {
                             ref
                                 .read(
@@ -455,7 +454,7 @@ class _VoiceSilenceTimeoutSliderState
           child: Row(
             children: [
               Icon(Icons.timer_outlined,
-                  size: 20, color: ref.watch(primaryColorProvider)),
+                  size: 20, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -483,7 +482,7 @@ class _VoiceSilenceTimeoutSliderState
           divisions: (VoiceBillingSettings.maxSilenceTimeoutMs -
                   VoiceBillingSettings.minSilenceTimeoutMs) ~/
               100,
-          activeColor: ref.watch(primaryColorProvider),
+          activeColor: Theme.of(context).colorScheme.primary,
           label: '${seconds}s',
           onChanged: (value) {
             setState(() => _dragValueMs = value.round());

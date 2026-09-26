@@ -385,7 +385,7 @@ class TransactionListItem extends ConsumerWidget {
                               ledgerName!,
                               style: TextStyle(
                                 fontSize: 11,
-                                color: ref.watch(primaryColorProvider),
+                                color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

@@ -4,14 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:beecount/widgets/biz/bee_icon.dart';
 
-import '../data/import_page.dart';
-import '../data/export_page.dart';
-import '../settings/personalize_page.dart';
 import '../../providers.dart';
-import '../../providers/theme_providers.dart';
 import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/biz.dart';
 import '../../styles/tokens.dart';
+import '../../styles/liquid_theme.dart';
+import 'widgets/liquid_main_section.dart';
 import 'package:flutter_cloud_sync/flutter_cloud_sync.dart' hide SyncStatus;
 import '../../cloud/sync_service.dart';
 import '../cloud/cloud_service_page.dart';
@@ -22,14 +20,6 @@ import '../settings/help_center_page.dart';
 import '../../providers/sync_providers.dart' as sp;
 import '../../services/export/share_poster_service.dart';
 import '../../l10n/app_localizations.dart';
-import '../category/category_manage_page.dart';
-import '../category/category_migration_page.dart';
-import '../transaction/recurring_transaction_page.dart';
-import '../settings/reminder_settings_page.dart';
-import '../settings/language_settings_page.dart';
-import '../settings/widget_management_page.dart';
-import '../automation/auto_billing_settings_page.dart';
-import '../ai/ai_settings_page.dart';
 import '../cloud/cloud_sync_page.dart';
 import '../cloud/beecount_cloud_sync_page.dart';
 import '../../utils/website_urls.dart';
@@ -40,10 +30,8 @@ import '../settings/smart_billing_page.dart';
 import '../settings/automation_page.dart';
 import '../settings/about_page.dart';
 import '../report/annual_report_page.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:in_app_review/in_app_review.dart';
-import '../../services/system/update_service.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../donation/donation_page.dart';
 
@@ -54,6 +42,7 @@ class MinePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(authServiceProvider);
     final ledgerId = ref.watch(currentLedgerIdProvider);
+    final liquid = LiquidTheme.isActive(context);
 
     return Scaffold(
       backgroundColor: BeeTokens.scaffoldBackground(context), // ⭐ 使用 Token
@@ -63,238 +52,285 @@ class MinePage extends ConsumerWidget {
             showBack: false,
             title: AppLocalizations.of(context).mineTitle,
             compact: true,
-            showTitleSection: false,
-            content: _MinePageHeader(),
+            showTitleSection: liquid,
+            content: liquid ? null : _MinePageHeader(),
           ),
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                BeeTokens.cardDivider(context, indent: 0),
-                SizedBox(height: 8.0.scaled(context, ref)),
+                if (liquid)
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 4, 16, 0),
+                    child: _MinePageHeader(),
+                  )
+                else
+                  BeeTokens.cardDivider(context, indent: 0),
+                LiquidMainSectionTitle(
+                  title: AppLocalizations.of(context).mineCloudService,
+                ),
+                SizedBox(height: liquid ? 0 : 8.0.scaled(context, ref)),
                 // 云同步与备份
-                Consumer(builder: (sectionContext, sectionRef, _) {
-                  final activeCfg = sectionRef.watch(activeCloudConfigProvider);
+                Consumer(
+                  builder: (sectionContext, sectionRef, _) {
+                    final activeCfg = sectionRef.watch(
+                      activeCloudConfigProvider,
+                    );
 
-                  return SectionCard(
-                    margin: EdgeInsets.fromLTRB(
+                    return SectionCard(
+                      margin: EdgeInsets.fromLTRB(
                         12.0.scaled(sectionContext, sectionRef),
                         0,
                         12.0.scaled(sectionContext, sectionRef),
-                        0),
-                    child: Column(
-                      children: [
-                        // 云服务 —— BeeCount Cloud 模式下 subtitle 带上
-                        // server 版本号(从 fetchServerVersion 拉的 FutureProvider),
-                        // 一眼看到 cloud 哪版。其它模式没版本概念,保留原文案。
-                        Consumer(builder: (ctx, r, _) {
-                          final cloudVersion = r
-                              .watch(beecountCloudServerVersionProvider)
-                              .valueOrNull;
-                          return AppListTile(
-                            leading: Icons.cloud_queue_outlined,
-                            title: AppLocalizations.of(sectionContext)
-                                .mineCloudService,
-                            subtitle: activeCfg.when(
-                              loading: () => AppLocalizations.of(sectionContext)
-                                  .mineCloudServiceLoading,
-                              error: (e, _) =>
-                                  '${AppLocalizations.of(sectionContext).commonError}: $e',
-                              data: (cfg) {
-                                switch (cfg.type) {
-                                  case CloudBackendType.local:
-                                    return AppLocalizations.of(sectionContext)
-                                        .mineCloudServiceOffline;
-                                  case CloudBackendType.webdav:
-                                    return AppLocalizations.of(sectionContext)
-                                        .mineCloudServiceWebDAV;
-                                  case CloudBackendType.icloud:
-                                    return 'iCloud';
-                                  case CloudBackendType.supabase:
-                                    return AppLocalizations.of(sectionContext)
-                                        .mineCloudServiceCustom;
-                                  case CloudBackendType.s3:
-                                    return 'S3';
-                                  case CloudBackendType.beecountCloud:
-                                    return cloudVersion != null &&
-                                            cloudVersion.isNotEmpty
-                                        ? 'BeeCount Cloud v$cloudVersion'
-                                        : 'BeeCount Cloud';
-                                }
-                              },
-                            ),
-                            onTap: () async {
-                              await Navigator.of(sectionContext).push(
-                                MaterialPageRoute(
-                                    builder: (_) => const CloudServicePage()),
-                              );
-                            },
-                          );
-                        }),
-                        // 同步状态
-                        Builder(
-                          builder: (ctx) {
-                            return authAsync.when(
-                              loading: () => const Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child:
-                                    Center(child: CircularProgressIndicator()),
-                              ),
-                              error: (e, _) => Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Text(
-                                  '${AppLocalizations.of(sectionContext).commonError}: $e',
-                                  style: const TextStyle(color: Colors.red),
-                                ),
-                              ),
-                              data: (auth) => FutureBuilder<CloudUser?>(
-                                future: auth.currentUser,
-                                builder: (ctx, snap) {
-                                  if (snap.hasError) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Text(
-                                        '${AppLocalizations.of(sectionContext).commonError}: ${snap.error}',
-                                        style:
-                                            const TextStyle(color: Colors.red),
-                                      ),
-                                    );
-                                  }
-
-                                  final user = snap.data;
-                                  final cloudConfig = sectionRef
-                                      .watch(activeCloudConfigProvider);
-                                  final isLocalMode = cloudConfig.hasValue &&
-                                      cloudConfig.value!.type ==
-                                          CloudBackendType.local;
-                                  final isICloudMode = cloudConfig.hasValue &&
-                                      cloudConfig.value!.type ==
-                                          CloudBackendType.icloud;
-                                  // iCloud 使用系统账号，不需要登录；其他云服务需要登录
-                                  final canUseCloud = !isLocalMode &&
-                                      (isICloudMode || user != null);
-                                  final asyncSt = sectionRef
-                                      .watch(syncStatusProvider(ledgerId));
-                                  final cached = sectionRef
-                                      .watch(lastSyncStatusProvider(ledgerId));
-                                  final st = asyncSt.asData?.value ?? cached;
-
-                                  // 计算简化的同步状态显示
-                                  String subtitle = '';
-                                  bool showCheckIcon = false;
-                                  final isFirstLoad = st == null;
-                                  final refreshing = asyncSt.isLoading;
-
-                                  if (!isFirstLoad) {
-                                    switch (st.diff) {
-                                      case SyncDiff.notLoggedIn:
-                                        subtitle =
-                                            AppLocalizations.of(sectionContext)
-                                                .mineSyncNotLoggedIn;
-                                        break;
-                                      case SyncDiff.notConfigured:
-                                        subtitle =
-                                            AppLocalizations.of(sectionContext)
-                                                .mineSyncNotConfigured;
-                                        break;
-                                      case SyncDiff.noRemote:
-                                        subtitle =
-                                            AppLocalizations.of(sectionContext)
-                                                .mineSyncNoRemote;
-                                        break;
-                                      case SyncDiff.inSync:
-                                        subtitle =
-                                            AppLocalizations.of(sectionContext)
-                                                .mineSyncInSyncSimple;
-                                        showCheckIcon = true;
-                                        break;
-                                      case SyncDiff.localNewer:
-                                        subtitle =
-                                            AppLocalizations.of(sectionContext)
-                                                .mineSyncLocalNewerSimple;
-                                        break;
-                                      case SyncDiff.cloudNewer:
-                                        subtitle =
-                                            AppLocalizations.of(sectionContext)
-                                                .mineSyncCloudNewerSimple;
-                                        break;
-                                      case SyncDiff.different:
-                                        subtitle =
-                                            AppLocalizations.of(sectionContext)
-                                                .mineSyncDifferent;
-                                        break;
-                                      case SyncDiff.error:
-                                        subtitle =
-                                            AppLocalizations.of(sectionContext)
-                                                .mineSyncError;
-                                        break;
+                        0,
+                      ),
+                      child: Column(
+                        children: [
+                          // 云服务 —— BeeCount Cloud 模式下 subtitle 带上
+                          // server 版本号(从 fetchServerVersion 拉的 FutureProvider),
+                          // 一眼看到 cloud 哪版。其它模式没版本概念,保留原文案。
+                          Consumer(
+                            builder: (ctx, r, _) {
+                              final cloudVersion = r
+                                  .watch(beecountCloudServerVersionProvider)
+                                  .valueOrNull;
+                              return AppListTile(
+                                leading: Icons.cloud_queue_outlined,
+                                title: AppLocalizations.of(
+                                  sectionContext,
+                                ).mineCloudService,
+                                subtitle: activeCfg.when(
+                                  loading: () => AppLocalizations.of(
+                                    sectionContext,
+                                  ).mineCloudServiceLoading,
+                                  error: (e, _) =>
+                                      '${AppLocalizations.of(sectionContext).commonError}: $e',
+                                  data: (cfg) {
+                                    switch (cfg.type) {
+                                      case CloudBackendType.local:
+                                        return AppLocalizations.of(
+                                          sectionContext,
+                                        ).mineCloudServiceOffline;
+                                      case CloudBackendType.webdav:
+                                        return AppLocalizations.of(
+                                          sectionContext,
+                                        ).mineCloudServiceWebDAV;
+                                      case CloudBackendType.icloud:
+                                        return 'iCloud';
+                                      case CloudBackendType.supabase:
+                                        return AppLocalizations.of(
+                                          sectionContext,
+                                        ).mineCloudServiceCustom;
+                                      case CloudBackendType.s3:
+                                        return 'S3';
+                                      case CloudBackendType.beecountCloud:
+                                        return cloudVersion != null &&
+                                                cloudVersion.isNotEmpty
+                                            ? 'BeeCount Cloud v$cloudVersion'
+                                            : 'BeeCount Cloud';
                                     }
-                                  }
-
-                                  return Column(
-                                    children: [
-                                      BeeTokens.cardDivider(sectionContext),
-                                      AppListTile(
-                                        leading: Icons.cloud_sync_outlined,
-                                        title:
-                                            AppLocalizations.of(sectionContext)
-                                                .mineSyncTitle,
-                                        subtitle: isFirstLoad ? null : subtitle,
-                                        enabled: !isLocalMode,
-                                        trailing: (canUseCloud &&
-                                                (isFirstLoad || refreshing))
-                                            ? const SizedBox(
-                                                width: 20,
-                                                height: 20,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                        strokeWidth: 2))
-                                            : showCheckIcon
-                                                ? Icon(Icons.check_circle,
-                                                    color: sectionRef.watch(
-                                                        primaryColorProvider),
-                                                    size: 20)
-                                                : Icon(Icons.chevron_right,
-                                                    color: BeeTokens.iconTertiary(
-                                                        context), // ⭐ 使用 Token
-                                                    size: 20),
-                                        onTap: () async {
-                                          // BeeCount Cloud 专属页跟老的
-                                          // iCloud/WebDAV/Supabase 页语义完全不同,
-                                          // 路由按 config.type 分叉,避免 UI 里
-                                          // 大段 if-else 分支。
-                                          final cfg = ref
-                                              .read(activeCloudConfigProvider)
-                                              .valueOrNull;
-                                          final isBeeCount = cfg != null &&
-                                              cfg.type ==
-                                                  CloudBackendType.beecountCloud;
-                                          await Navigator.of(sectionContext)
-                                              .push(
-                                            MaterialPageRoute(
-                                                builder: (_) => isBeeCount
-                                                    ? const BeeCountCloudSyncPage()
-                                                    : const CloudSyncPage()),
-                                          );
-                                        },
-                                      ),
-                                    ],
+                                  },
+                                ),
+                                onTap: () async {
+                                  await Navigator.of(sectionContext).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const CloudServicePage(),
+                                    ),
                                   );
                                 },
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                }),
+                              );
+                            },
+                          ),
+                          // 同步状态
+                          Builder(
+                            builder: (ctx) {
+                              return authAsync.when(
+                                loading: () => const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                ),
+                                error: (e, _) => Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Text(
+                                    '${AppLocalizations.of(sectionContext).commonError}: $e',
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                                data: (auth) => FutureBuilder<CloudUser?>(
+                                  future: auth.currentUser,
+                                  builder: (ctx, snap) {
+                                    if (snap.hasError) {
+                                      return Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Text(
+                                          '${AppLocalizations.of(sectionContext).commonError}: ${snap.error}',
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      );
+                                    }
+
+                                    final user = snap.data;
+                                    final cloudConfig = sectionRef.watch(
+                                      activeCloudConfigProvider,
+                                    );
+                                    final isLocalMode = cloudConfig.hasValue &&
+                                        cloudConfig.value!.type ==
+                                            CloudBackendType.local;
+                                    final isICloudMode = cloudConfig.hasValue &&
+                                        cloudConfig.value!.type ==
+                                            CloudBackendType.icloud;
+                                    // iCloud 使用系统账号，不需要登录；其他云服务需要登录
+                                    final canUseCloud = !isLocalMode &&
+                                        (isICloudMode || user != null);
+                                    final asyncSt = sectionRef.watch(
+                                      syncStatusProvider(ledgerId),
+                                    );
+                                    final cached = sectionRef.watch(
+                                      lastSyncStatusProvider(ledgerId),
+                                    );
+                                    final st = asyncSt.asData?.value ?? cached;
+
+                                    // 计算简化的同步状态显示
+                                    String subtitle = '';
+                                    bool showCheckIcon = false;
+                                    final isFirstLoad = st == null;
+                                    final refreshing = asyncSt.isLoading;
+
+                                    if (!isFirstLoad) {
+                                      switch (st.diff) {
+                                        case SyncDiff.notLoggedIn:
+                                          subtitle = AppLocalizations.of(
+                                            sectionContext,
+                                          ).mineSyncNotLoggedIn;
+                                          break;
+                                        case SyncDiff.notConfigured:
+                                          subtitle = AppLocalizations.of(
+                                            sectionContext,
+                                          ).mineSyncNotConfigured;
+                                          break;
+                                        case SyncDiff.noRemote:
+                                          subtitle = AppLocalizations.of(
+                                            sectionContext,
+                                          ).mineSyncNoRemote;
+                                          break;
+                                        case SyncDiff.inSync:
+                                          subtitle = AppLocalizations.of(
+                                            sectionContext,
+                                          ).mineSyncInSyncSimple;
+                                          showCheckIcon = true;
+                                          break;
+                                        case SyncDiff.localNewer:
+                                          subtitle = AppLocalizations.of(
+                                            sectionContext,
+                                          ).mineSyncLocalNewerSimple;
+                                          break;
+                                        case SyncDiff.cloudNewer:
+                                          subtitle = AppLocalizations.of(
+                                            sectionContext,
+                                          ).mineSyncCloudNewerSimple;
+                                          break;
+                                        case SyncDiff.different:
+                                          subtitle = AppLocalizations.of(
+                                            sectionContext,
+                                          ).mineSyncDifferent;
+                                          break;
+                                        case SyncDiff.error:
+                                          subtitle = AppLocalizations.of(
+                                            sectionContext,
+                                          ).mineSyncError;
+                                          break;
+                                      }
+                                    }
+
+                                    return Column(
+                                      children: [
+                                        BeeTokens.cardDivider(sectionContext),
+                                        AppListTile(
+                                          leading: Icons.cloud_sync_outlined,
+                                          title: AppLocalizations.of(
+                                            sectionContext,
+                                          ).mineSyncTitle,
+                                          subtitle:
+                                              isFirstLoad ? null : subtitle,
+                                          enabled: !isLocalMode,
+                                          trailing: (canUseCloud &&
+                                                  (isFirstLoad || refreshing))
+                                              ? const SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                  ),
+                                                )
+                                              : showCheckIcon
+                                                  ? Icon(
+                                                      Icons.check_circle,
+                                                      color: Theme.of(
+                                                        sectionContext,
+                                                      ).colorScheme.primary,
+                                                      size: 20,
+                                                    )
+                                                  : Icon(
+                                                      Icons.chevron_right,
+                                                      color: BeeTokens
+                                                          .iconTertiary(
+                                                        context,
+                                                      ), // ⭐ 使用 Token
+                                                      size: 20,
+                                                    ),
+                                          onTap: () async {
+                                            // BeeCount Cloud 专属页跟老的
+                                            // iCloud/WebDAV/Supabase 页语义完全不同,
+                                            // 路由按 config.type 分叉,避免 UI 里
+                                            // 大段 if-else 分支。
+                                            final cfg = ref
+                                                .read(activeCloudConfigProvider)
+                                                .valueOrNull;
+                                            final isBeeCount = cfg != null &&
+                                                cfg.type ==
+                                                    CloudBackendType
+                                                        .beecountCloud;
+                                            await Navigator.of(
+                                              sectionContext,
+                                            ).push(
+                                              MaterialPageRoute(
+                                                builder: (_) => isBeeCount
+                                                    ? const BeeCountCloudSyncPage()
+                                                    : const CloudSyncPage(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
                 // 功能管理
-                SizedBox(height: 8.0.scaled(context, ref)),
+                LiquidMainSectionTitle(
+                  title: AppLocalizations.of(context).commonSettings,
+                ),
+                SizedBox(height: liquid ? 0 : 8.0.scaled(context, ref)),
                 SectionCard(
-                  margin: EdgeInsets.fromLTRB(12.0.scaled(context, ref), 0,
-                      12.0.scaled(context, ref), 0),
+                  margin: EdgeInsets.fromLTRB(
+                    12.0.scaled(context, ref),
+                    0,
+                    12.0.scaled(context, ref),
+                    0,
+                  ),
                   child: Column(
                     children: [
                       // 智能记账(共享账本入口已移到"账本管理"页 PrimaryHeader)
@@ -302,13 +338,16 @@ class MinePage extends ConsumerWidget {
                         leading: Icons.auto_awesome_outlined,
                         title: AppLocalizations.of(context).smartBilling,
                         subtitle: AppLocalizations.of(context).smartBillingDesc,
-                        trailing: Icon(Icons.chevron_right,
-                            color: BeeTokens.iconTertiary(context),
-                            size: 20), // ⭐ 使用 Token
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: BeeTokens.iconTertiary(context),
+                          size: 20,
+                        ), // ⭐ 使用 Token
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (_) => const SmartBillingPage()),
+                              builder: (_) => const SmartBillingPage(),
+                            ),
                           );
                         },
                       ),
@@ -317,15 +356,19 @@ class MinePage extends ConsumerWidget {
                       AppListTile(
                         leading: Icons.storage_outlined,
                         title: AppLocalizations.of(context).dataManagement,
-                        subtitle:
-                            AppLocalizations.of(context).dataManagementDesc,
-                        trailing: Icon(Icons.chevron_right,
-                            color: BeeTokens.iconTertiary(context),
-                            size: 20), // ⭐ 使用 Token
+                        subtitle: AppLocalizations.of(
+                          context,
+                        ).dataManagementDesc,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: BeeTokens.iconTertiary(context),
+                          size: 20,
+                        ), // ⭐ 使用 Token
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (_) => const DataManagementPage()),
+                              builder: (_) => const DataManagementPage(),
+                            ),
                           );
                         },
                       ),
@@ -337,13 +380,16 @@ class MinePage extends ConsumerWidget {
                         leading: Icons.schedule_outlined,
                         title: AppLocalizations.of(context).automation,
                         subtitle: AppLocalizations.of(context).automationDesc,
-                        trailing: Icon(Icons.chevron_right,
-                            color: BeeTokens.iconTertiary(context),
-                            size: 20), // ⭐ 使用 Token
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: BeeTokens.iconTertiary(context),
+                          size: 20,
+                        ), // ⭐ 使用 Token
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (_) => const AutomationPage()),
+                              builder: (_) => const AutomationPage(),
+                            ),
                           );
                         },
                       ),
@@ -355,15 +401,19 @@ class MinePage extends ConsumerWidget {
                         // 设置里引(终点是皮肤页)。见 FeatureHighlight。
                         dotAnchor: 'personalize',
                         title: AppLocalizations.of(context).appearanceSettings,
-                        subtitle:
-                            AppLocalizations.of(context).appearanceSettingsDesc,
-                        trailing: Icon(Icons.chevron_right,
-                            color: BeeTokens.iconTertiary(context),
-                            size: 20), // ⭐ 使用 Token
+                        subtitle: AppLocalizations.of(
+                          context,
+                        ).appearanceSettingsDesc,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: BeeTokens.iconTertiary(context),
+                          size: 20,
+                        ), // ⭐ 使用 Token
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (_) => const AppearanceSettingsPage()),
+                              builder: (_) => const AppearanceSettingsPage(),
+                            ),
                           );
                         },
                       ),
@@ -371,22 +421,33 @@ class MinePage extends ConsumerWidget {
                   ),
                 ),
                 // 帮助与信息
-                SizedBox(height: 8.0.scaled(context, ref)),
+                LiquidMainSectionTitle(
+                  title: AppLocalizations.of(context).mineHelp,
+                ),
+                SizedBox(height: liquid ? 0 : 8.0.scaled(context, ref)),
                 SectionCard(
-                  margin: EdgeInsets.fromLTRB(12.0.scaled(context, ref), 0,
-                      12.0.scaled(context, ref), 0),
+                  margin: EdgeInsets.fromLTRB(
+                    12.0.scaled(context, ref),
+                    0,
+                    12.0.scaled(context, ref),
+                    0,
+                  ),
                   child: Column(
                     children: [
                       AppListTile(
                         leading: Icons.info_outline,
                         title: AppLocalizations.of(context).about,
                         subtitle: AppLocalizations.of(context).aboutDesc,
-                        trailing: Icon(Icons.chevron_right,
-                            color: BeeTokens.iconTertiary(context), size: 20),
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: BeeTokens.iconTertiary(context),
+                          size: 20,
+                        ),
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (_) => const AboutPage()),
+                              builder: (_) => const AboutPage(),
+                            ),
                           );
                         },
                       ),
@@ -399,12 +460,16 @@ class MinePage extends ConsumerWidget {
                         subtitle: AppLocalizations.of(context).mineHelpSubtitle,
                         onTap: () async {
                           if (kHelpCenterInApp) {
-                            await Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => const HelpCenterPage()));
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const HelpCenterPage(),
+                              ),
+                            );
                           } else {
                             final locale = Localizations.localeOf(context);
                             await _tryOpenUrl(
-                                Uri.parse(WebsiteUrls.docs(locale)));
+                              Uri.parse(WebsiteUrls.docs(locale)),
+                            );
                           }
                         },
                       ),
@@ -412,18 +477,26 @@ class MinePage extends ConsumerWidget {
                   ),
                 ),
                 // 支持我们
-                SizedBox(height: 8.0.scaled(context, ref)),
+                LiquidMainSectionTitle(
+                  title: AppLocalizations.of(context).mineSupportAuthor,
+                ),
+                SizedBox(height: liquid ? 0 : 8.0.scaled(context, ref)),
                 SectionCard(
-                  margin: EdgeInsets.fromLTRB(12.0.scaled(context, ref), 0,
-                      12.0.scaled(context, ref), 0),
+                  margin: EdgeInsets.fromLTRB(
+                    12.0.scaled(context, ref),
+                    0,
+                    12.0.scaled(context, ref),
+                    0,
+                  ),
                   child: Column(
                     children: [
                       // 仅在iOS显示打赏入口
                       if (Platform.isIOS) ...[
                         Consumer(
                           builder: (context, ref, _) {
-                            final primaryColor =
-                                ref.watch(primaryColorProvider);
+                            final primaryColor = Theme.of(
+                              context,
+                            ).colorScheme.primary;
                             return AppListTile(
                               leading: Icons.favorite,
                               leadingWidget: Container(
@@ -439,15 +512,19 @@ class MinePage extends ConsumerWidget {
                                 ),
                               ),
                               title: AppLocalizations.of(context).donationTitle,
-                              subtitle: AppLocalizations.of(context)
-                                  .donationEntrySubtitle,
-                              trailing: Icon(Icons.chevron_right,
-                                  color: BeeTokens.iconTertiary(context),
-                                  size: 20),
+                              subtitle: AppLocalizations.of(
+                                context,
+                              ).donationEntrySubtitle,
+                              trailing: Icon(
+                                Icons.chevron_right,
+                                color: BeeTokens.iconTertiary(context),
+                                size: 20,
+                              ),
                               onTap: () async {
                                 await Navigator.of(context).push(
                                   MaterialPageRoute(
-                                      builder: (_) => const DonationPage()),
+                                    builder: (_) => const DonationPage(),
+                                  ),
                                 );
                               },
                             );
@@ -458,17 +535,19 @@ class MinePage extends ConsumerWidget {
                       // GitHub Star
                       Consumer(
                         builder: (context, ref, _) {
-                          final starCountAsync =
-                              ref.watch(githubStarCountProvider);
+                          final starCountAsync = ref.watch(
+                            githubStarCountProvider,
+                          );
                           final starCount = starCountAsync.valueOrNull ??
                               githubStarFallbackCount;
                           return AppListTile(
                             leading: Icons.star_outline,
-                            title:
-                                AppLocalizations.of(context).mineSupportAuthor,
-                            subtitle: AppLocalizations.of(context)
-                                .mineSupportAuthorSubtitle(
-                                    starCount.toString()),
+                            title: AppLocalizations.of(
+                              context,
+                            ).mineSupportAuthor,
+                            subtitle: AppLocalizations.of(
+                              context,
+                            ).mineSupportAuthorSubtitle(starCount.toString()),
                             onTap: () => _showGitHubStarGuide(context),
                           );
                         },
@@ -478,14 +557,19 @@ class MinePage extends ConsumerWidget {
                       AppListTile(
                         leading: Icons.auto_graph_rounded,
                         title: AppLocalizations.of(context).annualReportTitle,
-                        subtitle: AppLocalizations.of(context)
-                            .annualReportEntrySubtitle,
-                        trailing: Icon(Icons.chevron_right,
-                            color: BeeTokens.iconTertiary(context), size: 20),
+                        subtitle: AppLocalizations.of(
+                          context,
+                        ).annualReportEntrySubtitle,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: BeeTokens.iconTertiary(context),
+                          size: 20,
+                        ),
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                                builder: (_) => const AnnualReportPage()),
+                              builder: (_) => const AnnualReportPage(),
+                            ),
                           );
                         },
                       ),
@@ -494,10 +578,14 @@ class MinePage extends ConsumerWidget {
                       AppListTile(
                         leading: Icons.ios_share_rounded,
                         title: AppLocalizations.of(context).mineShareApp,
-                        subtitle:
-                            AppLocalizations.of(context).mineShareWithFriends,
-                        trailing: Icon(Icons.chevron_right,
-                            color: BeeTokens.iconTertiary(context), size: 20),
+                        subtitle: AppLocalizations.of(
+                          context,
+                        ).mineShareWithFriends,
+                        trailing: Icon(
+                          Icons.chevron_right,
+                          color: BeeTokens.iconTertiary(context),
+                          size: 20,
+                        ),
                         onTap: () {
                           // 打开海报轮播预览对话框（支持年度、月度、总览3种海报）
                           SharePosterService.showPosterCarouselPreview(context);
@@ -508,8 +596,9 @@ class MinePage extends ConsumerWidget {
                       AppListTile(
                         leading: Icons.content_copy_rounded,
                         title: AppLocalizations.of(context).mineCopyPromoText,
-                        subtitle:
-                            AppLocalizations.of(context).mineCopyPromoSubtitle,
+                        subtitle: AppLocalizations.of(
+                          context,
+                        ).mineCopyPromoSubtitle,
                         onTap: () async {
                           final l10n = AppLocalizations.of(context);
                           await Clipboard.setData(
@@ -526,8 +615,9 @@ class MinePage extends ConsumerWidget {
                         AppListTile(
                           leading: Icons.star_border_rounded,
                           title: AppLocalizations.of(context).mineRateApp,
-                          subtitle:
-                              AppLocalizations.of(context).mineRateAppSubtitle,
+                          subtitle: AppLocalizations.of(
+                            context,
+                          ).mineRateAppSubtitle,
                           onTap: () => _rateApp(context),
                         ),
                       ],
@@ -536,7 +626,10 @@ class MinePage extends ConsumerWidget {
                 ),
                 SizedBox(height: BeeDimens.p16.scaled(context, ref)),
                 // 底部留白，避免被悬浮 Tab 栏遮挡
-                SizedBox(height: 56 + 12 + MediaQuery.of(context).viewPadding.bottom + 16),
+                SizedBox(
+                  height:
+                      56 + 12 + MediaQuery.of(context).viewPadding.bottom + 16,
+                ),
               ],
             ),
           ),
@@ -587,41 +680,21 @@ class _StatCell extends ConsumerWidget {
       crossAxisAlignment:
           centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
-        valueWidget,
+        if (LiquidTheme.isActive(context))
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: valueWidget,
+          )
+        else
+          valueWidget,
         SizedBox(height: 4.0.scaled(context, ref)), // 数字与标签间距增大
-        Text(label,
-            style: labelStyle,
-            textAlign: centered ? TextAlign.center : TextAlign.start),
+        Text(
+          label,
+          style: labelStyle,
+          textAlign: centered ? TextAlign.center : TextAlign.start,
+        ),
       ],
-    );
-  }
-}
-
-// 导入完成后的短暂动画提示：线性进度条从 0 -> 100%
-class _ImportSuccessTile extends StatelessWidget {
-  const _ImportSuccessTile();
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 900),
-      curve: Curves.easeOutCubic,
-      builder: (ctx, v, child) {
-        return AppListTile(
-          leading: Icons.check_circle_outline,
-          title: AppLocalizations.of(ctx).mineImportCompleteTitle,
-          subtitle: AppLocalizations.of(ctx).mineImportCompleteAllSuccess,
-          trailing: SizedBox(
-            width: 72,
-            child: LinearProgressIndicator(
-              value: v,
-              valueColor: AlwaysStoppedAnimation(primary),
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -662,22 +735,17 @@ void _showGitHubStarGuide(BuildContext context) {
 
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (context) => BeeAlertDialog(
       title: Text(l10n.githubStarGuideTitle),
       content: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.5,
-        ),
+        constraints: BoxConstraints(maxHeight: screenHeight * 0.5),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 l10n.githubStarGuideContent,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
               ),
               const SizedBox(height: 16),
               // 引导图片
@@ -747,8 +815,9 @@ class _EditDisplayNameDialog extends StatefulWidget {
 }
 
 class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.initial);
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial,
+  );
 
   @override
   void dispose() {
@@ -759,7 +828,7 @@ class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AlertDialog(
+    return BeeAlertDialog(
       title: Text(l10n.mineDisplayNameEditTitle),
       content: TextField(
         controller: _controller,
@@ -829,7 +898,7 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
     final l10n = AppLocalizations.of(context);
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.mineProfileEditTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -852,8 +921,10 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
             if (_avatarPath != null)
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: Text(l10n.mineAvatarDelete,
-                    style: const TextStyle(color: Colors.red)),
+                title: Text(
+                  l10n.mineAvatarDelete,
+                  style: const TextStyle(color: Colors.red),
+                ),
                 onTap: () => Navigator.pop(context, 'delete'),
               ),
           ],
@@ -906,32 +977,40 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
   /// 失败仅记日志，不阻塞用户使用本地头像；iCloud/WebDAV/Supabase 场景跳过。
   Future<void> _syncAvatarToCloud(String absolutePath) async {
     try {
-      final providerInstance = await ref.read(sp.beecountCloudProviderInstance.future);
+      final providerInstance = await ref.read(
+        sp.beecountCloudProviderInstance.future,
+      );
       if (providerInstance == null) {
         logger.debug('avatar_sync', '非 BeeCount Cloud 模式，跳过头像云同步');
         return;
       }
       final file = File(absolutePath);
       if (!file.existsSync()) {
-        logger.warning('avatar_sync', 'upload skipped: file missing $absolutePath');
+        logger.warning(
+          'avatar_sync',
+          'upload skipped: file missing $absolutePath',
+        );
         return;
       }
       final bytes = await file.readAsBytes();
       final name = absolutePath.split('/').last;
-      logger.info('avatar_sync',
-          'upload start path=$absolutePath size=${bytes.length}B');
+      logger.info(
+        'avatar_sync',
+        'upload start path=$absolutePath size=${bytes.length}B',
+      );
       final result = await providerInstance.uploadMyAvatar(
         bytes: bytes,
         fileName: name,
-        mimeType: name.toLowerCase().endsWith('.png')
-            ? 'image/png'
-            : 'image/jpeg',
+        mimeType:
+            name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg',
       );
       // 上传成功后把本地 remoteVersion 立刻推到 server 的新版本，避免下一次
       // bootstrap 再触发一次重新下载自己刚传的头像。
       await AvatarService.setStoredRemoteVersion(result.avatarVersion);
-      logger.info('avatar_sync',
-          'upload done server_version=${result.avatarVersion} url=${result.avatarUrl}');
+      logger.info(
+        'avatar_sync',
+        'upload done server_version=${result.avatarVersion} url=${result.avatarUrl}',
+      );
     } catch (e, st) {
       logger.warning('avatar_sync', 'upload failed (non-blocking): $e', st);
     }
@@ -1000,7 +1079,6 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
   @override
   Widget build(BuildContext context) {
     // 头像功能不受云同步限制，任何时候都可以上传
-    final canEditAvatar = true;
 
     // 监听云同步写下来的头像路径：当 SyncEngine.syncMyProfile 从服务端拉到
     // 新头像并 bump avatarRefreshProvider 时，这里自动拿到新值，无需手动刷新。
@@ -1032,12 +1110,152 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
     final currencyCode = currentLedgerAsync.asData?.value?.currency ?? 'CNY';
 
     // 统计信息文字颜色
-    final labelStyle = Theme.of(context)
-        .textTheme
-        .labelMedium
-        ?.copyWith(color: BeeTokens.textSecondary(context));
-    final numStyle = BeeTextTokens.strongTitle(context)
-        .copyWith(fontSize: 20, color: BeeTokens.textPrimary(context));
+    final labelStyle = Theme.of(
+      context,
+    ).textTheme.labelMedium?.copyWith(color: BeeTokens.textSecondary(context));
+    final numStyle = BeeTextTokens.strongTitle(
+      context,
+    ).copyWith(fontSize: 20, color: BeeTokens.textPrimary(context));
+
+    if (LiquidTheme.isActive(context)) {
+      return GlassSurface(
+        prominent: false,
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                GlassPressable(
+                  onTap: _showProfileOptions,
+                  child: Container(
+                    width: 62,
+                    height: 62,
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: .10),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: .16),
+                      ),
+                    ),
+                    child: ClipOval(
+                      child: _isLoadingAvatar
+                          ? const Center(
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : effectiveAvatarPath != null
+                              ? Image.file(
+                                  File(effectiveAvatarPath),
+                                  key: ValueKey(effectiveAvatarPath),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => BeeIcon(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                    size: 32,
+                                  ),
+                                )
+                              : BeeIcon(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 32,
+                                ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: GlassPressable(
+                    onTap: _showEditDisplayName,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            displayName.isEmpty
+                                ? l10n.homeAppTitle
+                                : displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 21,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            headerText,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: labelStyle?.copyWith(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.mineCurrentBalance,
+                  icon: Icon(
+                    hide
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20,
+                    color: BeeTokens.textSecondary(context),
+                  ),
+                  onPressed: () {
+                    ref.read(hideAmountsProvider.notifier).state = !hide;
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCell(
+                    label: l10n.mineDaysCount,
+                    value: day.toString(),
+                    labelStyle: labelStyle,
+                    numStyle: numStyle,
+                  ),
+                ),
+                Expanded(
+                  child: _StatCell(
+                    label: l10n.mineTotalRecords,
+                    value: tx.toString(),
+                    labelStyle: labelStyle,
+                    numStyle: numStyle,
+                  ),
+                ),
+                Expanded(
+                  child: _StatCell(
+                    label: l10n.mineCurrentBalance,
+                    value: balance,
+                    isAmount: true,
+                    currencyCode: currencyCode,
+                    labelStyle: labelStyle,
+                    numStyle: numStyle.copyWith(
+                      color: balance < 0 ? BeeTokens.error(context) : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -1052,7 +1270,7 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
             children: [
               // 头像/Logo
               GestureDetector(
-                onTap: canEditAvatar ? _showProfileOptions : null,
+                onTap: _showProfileOptions,
                 child: Stack(
                   children: [
                     Container(
@@ -1060,15 +1278,13 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
                       height: 80.0.scaled(context, ref),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         border: Border.all(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withValues(alpha: 0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.3),
                           width: 2,
                         ),
                       ),
@@ -1080,8 +1296,9 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
                                   height: 20.0.scaled(context, ref),
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                                 ),
                               )
@@ -1095,39 +1312,39 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
                                       return BeeIcon(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                         size: 40.0.scaled(context, ref),
                                       );
                                     },
                                   )
                                 : BeeIcon(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     size: 40.0.scaled(context, ref),
                                   )),
                       ),
                     ),
-                    if (canEditAvatar)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 24.0.scaled(context, ref),
-                          height: 24.0.scaled(context, ref),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: Icon(
-                            Icons.edit,
-                            size: 12.0.scaled(context, ref),
-                            color: Colors.white,
-                          ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 24.0.scaled(context, ref),
+                        height: 24.0.scaled(context, ref),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: Icon(
+                          Icons.edit,
+                          size: 12.0.scaled(context, ref),
+                          color: Colors.white,
                         ),
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -1140,8 +1357,11 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (displayName.isNotEmpty) ...[
-                    Icon(greeting.icon,
-                        size: 18.0.scaled(context, ref), color: greeting.color),
+                    Icon(
+                      greeting.icon,
+                      size: 18.0.scaled(context, ref),
+                      color: greeting.color,
+                    ),
                     SizedBox(width: 6.0.scaled(context, ref)),
                   ],
                   Flexible(

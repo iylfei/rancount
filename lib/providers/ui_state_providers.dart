@@ -1,3 +1,4 @@
+import 'appearance_providers.dart';
 import '../utils/beijing_time.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -200,6 +201,7 @@ final appSplashInitProvider = FutureProvider<void>((ref) async {
     // 确保基础providers已初始化
     logger.info(tag, '初始化基础配置...');
     await Future.wait([
+      ref.watch(appearanceInitProvider.future),
       ref.watch(primaryColorInitProvider.future),
       ref.watch(themeModeInitProvider.future),
       ref.watch(appInitProvider.future),

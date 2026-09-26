@@ -3407,5 +3407,19 @@
   "agentActivityToolDenied": "已拒绝",
   "agentActivityToolFailed": "失败",
   "agentRunCancelled": "本次操作已停止。",
-  "agentRunStop": "停止"
+  "agentRunStop": "停止",
+  "appearanceVisualStyle": "界面风格",
+  "appearanceLiquidGlass": "液态玻璃",
+  "appearanceClassic": "经典",
+  "appearanceLiquidDescription": "通透材质 · 灵动反馈",
+  "appearanceClassicDescription": "原有配色与皮肤",
+  "appearanceGlassEffects": "玻璃效果",
+  "appearanceGlassAutomatic": "自动",
+  "appearanceGlassSimplified": "简化",
+  "appearanceInterfaceAnimations": "界面动效",
+  "appearanceMotionDescription": "同时遵循系统减少动态效果设置",
+  "appearanceHaptics": "触感反馈",
+  "appearanceHapticsDescription": "操作时提供轻柔震动",
+  "appearanceGlassAutomaticDescription": "根据设备能力呈现玻璃折射",
+  "appearanceGlassSimplifiedDescription": "柔和透明效果，减少渲染开销"
 }

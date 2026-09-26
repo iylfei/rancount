@@ -3483,5 +3483,134 @@
   "agentActivityToolDenied": "Denied",
   "agentActivityToolFailed": "Failed",
   "agentRunCancelled": "This run was stopped.",
-  "agentRunStop": "Stop"
+  "agentRunStop": "Stop",
+  "@searchBatchModeWithCount": {
+    "placeholders": {
+      "selected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@searchSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@searchBatchDeleteConfirmMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@searchBatchSetNoteMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@searchBatchDeleteSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@searchBatchDeleteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@searchBatchSetNoteSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@searchBatchSetNoteFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@searchBatchChangeCategorySuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@searchBatchChangeCategoryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "@searchResultsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@ledgersClearMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@ledgersDeleteLocalMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@categoryClearUnusedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@categoryClearUnusedSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@categoryShareSuccess": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "appearanceVisualStyle": "Interface style",
+  "appearanceLiquidGlass": "Liquid glass",
+  "appearanceClassic": "Classic",
+  "appearanceLiquidDescription": "Clear layers · fluid feedback",
+  "appearanceClassicDescription": "Your colors and skins",
+  "appearanceGlassEffects": "Glass effects",
+  "appearanceGlassAutomatic": "Automatic",
+  "appearanceGlassSimplified": "Simplified",
+  "appearanceInterfaceAnimations": "Interface animations",
+  "appearanceMotionDescription": "Respects system reduce motion settings",
+  "appearanceHaptics": "Haptic feedback",
+  "appearanceHapticsDescription": "A subtle touch with each action",
+  "appearanceGlassAutomaticDescription": "Refraction when supported by your device",
+  "appearanceGlassSimplifiedDescription": "Soft transparency with lighter rendering"
 }

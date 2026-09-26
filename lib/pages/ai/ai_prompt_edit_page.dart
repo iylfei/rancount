@@ -1,3 +1,4 @@
+import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,11 +35,12 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
   /// 变量说明列表 —— 从 [PromptBuilder.placeholders] 登记表生成,不再手工维护
   /// (以前手写导致 `{{BILL_GUARD}}` 一直漏列)。
   List<Map<String, String>> _getVariables(AppLocalizations l10n) => [
-        for (final p in PromptBuilder.placeholders)
-          {'name': p.token, 'desc': _placeholderDesc(p.token, l10n)},
-      ];
+    for (final p in PromptBuilder.placeholders)
+      {'name': p.token, 'desc': _placeholderDesc(p.token, l10n)},
+  ];
 
-  String _placeholderDesc(String token, AppLocalizations l10n) => switch (token) {
+  String _placeholderDesc(String token, AppLocalizations l10n) =>
+      switch (token) {
         '{{BILL_GUARD}}' => l10n.aiPromptVarBillGuard,
         '{{INPUT_SOURCE}}' => l10n.aiPromptVarInputSource,
         '{{CURRENT_TIME}}' => l10n.aiPromptVarCurrentTime,
@@ -78,8 +80,9 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(AIConstants.keyAiCustomPrompt);
     // 空字符串也回退到默认，避免编辑页显示空内容
-    final customPrompt =
-        (saved != null && saved.trim().isNotEmpty) ? saved : defaultPrompt;
+    final customPrompt = (saved != null && saved.trim().isNotEmpty)
+        ? saved
+        : defaultPrompt;
 
     setState(() {
       _promptController.text = customPrompt;
@@ -107,7 +110,7 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.aiPromptResetConfirmTitle),
         content: Text(l10n.aiPromptResetConfirmMessage),
         actions: [
@@ -146,7 +149,9 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
       _hasChanges = _promptController.text != _savedPrompt;
     });
     showToast(
-        context, AppLocalizations.of(context).aiPromptVarSectionInserted(p.token));
+      context,
+      AppLocalizations.of(context).aiPromptVarSectionInserted(p.token),
+    );
   }
 
   Future<void> _pastePrompt() async {
@@ -168,10 +173,7 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
     final text = _promptController.text;
     if (text.isEmpty) return;
 
-    await Share.share(
-      text,
-      subject: l10n.aiPromptEditTitle,
-    );
+    await Share.share(text, subject: l10n.aiPromptEditTitle);
   }
 
   /// 生成预览内容
@@ -216,7 +218,9 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
   void _showPreviewDialog() {
     final l10n = AppLocalizations.of(context);
     final preview = _generatePreview();
-    final primaryColor = ref.read(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.read(primaryColorProvider));
 
     showDialog(
       context: context,
@@ -301,20 +305,17 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.watch(primaryColorProvider));
 
     if (_loading) {
       return Scaffold(
         backgroundColor: BeeTokens.scaffoldBackground(context),
         body: Column(
           children: [
-            PrimaryHeader(
-              title: l10n.aiPromptEditTitle,
-              showBack: true,
-            ),
-            const Expanded(
-              child: Center(child: CircularProgressIndicator()),
-            ),
+            PrimaryHeader(title: l10n.aiPromptEditTitle, showBack: true),
+            const Expanded(child: Center(child: CircularProgressIndicator())),
           ],
         ),
       );
@@ -387,7 +388,10 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
           l10n.aiPromptVariables,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
-        subtitle: Text(l10n.aiPromptVariablesHint, style: const TextStyle(fontSize: 12)),
+        subtitle: Text(
+          l10n.aiPromptVariablesHint,
+          style: const TextStyle(fontSize: 12),
+        ),
         children: [
           const Divider(height: 1),
           Padding(
@@ -402,7 +406,10 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
@@ -458,7 +465,8 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
                 Expanded(
                   child: Text(
                     l10n.aiPromptMissingVarsHint(
-                        missing.map((p) => p.token).join('、')),
+                      missing.map((p) => p.token).join('、'),
+                    ),
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.5,
@@ -520,22 +528,25 @@ class _AIPromptEditPageState extends ConsumerState<AIPromptEditPage> {
                 const SizedBox(width: 8),
                 Text(
                   l10n.aiPromptContent,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 if (_hasChanges)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       l10n.aiPromptUnsaved,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.orange[700],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.orange[700]),
                     ),
                   ),
               ],

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers.dart';
-import '../../providers/currency_providers.dart';
 import '../../styles/tokens.dart';
 import '../../utils/currencies.dart';
 import 'currency_flag.dart';
@@ -22,7 +21,7 @@ Future<String?> showCurrencyPickerSheet(
   String? rateBase,
 }) {
   final current = selected.toUpperCase();
-  return showModalBottomSheet<String>(
+  return showBeeBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     backgroundColor: BeeTokens.surfaceSheet(context),

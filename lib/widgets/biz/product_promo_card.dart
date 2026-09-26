@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -158,7 +159,7 @@ class ProductPromoLauncher {
       builder: (ctx) {
         // 弹窗交互元素跟随 app 主题色(用户自定义),不用产品 brand color。
         final themeColor = Theme.of(ctx).colorScheme.primary;
-        return AlertDialog(
+        return BeeAlertDialog(
           // TF+商店并排那一支 actions 只剩一个"前往官网",居中放视觉更平衡;
           // 其他场景仍是 [官网] + [商店/邮箱] 两个按钮,默认 end 对齐就好
           actionsAlignment: _showTestFlightRow(info, hasStore)

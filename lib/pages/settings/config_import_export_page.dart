@@ -12,6 +12,7 @@ import '../../styles/tokens.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../../utils/file_picker_helper.dart';
 import '../../providers/font_scale_provider.dart';
+import '../../providers/appearance_providers.dart';
 import '../../providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/export/config_export_service.dart';
@@ -262,6 +263,7 @@ class _ConfigImportExportPageState
   Future<void> _refreshProvidersAfterImport() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      restoreAppearanceSettings(ref.read, prefs);
 
       // 刷新主题色
       final primaryColor = prefs.getInt('primaryColor');

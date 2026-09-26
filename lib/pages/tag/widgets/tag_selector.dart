@@ -1,3 +1,4 @@
+import 'package:beecount/widgets/ui/bee_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/db.dart';
@@ -28,7 +29,7 @@ class TagSelector extends ConsumerStatefulWidget {
     BuildContext context, {
     List<int> selectedTagIds = const [],
   }) async {
-    return await showModalBottomSheet<List<int>>(
+    return await showBeeBottomSheet<List<int>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

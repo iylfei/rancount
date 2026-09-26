@@ -63,7 +63,8 @@ import 'app_localizations_zh.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -71,7 +72,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -83,19 +85,20 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('ko'),
     Locale('zh'),
-    Locale('zh', 'TW')
+    Locale('zh', 'TW'),
   ];
 
   /// No description provided for @aiConsentTitle.
@@ -804,7 +807,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Batch Operations ({selected}/{total})'**
-  String searchBatchModeWithCount(Object selected, Object total);
+  String searchBatchModeWithCount(int selected, int total);
 
   /// No description provided for @searchExitBatchMode.
   ///
@@ -828,7 +831,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count} selected'**
-  String searchSelectedCount(Object count);
+  String searchSelectedCount(int count);
 
   /// No description provided for @searchBatchSetNote.
   ///
@@ -852,7 +855,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to delete the selected {count} transactions?\nThis action cannot be undone.'**
-  String searchBatchDeleteConfirmMessage(Object count);
+  String searchBatchDeleteConfirmMessage(int count);
 
   /// No description provided for @searchBatchSetNoteTitle.
   ///
@@ -864,7 +867,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Set the same note for the selected {count} transactions'**
-  String searchBatchSetNoteMessage(Object count);
+  String searchBatchSetNoteMessage(int count);
 
   /// No description provided for @searchBatchSetNoteHint.
   ///
@@ -876,43 +879,43 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Successfully deleted {count} transactions'**
-  String searchBatchDeleteSuccess(Object count);
+  String searchBatchDeleteSuccess(int count);
 
   /// No description provided for @searchBatchDeleteFailed.
   ///
   /// In en, this message translates to:
   /// **'Delete failed: {error}'**
-  String searchBatchDeleteFailed(Object error);
+  String searchBatchDeleteFailed(String error);
 
   /// No description provided for @searchBatchSetNoteSuccess.
   ///
   /// In en, this message translates to:
   /// **'Successfully set note for {count} transactions'**
-  String searchBatchSetNoteSuccess(Object count);
+  String searchBatchSetNoteSuccess(int count);
 
   /// No description provided for @searchBatchSetNoteFailed.
   ///
   /// In en, this message translates to:
   /// **'Set note failed: {error}'**
-  String searchBatchSetNoteFailed(Object error);
+  String searchBatchSetNoteFailed(String error);
 
   /// No description provided for @searchBatchChangeCategorySuccess.
   ///
   /// In en, this message translates to:
   /// **'Successfully changed category for {count} transactions'**
-  String searchBatchChangeCategorySuccess(Object count);
+  String searchBatchChangeCategorySuccess(int count);
 
   /// No description provided for @searchBatchChangeCategoryFailed.
   ///
   /// In en, this message translates to:
   /// **'Change category failed: {error}'**
-  String searchBatchChangeCategoryFailed(Object error);
+  String searchBatchChangeCategoryFailed(String error);
 
   /// No description provided for @searchResultsCount.
   ///
   /// In en, this message translates to:
   /// **'{count} results'**
-  String searchResultsCount(Object count);
+  String searchResultsCount(int count);
 
   /// No description provided for @searchSummaryIncome.
   ///
@@ -1128,7 +1131,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Are you sure to clear all transactions in ledger \"{name}\"? This action cannot be undone.\\nThe ledger will be kept, only transaction data will be deleted.'**
-  String ledgersClearMessage(Object name);
+  String ledgersClearMessage(String name);
 
   /// No description provided for @ledgerDefaultName.
   ///
@@ -1200,7 +1203,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Are you sure to delete local ledger \"{name}\"?\\nCloud backup will be kept and you can restore it anytime.'**
-  String ledgersDeleteLocalMessage(Object name);
+  String ledgersDeleteLocalMessage(String name);
 
   /// No description provided for @ledgersDeleteLocalSuccess.
   ///
@@ -1746,7 +1749,12 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Imported {done} / {total} records, success {ok}, failed {fail}'**
-  String importProgressDetail(Object done, Object fail, Object ok, Object total);
+  String importProgressDetail(
+    Object done,
+    Object fail,
+    Object ok,
+    Object total,
+  );
 
   /// No description provided for @importBackgroundImport.
   ///
@@ -3120,7 +3128,12 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Progress: {done}/{total}, Success {ok}, Failed {fail}'**
-  String mineImportProgressSubtitle(Object done, Object fail, Object ok, Object total);
+  String mineImportProgressSubtitle(
+    Object done,
+    Object fail,
+    Object ok,
+    Object total,
+  );
 
   /// No description provided for @mineImportCompleteTitle.
   ///
@@ -3546,7 +3559,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Are you sure you want to delete {count} unused categories? This action cannot be undone.'**
-  String categoryClearUnusedMessage(Object count);
+  String categoryClearUnusedMessage(int count);
 
   /// No description provided for @categoryClearUnusedListTitle.
   ///
@@ -3564,7 +3577,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Deleted {count} categories'**
-  String categoryClearUnusedSuccess(Object count);
+  String categoryClearUnusedSuccess(int count);
 
   /// No description provided for @categoryClearUnusedFailed.
   ///
@@ -3720,7 +3733,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Saved to {path}'**
-  String categoryShareSuccess(Object path);
+  String categoryShareSuccess(String path);
 
   /// No description provided for @categoryShareSubject.
   ///
@@ -4920,7 +4933,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Migrate {count} transactions from \"{fromName}\" to \"{toName}\"?\n\nThis operation cannot be undone!'**
-  String categoryMigrationConfirmMessage(Object count, Object fromName, Object toName);
+  String categoryMigrationConfirmMessage(
+    Object count,
+    Object fromName,
+    Object toName,
+  );
 
   /// No description provided for @categoryMigrationConfirmOk.
   ///
@@ -4938,7 +4955,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Successfully migrated {count} transactions from \"{fromName}\" to \"{toName}\".'**
-  String categoryMigrationCompleteMessage(Object count, Object fromName, Object toName);
+  String categoryMigrationCompleteMessage(
+    Object count,
+    Object fromName,
+    Object toName,
+  );
 
   /// No description provided for @categoryMigrationFailedTitle.
   ///
@@ -5982,7 +6003,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Found update package:\\n\\nFile name: {fileName}\\nSize: {fileSize}MB\\nDownload time: {time}\\n\\nInstall immediately?'**
-  String updateInstallPackageFoundMessage(String fileName, String fileSize, String time);
+  String updateInstallPackageFoundMessage(
+    String fileName,
+    String fileSize,
+    String time,
+  );
 
   /// No description provided for @updateMultiplePackagesFoundMessage.
   ///
@@ -11694,7 +11719,12 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Exporting {attachmentCount} attachment(s) + {iconCount} icon(s) ({current}/{total})'**
-  String attachmentExportProgressDetail(int attachmentCount, int iconCount, int current, int total);
+  String attachmentExportProgressDetail(
+    int attachmentCount,
+    int iconCount,
+    int current,
+    int total,
+  );
 
   /// No description provided for @attachmentExportSuccess.
   ///
@@ -11736,7 +11766,12 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Imported {imported}, Skipped {skipped}, Overwritten {overwritten}, Failed {failed}'**
-  String attachmentImportResult(int imported, int skipped, int overwritten, int failed);
+  String attachmentImportResult(
+    int imported,
+    int skipped,
+    int overwritten,
+    int failed,
+  );
 
   /// No description provided for @attachmentImportFailed.
   ///
@@ -15079,9 +15114,94 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop'**
   String get agentRunStop;
+
+  /// No description provided for @appearanceVisualStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface style'**
+  String get appearanceVisualStyle;
+
+  /// No description provided for @appearanceLiquidGlass.
+  ///
+  /// In en, this message translates to:
+  /// **'Liquid glass'**
+  String get appearanceLiquidGlass;
+
+  /// No description provided for @appearanceClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get appearanceClassic;
+
+  /// No description provided for @appearanceLiquidDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear layers · fluid feedback'**
+  String get appearanceLiquidDescription;
+
+  /// No description provided for @appearanceClassicDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Your colors and skins'**
+  String get appearanceClassicDescription;
+
+  /// No description provided for @appearanceGlassEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Glass effects'**
+  String get appearanceGlassEffects;
+
+  /// No description provided for @appearanceGlassAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get appearanceGlassAutomatic;
+
+  /// No description provided for @appearanceGlassSimplified.
+  ///
+  /// In en, this message translates to:
+  /// **'Simplified'**
+  String get appearanceGlassSimplified;
+
+  /// No description provided for @appearanceInterfaceAnimations.
+  ///
+  /// In en, this message translates to:
+  /// **'Interface animations'**
+  String get appearanceInterfaceAnimations;
+
+  /// No description provided for @appearanceMotionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Respects system reduce motion settings'**
+  String get appearanceMotionDescription;
+
+  /// No description provided for @appearanceHaptics.
+  ///
+  /// In en, this message translates to:
+  /// **'Haptic feedback'**
+  String get appearanceHaptics;
+
+  /// No description provided for @appearanceHapticsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A subtle touch with each action'**
+  String get appearanceHapticsDescription;
+
+  /// No description provided for @appearanceGlassAutomaticDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Refraction when supported by your device'**
+  String get appearanceGlassAutomaticDescription;
+
+  /// No description provided for @appearanceGlassSimplifiedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft transparency with lighter rendering'**
+  String get appearanceGlassSimplifiedDescription;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -15090,35 +15210,40 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['en', 'ko', 'zh'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'ko', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
   // Lookup logic when language+country codes are specified.
   switch (locale.languageCode) {
-    case 'zh': {
-  switch (locale.countryCode) {
-    case 'TW': return AppLocalizationsZhTw();
-   }
-  break;
-   }
+    case 'zh':
+      {
+        switch (locale.countryCode) {
+          case 'TW':
+            return AppLocalizationsZhTw();
+        }
+        break;
+      }
   }
 
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en': return AppLocalizationsEn();
-    case 'ko': return AppLocalizationsKo();
-    case 'zh': return AppLocalizationsZh();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'ko':
+      return AppLocalizationsKo();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

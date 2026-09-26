@@ -1,3 +1,4 @@
+import '../../styles/liquid_theme.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -241,7 +242,9 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
                     child: Text(
                       AppLocalizations.of(context).aiChatGoToSettings,
                       style: TextStyle(
-                        color: ref.watch(primaryColorProvider),
+                        color: (LiquidTheme.isActive(context)
+                            ? Theme.of(context).colorScheme.primary
+                            : ref.watch(primaryColorProvider)),
                         fontSize: 13.0.scaled(context, ref),
                       ),
                     ),
@@ -258,10 +261,10 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
                   data: (messages) {
                     final displayMessages =
                         AgentMessageVisibility.forLiveResponse(
-                      messages,
-                      liveResponse: _liveAgentResponse,
-                      persistedMessageId: _liveAssistantMessageId,
-                    );
+                          messages,
+                          liveResponse: _liveAgentResponse,
+                          persistedMessageId: _liveAssistantMessageId,
+                        );
                     final pendingResponseId = _pendingResponseMessageId;
                     if (pendingResponseId != null &&
                         displayMessages.any(
@@ -293,7 +296,8 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
                           horizontal: 12.0.scaled(context, ref),
                           vertical: 8.0.scaled(context, ref),
                         ),
-                        itemCount: displayMessages.length +
+                        itemCount:
+                            displayMessages.length +
                             (_hasLiveAgentMessage ? 1 : 0),
                         itemBuilder: (context, index) {
                           if (index == displayMessages.length) {
@@ -317,15 +321,19 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
                     right: 16.0.scaled(context, ref),
                     bottom: 16.0.scaled(context, ref),
                     child: Material(
-                      color: ref.watch(primaryColorProvider),
-                      borderRadius:
-                          BorderRadius.circular(24.0.scaled(context, ref)),
+                      color: (LiquidTheme.isActive(context)
+                          ? Theme.of(context).colorScheme.primary
+                          : ref.watch(primaryColorProvider)),
+                      borderRadius: BorderRadius.circular(
+                        24.0.scaled(context, ref),
+                      ),
                       elevation: 8,
                       shadowColor: Colors.black.withValues(alpha: 0.4),
                       child: InkWell(
                         onTap: _scrollToBottomWithAnimation,
-                        borderRadius:
-                            BorderRadius.circular(24.0.scaled(context, ref)),
+                        borderRadius: BorderRadius.circular(
+                          24.0.scaled(context, ref),
+                        ),
                         child: Container(
                           width: 48.0.scaled(context, ref),
                           height: 48.0.scaled(context, ref),
@@ -354,7 +362,10 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
     final isUser = message.role == 'user';
 
     // 只对正在播放动画的消息ID启用动画
-    final shouldAnimate = !isUser && message.id == _animatingMessageId;
+    final shouldAnimate =
+        !isUser &&
+        message.id == _animatingMessageId &&
+        (!LiquidTheme.isActive(context) || LiquidTheme.motionOf(context));
 
     // 记账卡片
     if (message.messageType == 'bill_card' && message.metadata != null) {
@@ -366,10 +377,8 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
         final txId = parsed.txIds.isNotEmpty ? parsed.txIds.first : null;
         final isUndone = txId != null && parsed.undoneIds.contains(txId);
         return GestureDetector(
-          onLongPressStart: (details) => _showBillCardMenu(
-            details.globalPosition,
-            message,
-          ),
+          onLongPressStart: (details) =>
+              _showBillCardMenu(details.globalPosition, message),
           child: BillCardWidget(
             billInfo: bill,
             transactionId: txId,
@@ -396,8 +405,9 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
       padding: EdgeInsets.only(bottom: 8.0.scaled(context, ref)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           // AI头像（左侧）
           if (!isUser) ...[
@@ -407,11 +417,8 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
           // 消息气泡
           Flexible(
             child: GestureDetector(
-              onLongPressStart: (details) => _showTextMessageMenu(
-                details.globalPosition,
-                message,
-                isUser,
-              ),
+              onLongPressStart: (details) =>
+                  _showTextMessageMenu(details.globalPosition, message, isUser),
               child: Container(
                 margin: EdgeInsets.only(
                   left: isUser ? 60.0.scaled(context, ref) : 0,
@@ -423,13 +430,20 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
                 ),
                 decoration: BoxDecoration(
                   color: isUser
-                      ? ref.watch(primaryColorProvider).withValues(alpha: 0.1)
+                      ? (LiquidTheme.isActive(context)
+                                ? Theme.of(context).colorScheme.primary
+                                : ref.watch(primaryColorProvider))
+                            .withValues(alpha: 0.1)
                       : BeeTokens.surface(context),
-                  borderRadius:
-                      BorderRadius.circular(12.0.scaled(context, ref)),
+                  borderRadius: BorderRadius.circular(
+                    12.0.scaled(context, ref),
+                  ),
                   border: Border.all(
                     color: isUser
-                        ? ref.watch(primaryColorProvider).withValues(alpha: 0.3)
+                        ? (LiquidTheme.isActive(context)
+                                  ? Theme.of(context).colorScheme.primary
+                                  : ref.watch(primaryColorProvider))
+                              .withValues(alpha: 0.3)
                         : BeeTokens.border(context),
                   ),
                 ),
@@ -437,8 +451,9 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
                     ? TypewriterText(
                         text: message.content,
                         animate: shouldAnimate,
-                        onTextChange:
-                            shouldAnimate ? _scrollToBottomSmooth : null,
+                        onTextChange: shouldAnimate
+                            ? _scrollToBottomSmooth
+                            : null,
                         onComplete: shouldAnimate
                             ? () {
                                 if (mounted) {
@@ -571,14 +586,24 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: ref.watch(primaryColorProvider).withValues(alpha: 0.3),
+          color:
+              (LiquidTheme.isActive(context)
+                      ? Theme.of(context).colorScheme.primary
+                      : ref.watch(primaryColorProvider))
+                  .withValues(alpha: 0.3),
           width: 1.5,
         ),
-        color: ref.watch(primaryColorProvider).withValues(alpha: 0.1),
+        color:
+            (LiquidTheme.isActive(context)
+                    ? Theme.of(context).colorScheme.primary
+                    : ref.watch(primaryColorProvider))
+                .withValues(alpha: 0.1),
       ),
       child: Center(
         child: BeeIcon(
-          color: ref.watch(primaryColorProvider),
+          color: (LiquidTheme.isActive(context)
+              ? Theme.of(context).colorScheme.primary
+              : ref.watch(primaryColorProvider)),
           size: 18.0.scaled(context, ref),
         ),
       ),
@@ -592,10 +617,7 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
       height: 32.0.scaled(context, ref),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: BeeTokens.border(context),
-          width: 1,
-        ),
+        border: Border.all(color: BeeTokens.border(context), width: 1),
       ),
       child: ClipOval(
         child: Image.file(
@@ -611,63 +633,72 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
   }
 
   Widget _buildInputArea() {
-    return Container(
-      padding: EdgeInsets.all(16.0.scaled(context, ref)),
-      decoration: BoxDecoration(
-        color: BeeTokens.surface(context),
-        border: Border(
-          top: BorderSide(
-            color: BeeTokens.divider(context),
-          ),
-        ),
-      ),
-      child: SafeArea(
-        top: false, // 不保护顶部，避免额外空白
-        child: Row(
-          children: [
-            AIQuickCommandLauncher(
-              onCommandTap: _handleQuickCommand,
-              enabled: !_isLoading,
-            ),
-            Expanded(
-              child: TextField(
-                controller: _inputController,
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context).aiChatInputHint,
-                  hintStyle: TextStyle(
-                    color: BeeTokens.textTertiary(context),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(20.0.scaled(context, ref)),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: BeeTokens.scaffoldBackground(context),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16.0.scaled(context, ref),
-                    vertical: 10.0.scaled(context, ref),
-                  ),
+    return GlassSurface(
+      margin: LiquidTheme.isActive(context)
+          ? const EdgeInsets.fromLTRB(12, 6, 12, 8)
+          : EdgeInsets.zero,
+      child: Container(
+        padding: EdgeInsets.all(16.0.scaled(context, ref)),
+        decoration: LiquidTheme.isActive(context)
+            ? null
+            : BoxDecoration(
+                color: BeeTokens.surface(context),
+                border: Border(
+                  top: BorderSide(color: BeeTokens.divider(context)),
                 ),
-                maxLines: null,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
+              ),
+        child: SafeArea(
+          top: false, // 不保护顶部，避免额外空白
+          child: Row(
+            children: [
+              AIQuickCommandLauncher(
+                onCommandTap: _handleQuickCommand,
                 enabled: !_isLoading,
               ),
-            ),
-            SizedBox(width: 8.0.scaled(context, ref)),
-            IconButton(
-              icon: Icon(
-                _isLoading ? Icons.stop_circle_outlined : Icons.send,
-                color: _isLoading
-                    ? Theme.of(context).colorScheme.error
-                    : ref.watch(primaryColorProvider),
+              Expanded(
+                child: TextField(
+                  controller: _inputController,
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context).aiChatInputHint,
+                    hintStyle: TextStyle(
+                      color: BeeTokens.textTertiary(context),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        20.0.scaled(context, ref),
+                      ),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: BeeTokens.scaffoldBackground(context),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16.0.scaled(context, ref),
+                      vertical: 10.0.scaled(context, ref),
+                    ),
+                  ),
+                  maxLines: null,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _sendMessage(),
+                  enabled: !_isLoading,
+                ),
               ),
-              tooltip:
-                  _isLoading ? AppLocalizations.of(context).agentRunStop : null,
-              onPressed: _isLoading ? _stopCurrentAgentRun : _sendMessage,
-            ),
-          ],
+              SizedBox(width: 8.0.scaled(context, ref)),
+              IconButton(
+                icon: Icon(
+                  _isLoading ? Icons.stop_circle_outlined : Icons.send,
+                  color: _isLoading
+                      ? Theme.of(context).colorScheme.error
+                      : (LiquidTheme.isActive(context)
+                            ? Theme.of(context).colorScheme.primary
+                            : ref.watch(primaryColorProvider)),
+                ),
+                tooltip: _isLoading
+                    ? AppLocalizations.of(context).agentRunStop
+                    : null,
+                onPressed: _isLoading ? _stopCurrentAgentRun : _sendMessage,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -720,11 +751,7 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
       }
 
       // 发送完整prompt给AI，但在对话中只显示标题
-      await _sendMessageText(
-        prompt,
-        displayText: displayText,
-        forceChat: true,
-      );
+      await _sendMessageText(prompt, displayText: displayText, forceChat: true);
     } catch (e, st) {
       logger.error('AIChat', '处理快捷指令失败', e, st);
       if (mounted) {
@@ -832,10 +859,10 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
               choice,
             );
           case AgentToolStartedEvent(
-              :final toolName,
-              :final callId,
-              :final arguments
-            ):
+            :final toolName,
+            :final callId,
+            :final arguments,
+          ):
             setState(() {
               _agentExecutionSteps = _updateExecutionStep(
                 toolName: toolName,
@@ -845,13 +872,13 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
               );
             });
           case AgentToolCompletedEvent(
-              :final toolName,
-              :final callId,
-              :final arguments,
-              :final result,
-              :final error,
-              :final succeeded
-            ):
+            :final toolName,
+            :final callId,
+            :final arguments,
+            :final result,
+            :final error,
+            :final succeeded,
+          ):
             setState(() {
               _agentExecutionSteps = _updateExecutionStep(
                 toolName: toolName,
@@ -886,11 +913,13 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
           content: response.text,
           messageType: response.type,
           metadata: response.bills.isNotEmpty
-              ? Value(_encodeBillMetadata(
-                  response.bills,
-                  response.transactionIds,
-                  const <int>{},
-                ))
+              ? Value(
+                  _encodeBillMetadata(
+                    response.bills,
+                    response.transactionIds,
+                    const <int>{},
+                  ),
+                )
               : const Value.absent(),
           transactionId: response.transactionId != null
               ? Value(response.transactionId)
@@ -933,7 +962,9 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
     } catch (e) {
       if (mounted) {
         showToast(
-            context, '${AppLocalizations.of(context).aiChatSendFailed}: $e');
+          context,
+          '${AppLocalizations.of(context).aiChatSendFailed}: $e',
+        );
       }
     } finally {
       if (mounted) {
@@ -984,8 +1015,9 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
     final current = index >= 0 ? steps[index] : null;
     final next = AgentExecutionStep(
       toolName: toolName,
-      arguments:
-          arguments.isEmpty ? (current?.arguments ?? arguments) : arguments,
+      arguments: arguments.isEmpty
+          ? (current?.arguments ?? arguments)
+          : arguments,
       callId: callId.isEmpty ? current?.callId : callId,
       status: status,
       result: result,
@@ -1004,7 +1036,10 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
       if (_scrollController.hasClients && mounted) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration:
+              LiquidTheme.isActive(context) && !LiquidTheme.motionOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
@@ -1016,7 +1051,10 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
+        duration:
+            LiquidTheme.isActive(context) && !LiquidTheme.motionOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     }
@@ -1037,7 +1075,7 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => BeeAlertDialog(
         title: Text(l10n.aiChatClearHistoryDialogTitle),
         content: Text(l10n.aiChatClearHistoryDialogContent),
         actions: [
@@ -1089,13 +1127,13 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
 
     final parsed = _parseBillMetadata(message);
     final newUndone = {...parsed.undoneIds, transactionId};
-    await repo.updateMessage(message.copyWith(
-      metadata: Value(_encodeBillMetadata(
-        parsed.bills,
-        parsed.txIds,
-        newUndone,
-      )),
-    ));
+    await repo.updateMessage(
+      message.copyWith(
+        metadata: Value(
+          _encodeBillMetadata(parsed.bills, parsed.txIds, newUndone),
+        ),
+      ),
+    );
 
     ref.read(statsRefreshProvider.notifier).state++;
 
@@ -1123,7 +1161,9 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
       if (transaction == null) {
         if (mounted) {
           showToast(
-              context, AppLocalizations.of(context).aiChatTransactionNotFound);
+            context,
+            AppLocalizations.of(context).aiChatTransactionNotFound,
+          );
         }
         return;
       }
@@ -1147,8 +1187,10 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
 
         // 从编辑页面返回后，无论是否保存，都刷新账单卡片
         if (mounted) {
-          logger.info('AIChat',
-              '编辑页面返回,刷新账单卡片: messageId=$messageId, txId=$transactionId');
+          logger.info(
+            'AIChat',
+            '编辑页面返回,刷新账单卡片: messageId=$messageId, txId=$transactionId',
+          );
           await _refreshBillCard(messageId, transactionId);
         }
       }
@@ -1198,23 +1240,27 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
       final parsed = _parseBillMetadata(message);
       final idx = parsed.txIds.indexOf(transactionId);
       if (idx < 0 || idx >= parsed.bills.length) {
-        logger.warning('AIChat',
-            '_refreshBillCard: 在 message $messageId 中找不到 txId=$transactionId');
+        logger.warning(
+          'AIChat',
+          '_refreshBillCard: 在 message $messageId 中找不到 txId=$transactionId',
+        );
         return;
       }
       final newBills = List<BillInfo>.from(parsed.bills);
       newBills[idx] = updatedBillInfo;
 
-      await repo.updateMessage(message.copyWith(
-        metadata: Value(_encodeBillMetadata(
-          newBills,
-          parsed.txIds,
-          parsed.undoneIds,
-        )),
-      ));
+      await repo.updateMessage(
+        message.copyWith(
+          metadata: Value(
+            _encodeBillMetadata(newBills, parsed.txIds, parsed.undoneIds),
+          ),
+        ),
+      );
 
       logger.info(
-          'AIChat', '账单卡片已刷新: messageId=$messageId, txId=$transactionId');
+        'AIChat',
+        '账单卡片已刷新: messageId=$messageId, txId=$transactionId',
+      );
     } catch (e, st) {
       logger.error('AIChat', '刷新账单卡片失败', e, st);
     }
@@ -1231,7 +1277,9 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
       if (transaction == null) {
         if (mounted) {
           showToast(
-              context, AppLocalizations.of(context).aiChatTransactionNotFound);
+            context,
+            AppLocalizations.of(context).aiChatTransactionNotFound,
+          );
         }
         return;
       }
@@ -1263,18 +1311,21 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
         final idx = parsed.txIds.indexOf(transactionId);
         if (idx >= 0 && idx < parsed.bills.length) {
           final newBills = List<BillInfo>.from(parsed.bills);
-          newBills[idx] =
-              parsed.bills[idx].copyWith(ledgerId: selectedLedgerId);
-          await repo.updateMessage(message.copyWith(
-            metadata: Value(_encodeBillMetadata(
-              newBills,
-              parsed.txIds,
-              parsed.undoneIds,
-            )),
-          ));
+          newBills[idx] = parsed.bills[idx].copyWith(
+            ledgerId: selectedLedgerId,
+          );
+          await repo.updateMessage(
+            message.copyWith(
+              metadata: Value(
+                _encodeBillMetadata(newBills, parsed.txIds, parsed.undoneIds),
+              ),
+            ),
+          );
         } else {
-          logger.warning('AIChat',
-              '_handleChangeLedger: 在 message $messageId 中找不到 txId=$transactionId');
+          logger.warning(
+            'AIChat',
+            '_handleChangeLedger: 在 message $messageId 中找不到 txId=$transactionId',
+          );
         }
 
         // 刷新统计信息（修改账本后，需要刷新旧账本和新账本的统计）
@@ -1284,8 +1335,10 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
         await PostProcessor.sync(ref, ledgerId: transaction.ledgerId);
         await PostProcessor.sync(ref, ledgerId: selectedLedgerId);
 
-        logger.info('AIChat',
-            '修改账本成功: ${transaction.ledgerId} -> $selectedLedgerId,已刷新统计信息和触发云同步');
+        logger.info(
+          'AIChat',
+          '修改账本成功: ${transaction.ledgerId} -> $selectedLedgerId,已刷新统计信息和触发云同步',
+        );
 
         if (mounted) {
           setState(() {}); // 触发重建以显示新的账本名称
@@ -1305,7 +1358,9 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
   /// 显示文字消息的长按菜单
   void _showTextMessageMenu(Offset position, Message message, bool isUser) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.read(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.read(primaryColorProvider));
 
     MessagePopoverMenu.show(
       context: context,
@@ -1333,7 +1388,9 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
   /// 显示记账卡片的长按菜单
   void _showBillCardMenu(Offset position, Message message) {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = ref.read(primaryColorProvider);
+    final primaryColor = (LiquidTheme.isActive(context)
+        ? Theme.of(context).colorScheme.primary
+        : ref.read(primaryColorProvider));
 
     MessagePopoverMenu.show(
       context: context,
@@ -1387,7 +1444,7 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
   // ============================================================
 
   ({List<BillInfo> bills, List<int> txIds, Set<int> undoneIds})
-      _parseBillMetadata(Message m) {
+  _parseBillMetadata(Message m) {
     final raw = jsonDecode(m.metadata!) as Map<String, dynamic>;
 
     // 新格式
@@ -1396,10 +1453,12 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
           .whereType<Map>()
           .map((j) => BillInfo.fromJson(Map<String, dynamic>.from(j)))
           .toList();
-      final txIds =
-          ((raw['txIds'] as List?) ?? const []).whereType<int>().toList();
-      final undoneIds =
-          ((raw['undoneIds'] as List?) ?? const []).whereType<int>().toSet();
+      final txIds = ((raw['txIds'] as List?) ?? const [])
+          .whereType<int>()
+          .toList();
+      final undoneIds = ((raw['undoneIds'] as List?) ?? const [])
+          .whereType<int>()
+          .toSet();
       return (bills: bills, txIds: txIds, undoneIds: undoneIds);
     }
 
@@ -1443,32 +1502,32 @@ class _AIChatPageState extends ConsumerState<AIChatPage>
     final undoneIds = parsed.undoneIds;
 
     return GestureDetector(
-      onLongPressStart: (details) => _showBillCardMenu(
-        details.globalPosition,
-        message,
-      ),
+      onLongPressStart: (details) =>
+          _showBillCardMenu(details.globalPosition, message),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (var i = 0; i < bills.length; i++)
-            Builder(builder: (_) {
-              final txId = i < txIds.length ? txIds[i] : null;
-              final isUndone = txId != null && undoneIds.contains(txId);
-              return BillCardWidget(
-                billInfo: bills[i],
-                transactionId: txId,
-                isUndone: isUndone,
-                onUndo: txId != null && !isUndone
-                    ? () => _handleUndoOne(message.id, txId)
-                    : null,
-                onEdit: txId != null && !isUndone
-                    ? () => _handleEdit(message.id, txId)
-                    : null,
-                onChangeLedger: txId != null && !isUndone
-                    ? () => _handleChangeLedger(message.id, txId)
-                    : null,
-              );
-            }),
+            Builder(
+              builder: (_) {
+                final txId = i < txIds.length ? txIds[i] : null;
+                final isUndone = txId != null && undoneIds.contains(txId);
+                return BillCardWidget(
+                  billInfo: bills[i],
+                  transactionId: txId,
+                  isUndone: isUndone,
+                  onUndo: txId != null && !isUndone
+                      ? () => _handleUndoOne(message.id, txId)
+                      : null,
+                  onEdit: txId != null && !isUndone
+                      ? () => _handleEdit(message.id, txId)
+                      : null,
+                  onChangeLedger: txId != null && !isUndone
+                      ? () => _handleChangeLedger(message.id, txId)
+                      : null,
+                );
+              },
+            ),
         ],
       ),
     );

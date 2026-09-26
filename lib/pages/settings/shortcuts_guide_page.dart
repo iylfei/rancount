@@ -7,7 +7,6 @@ import '../../l10n/app_localizations.dart';
 import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/biz.dart';
 import '../../styles/tokens.dart';
-import '../../providers.dart';
 import '../../services/platform/app_link_service.dart';
 
 /// 快捷方式引导页面
@@ -18,7 +17,7 @@ class ShortcutsGuidePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final primaryColor = ref.watch(primaryColorProvider);
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       backgroundColor: BeeTokens.scaffoldBackground(context),
