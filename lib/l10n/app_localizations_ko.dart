@@ -13,7 +13,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aiConsentBody =>
-      'AI 기능을 사용하면 관련 데이터가 사용자가 설정한 제3자 AI 제공업체로 전송됩니다:\n\n• 전송 대상: 기본값은 즈푸 GLM(open.bigmodel.cn, 즈푸 운영)이며, 다른 제3자 AI 서비스를 설정한 경우 해당 제공업체로 전송됩니다.\n• 전송 내용: 인식/대화를 위해 직접 사용하는 콘텐츠 — 영수증 이미지, 음성 녹음, 입력한 텍스트, 그리고 인식/분석을 완료하는 데 필요한 카테고리 이름, 계정 이름 및 관련 거래 기록.\n• 목적: 사용자가 직접 시작한 영수증 인식, 기록, 대화에만 사용되며 BeeCount 자체는 이 데이터를 수집하거나 저장하지 않습니다.\n\n해당 데이터는 제3자 제공업체의 자체 개인정보 처리방침에 따라 처리됩니다. 켜면 위와 같은 데이터 공유에 동의하는 것입니다.';
+      'AI 기능을 사용하면 관련 데이터가 사용자가 설정한 제3자 AI 제공업체로 전송됩니다:\n\n• 전송 대상: 기본값은 즈푸 GLM(open.bigmodel.cn, 즈푸 운영)이며, 다른 제3자 AI 서비스를 설정한 경우 해당 제공업체로 전송됩니다.\n• 전송 내용: 인식/대화를 위해 직접 사용하는 콘텐츠 — 영수증 이미지, 음성 녹음, 입력한 텍스트, 그리고 인식/분석을 완료하는 데 필요한 카테고리 이름, 계정 이름 및 관련 거래 기록.\n• 목적: 사용자가 직접 시작한 영수증 인식, 기록, 대화에만 사용되며 rancount 자체는 이 데이터를 수집하거나 저장하지 않습니다.\n\n해당 데이터는 제3자 제공업체의 자체 개인정보 처리방침에 따라 처리됩니다. 켜면 위와 같은 데이터 공유에 동의하는 것입니다.';
 
   @override
   String get aiConsentAgree => '동의하고 켜기';
@@ -136,7 +136,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get voiceRecordingPermissionDeniedMessage =>
-      '음성 기록에는 마이크 권한이 필요합니다. 시스템 설정에서 BeeCount의 마이크 접근을 허용해 주세요.';
+      '음성 기록에는 마이크 권한이 필요합니다. 시스템 설정에서 rancount의 마이크 접근을 허용해 주세요.';
 
   @override
   String voiceRecordingStartFailed(String error) {
@@ -281,7 +281,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get homeSelectDate => '날짜 선택';
 
   @override
-  String get homeAppTitle => '꿀벌 가계부';
+  String get homeAppTitle => 'rancount';
 
   @override
   String get homeSearch => '검색';
@@ -539,10 +539,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get analyticsToday => '오늘';
 
   @override
-  String get splashAppName => '꿀벌 가계부';
+  String get splashAppName => 'rancount';
 
   @override
-  String get splashSlogan => '매 순간의 기록';
+  String get splashSlogan => '';
 
   @override
   String get splashSecurityTitle => '오픈소스 데이터 보안';
@@ -987,7 +987,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get deleteConfirmMessage => '이 기록을 삭제하시겠습니까?';
 
   @override
-  String get mineSlogan => '꿀벌 가계부, 한 푼도 소중하게';
+  String get mineSlogan => '';
 
   @override
   String get mineDisplayNameEditTitle => '닉네임 설정';
@@ -1262,7 +1262,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get mineShareApp => '앱 공유';
 
   @override
-  String get mineShareWithFriends => '친구에게 BeeCount 공유하기';
+  String get mineShareWithFriends => '친구에게 rancount 공유하기';
 
   @override
   String get mineCopyPromoText => '홍보 문구 복사';
@@ -1274,10 +1274,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get mineShareGenerating => '공유 포스터 생성 중...';
 
   @override
-  String get sharePosterAppName => 'BeeCount';
+  String get sharePosterAppName => 'rancount';
 
   @override
-  String get sharePosterSlogan => '스마트한 가계부, 아름다운 삶';
+  String get sharePosterSlogan => '';
 
   @override
   String get sharePosterFeature1 => '데이터 보안·직접 관리';
@@ -1352,7 +1352,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareGuidanceCopyText =>
-      'BeeCount로 지출을 기록하세요 - 오픈소스, 무료, 광고 없음! 🐝 다운로드: https://github.com/TNT-Likely/BeeCount';
+      'rancount로 지출을 기록하세요 - 오픈소스, 무료, 광고 없음! 다운로드: https://github.com/TNT-Likely/BeeCount';
 
   @override
   String get shareGuidanceCopied => '텍스트가 복사되었습니다';
@@ -1984,7 +1984,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get categoryShareSubject => 'BeeCount 카테고리 설정';
+  String get categoryShareSubject => 'rancount 카테고리 설정';
 
   @override
   String get categoryShareFailed => '공유 실패';
@@ -2570,11 +2570,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get reminderIOSInstructions =>
-      '🍎 iOS 알림 설정:\n• 설정 > 알림 > 꿀벌 가계부\n• \"알림 허용\" 활성화\n• 알림 스타일 설정: 배너 또는 알림창\n• 소리와 진동 활성화\n\n⚠️ 중요 안내:\n• iOS 로컬 알림은 앱 프로세스에 의존합니다\n• 작업 관리자에서 앱을 강제 종료하지 마세요\n• 앱이 백그라운드나 포그라운드에 있을 때 알림이 작동합니다\n• 강제 종료하면 알림이 작동하지 않습니다\n\n💡 사용 팁:\n• 홈 버튼을 눌러 앱을 종료하기만 하면 됩니다\n• iOS가 백그라운드 앱을 자동으로 관리합니다\n• 알림을 받으려면 앱을 백그라운드에 유지하세요';
+      '🍎 iOS 알림 설정:\n• 설정 > 알림 > rancount\n• \"알림 허용\" 활성화\n• 알림 스타일 설정: 배너 또는 알림창\n• 소리와 진동 활성화\n\n⚠️ 중요 안내:\n• iOS 로컬 알림은 앱 프로세스에 의존합니다\n• 작업 관리자에서 앱을 강제 종료하지 마세요\n• 앱이 백그라운드나 포그라운드에 있을 때 알림이 작동합니다\n• 강제 종료하면 알림이 작동하지 않습니다\n\n💡 사용 팁:\n• 홈 버튼을 눌러 앱을 종료하기만 하면 됩니다\n• iOS가 백그라운드 앱을 자동으로 관리합니다\n• 알림을 받으려면 앱을 백그라운드에 유지하세요';
 
   @override
   String get reminderAndroidInstructions =>
-      '알림이 제대로 오지 않는다면 다음을 확인하세요:\n• 앱의 알림 전송이 허용되어 있는지\n• 앱의 배터리 최적화/절전 모드를 꺼두었는지\n• 앱의 백그라운드 실행과 자동 시작이 허용되어 있는지\n• Android 12 이상은 정확한 알람 권한이 필요합니다\n\n📱 샤오미(Xiaomi) 기기 특별 설정:\n• 설정 > 앱 관리 > 꿀벌 가계부 > 알림 관리\n• \"기록 알림\" 채널을 누르세요\n• 중요도를 \"긴급\" 또는 \"높음\"으로 설정하세요\n• \"배너 알림\", \"소리\", \"진동\"을 활성화하세요\n• 보안센터 > 앱 관리 > 권한 > 자동 실행\n\n🔒 백그라운드 고정 방법:\n• 최근 작업 목록에서 꿀벌 가계부를 찾으세요\n• 앱 카드를 아래로 당겨 잠금 아이콘을 표시하세요\n• 잠금 아이콘을 눌러 정리되지 않도록 하세요';
+      '알림이 제대로 오지 않는다면 다음을 확인하세요:\n• 앱의 알림 전송이 허용되어 있는지\n• 앱의 배터리 최적화/절전 모드를 꺼두었는지\n• 앱의 백그라운드 실행과 자동 시작이 허용되어 있는지\n• Android 12 이상은 정확한 알람 권한이 필요합니다\n\n📱 샤오미(Xiaomi) 기기 특별 설정:\n• 설정 > 앱 관리 > rancount > 알림 관리\n• \"기록 알림\" 채널을 누르세요\n• 중요도를 \"긴급\" 또는 \"높음\"으로 설정하세요\n• \"배너 알림\", \"소리\", \"진동\"을 활성화하세요\n• 보안센터 > 앱 관리 > 권한 > 자동 실행\n\n🔒 백그라운드 고정 방법:\n• 최근 작업 목록에서 rancount를 찾으세요\n• 앱 카드를 아래로 당겨 잠금 아이콘을 표시하세요\n• 잠금 아이콘을 눌러 정리되지 않도록 하세요';
 
   @override
   String get categoryDetailLoadFailed => '불러오기 실패';
@@ -2869,7 +2869,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exportCsvHeaderAttachments => '첨부파일';
 
   @override
-  String get exportShareText => 'BeeCount 내보내기 파일';
+  String get exportShareText => 'rancount 내보내기 파일';
 
   @override
   String get exportSuccessTitle => '내보내기 성공';
@@ -3281,7 +3281,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get updateNotificationGuideStep1 => '시스템 설정 > 앱 관리로 이동';
 
   @override
-  String get updateNotificationGuideStep2 => '\\\"BeeCount\\\" 앱을 찾으세요';
+  String get updateNotificationGuideStep2 => '\\\"rancount\\\" 앱을 찾으세요';
 
   @override
   String get updateNotificationGuideStep3 => '알림 권한을 활성화하세요';
@@ -4092,7 +4092,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '이전에 다운로드한 설치 패키지가 불완전하거나 손상되었습니다. 삭제하고 다시 다운로드하시겠습니까?';
 
   @override
-  String get welcomeTitle => 'BeeCount에 오신 것을 환영합니다';
+  String get welcomeTitle => 'rancount에 오신 것을 환영합니다';
 
   @override
   String get welcomeDescription => '사용자의 개인정보를 진심으로 존중하는 가계부 앱';
@@ -4124,7 +4124,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get welcomeCloudSyncDescription =>
-      'BeeCount는 다양한 동기화 방식을 지원합니다 - 내 데이터는 내가 관리합니다';
+      'rancount는 다양한 동기화 방식을 지원합니다 - 내 데이터는 내가 관리합니다';
 
   @override
   String get welcomeCloudSyncFeature1 => '클라우드 없이 완전히 오프라인으로 사용 가능';
@@ -4211,7 +4211,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get iosWidgetStep2 => '왼쪽 상단의 \"+\" 버튼을 누르세요';
 
   @override
-  String get iosWidgetStep3 => '\"BeeCount\"를 검색해서 선택하세요';
+  String get iosWidgetStep3 => '\"rancount\"를 검색해서 선택하세요';
 
   @override
   String get iosWidgetStep4 => '중간 크기 위젯을 선택해 홈 화면에 추가하세요';
@@ -4223,7 +4223,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get androidWidgetStep2 => '\"위젯\"을 선택하세요';
 
   @override
-  String get androidWidgetStep3 => '\"BeeCount\" 위젯을 찾아 길게 누르세요';
+  String get androidWidgetStep3 => '\"rancount\" 위젯을 찾아 길게 누르세요';
 
   @override
   String get androidWidgetStep4 => '홈 화면의 원하는 위치로 드래그하세요';
@@ -4332,11 +4332,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get iosAutoShortcutStep2 => '\"스크린샷 찍기\" 동작을 추가하세요';
 
   @override
-  String get iosAutoShortcutStep3 => '\"BeeCount - 자동 기록\" 동작을 검색해 추가하세요';
+  String get iosAutoShortcutStep3 => '\"rancount - 자동 기록\" 동작을 검색해 추가하세요';
 
   @override
   String get iosAutoShortcutStep4 =>
-      '\"BeeCount\"의 스크린샷 매개변수를 이전 단계의 \"스크린샷\"으로 설정하세요';
+      '\"rancount\"의 스크린샷 매개변수를 이전 단계의 \"스크린샷\"으로 설정하세요';
 
   @override
   String get iosAutoShortcutStep5 =>
@@ -4802,11 +4802,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get shareBillingGuide =>
-      '알리페이, 위챗, 사진 앱 등에서 결제 스크린샷을 보면 \"공유\"를 누르고 \"BeeCount\"를 선택하세요. 금액, 가맹점, 시간을 자동으로 인식해 거래를 생성합니다 — 스크린샷을 먼저 저장할 필요가 없습니다.';
+      '알리페이, 위챗, 사진 앱 등에서 결제 스크린샷을 보면 \"공유\"를 누르고 \"rancount\"를 선택하세요. 금액, 가맹점, 시간을 자동으로 인식해 거래를 생성합니다 — 스크린샷을 먼저 저장할 필요가 없습니다.';
 
   @override
   String get shareBillingActionHint =>
-      '공유 후 백그라운드에서 자동으로 인식됩니다 — BeeCount를 열 필요가 없습니다';
+      '공유 후 백그라운드에서 자동으로 인식됩니다 — rancount를 열 필요가 없습니다';
 
   @override
   String get automation => '자동화';
@@ -5012,7 +5012,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get configExportSubtitle => '현재 설정을 YAML 파일로 내보내기';
 
   @override
-  String get configExportShareSubject => 'BeeCount 설정 파일';
+  String get configExportShareSubject => 'rancount 설정 파일';
 
   @override
   String get configExportSuccess => '설정을 내보냈습니다';
@@ -5749,7 +5749,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get donationDescriptionDetail =>
-      'BeeCount를 사용해 주셔서 감사합니다! 이 앱이 도움이 되었다면 개발자에게 커피 한 잔을 사주는 것으로 응원해 주세요. 여러분의 후원이 계속 발전할 수 있는 원동력이 됩니다.';
+      'rancount를 사용해 주셔서 감사합니다! 이 앱이 도움이 되었다면 개발자에게 커피 한 잔을 사주는 것으로 응원해 주세요. 여러분의 후원이 계속 발전할 수 있는 원동력이 됩니다.';
 
   @override
   String get donationNoFeatures =>
@@ -5763,7 +5763,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String donationThankYouMessage(String productName) {
-    return '$productName을(를) 구매해 주셔서 감사합니다! 여러분의 후원은 저에게 큰 힘이 됩니다. BeeCount를 더 좋게 만들기 위해 계속 노력하겠습니다!';
+    return '$productName을(를) 구매해 주셔서 감사합니다! 여러분의 후원은 저에게 큰 힘이 됩니다. rancount를 더 좋게 만들기 위해 계속 노력하겠습니다!';
   }
 
   @override
@@ -6131,7 +6131,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get tagShareSubject => 'BeeCount 태그 설정';
+  String get tagShareSubject => 'rancount 태그 설정';
 
   @override
   String get tagShareFailed => '공유 실패';
@@ -6824,7 +6824,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appLockBiometricDesc => 'Face ID 또는 지문으로 잠금을 해제합니다';
 
   @override
-  String get appLockBiometricReason => '꿀벌 가계부 잠금을 해제하려면 본인 인증이 필요합니다';
+  String get appLockBiometricReason => 'rancount 잠금을 해제하려면 본인 인증이 필요합니다';
 
   @override
   String get appLockTimeout => '자동 잠금 시간';
@@ -7376,11 +7376,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get sharedInviteInstruction =>
-      '코드나 짧은 링크를 상대방에게 전달하세요. BeeCount를 설치한 후 링크를 누르거나 \"내 정보 → 공유 가계부 참여\"에서 코드를 입력하면 됩니다.';
+      '코드나 짧은 링크를 상대방에게 전달하세요. rancount를 설치한 후 링크를 누르거나 \"내 정보 → 공유 가계부 참여\"에서 코드를 입력하면 됩니다.';
 
   @override
   String sharedInviteShareText(String ledger, String code, String url) {
-    return 'BeeCount 공유 가계부 \"$ledger\"에 초대합니다.\n\n코드: $code\n링크: $url\n\n링크를 누르거나 BeeCount → 내 정보 → 공유 가계부 참여에서 이 코드를 입력하세요.';
+    return 'rancount 공유 가계부 \"$ledger\"에 초대합니다.\n\n코드: $code\n링크: $url\n\n링크를 누르거나 rancount → 내 정보 → 공유 가계부 참여에서 이 코드를 입력하세요.';
   }
 
   @override

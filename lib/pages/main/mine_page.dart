@@ -1099,10 +1099,9 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
           color: BeeTokens.textPrimary(context),
           fontWeight: FontWeight.w600,
         );
-    // 已设置=「问候,昵称」(与 web 一致),未设置=Slogan。
     final headerText = displayName.isNotEmpty
         ? l10n.mineGreetingNamed(greeting.text, displayName)
-        : l10n.mineSlogan;
+        : l10n.appName;
 
     final day = countsAsync.asData?.value.dayCount ?? 0;
     final tx = countsAsync.asData?.value.txCount ?? 0;
@@ -1192,13 +1191,15 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            headerText,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: labelStyle?.copyWith(fontSize: 12),
-                          ),
+                          if (displayName.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              headerText,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: labelStyle?.copyWith(fontSize: 12),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1349,8 +1350,8 @@ class _MinePageHeaderState extends ConsumerState<_MinePageHeader> {
                 ),
               ),
               SizedBox(height: 12.0.scaled(context, ref)),
-              // 昵称行:已设置 = 「时段图标 + 问候,昵称」(与 web 一致),未设置 =
-              // Slogan;名字可点直接编辑(发现性主入口在头像:点头像→编辑资料,可改
+              // 昵称行:已设置 = 「时段图标 + 问候,昵称」,未设置 = 应用名。
+              // 名字可点直接编辑(发现性主入口在头像:点头像→编辑资料,可改
               // 昵称/头像)。小眼睛(隐藏金额)紧跟其后,整体居中。
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

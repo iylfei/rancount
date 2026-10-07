@@ -1,0 +1,9 @@
+Generator: built-in image_gen edit
+Reference: rancount-icon-jade-v1.png
+
+Use case: precise-object-edit
+Asset type: revised RanCount app icon, single square artwork.
+Input image: the existing RanCount icon is the edit target. Keep the exact centered ivory folded-paper capital R silhouette, its shape, proportions, framing and layout. Change only the background and the coin, with natural lighting adjustments necessary to fit them.
+Primary request: replace the green mottled background with a perfectly clean, uniform solid deep midnight-indigo background (#202638). Absolutely no background gradients, cloudy texture, grain, bloom, haze or blurry areas. The background must look like a crisp flat digital color field.
+Replace the existing featureless gold disk inside the R's upper counter with an unmistakable small gold coin, keeping approximately the existing position and diameter. Use a clearly embossed centered yen/yuan currency symbol "¥", a raised circular outer rim, a fine clean engraved inner ring, subtle ridged edge visible at the lower right, and a visible narrow thickness. Make it finely minted brushed gold with crisp highlights and controlled metallic reflections. The symbol and rim must be strong and clear enough to read at app icon size. Warm champagne gold face, bright polished rim, short controlled contact shadow, no blurred edges. It should look like a real high-quality minted coin, not a clay disk, button, plastic badge or floating luminous circle.
+Constraints: preserve the beautiful ivory paper R and folded corner and all its main geometry. Render very clean sharply defined contours, retain soft satin paper material. Keep the background uniform except for very short and restrained contact shadows directly behind the R and coin. Full-bleed square with no external canvas, no rounded-corner frame. One icon only. No extra objects, no wordmark, no decorative sparkles, no watermark.

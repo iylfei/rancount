@@ -73,8 +73,6 @@ class UserProfilePoster extends StatelessWidget {
 
                   const Spacer(),
 
-                  // 底部Logo和slogan
-                  _buildFooter(),
                 ],
               ),
             ),
@@ -513,17 +511,4 @@ class UserProfilePoster extends StatelessWidget {
     }
   }
 
-  /// 构建底部slogan
-  Widget _buildFooter() {
-    return Center(
-      child: Text(
-        l10n.sharePosterSlogan,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.7),
-          fontSize: 14,
-          letterSpacing: 1,
-        ),
-      ),
-    );
-  }
 }

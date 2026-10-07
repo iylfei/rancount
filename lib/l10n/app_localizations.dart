@@ -110,7 +110,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiConsentBody.
   ///
   /// In en, this message translates to:
-  /// **'AI features need to send related data to the third-party AI provider you configure:\n\n• Who it goes to: by default Zhipu GLM (open.bigmodel.cn, operated by Zhipu); if you configure another third-party AI service, it goes to the provider you entered.\n• What is sent: the content you actively use for recognition/chat — receipt images, voice recordings, text you type, plus the category names, account names and relevant transaction records needed to complete recognition/analysis.\n• Purpose: only for bill recognition, bookkeeping and chats you initiate; BeeCount itself does not collect or store this data.\n\nThe data is processed by that third-party provider under its own privacy policy. Enabling means you consent to the data sharing above.'**
+  /// **'AI features need to send related data to the third-party AI provider you configure:\n\n• Who it goes to: by default Zhipu GLM (open.bigmodel.cn, operated by Zhipu); if you configure another third-party AI service, it goes to the provider you entered.\n• What is sent: the content you actively use for recognition/chat — receipt images, voice recordings, text you type, plus the category names, account names and relevant transaction records needed to complete recognition/analysis.\n• Purpose: only for bill recognition, bookkeeping and chats you initiate; rancount itself does not collect or store this data.\n\nThe data is processed by that third-party provider under its own privacy policy. Enabling means you consent to the data sharing above.'**
   String get aiConsentBody;
 
   /// No description provided for @aiConsentAgree.
@@ -350,7 +350,7 @@ abstract class AppLocalizations {
   /// No description provided for @voiceRecordingPermissionDeniedMessage.
   ///
   /// In en, this message translates to:
-  /// **'Voice billing requires microphone permission. Please allow BeeCount to access the microphone in System Settings.'**
+  /// **'Voice billing requires microphone permission. Please allow rancount to access the microphone in System Settings.'**
   String get voiceRecordingPermissionDeniedMessage;
 
   /// No description provided for @voiceRecordingStartFailed.
@@ -620,7 +620,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeAppTitle.
   ///
   /// In en, this message translates to:
-  /// **'Bee Accounting'**
+  /// **'rancount'**
   String get homeAppTitle;
 
   /// No description provided for @homeSearch.
@@ -1070,13 +1070,13 @@ abstract class AppLocalizations {
   /// No description provided for @splashAppName.
   ///
   /// In en, this message translates to:
-  /// **'Bee Accounting'**
+  /// **'rancount'**
   String get splashAppName;
 
   /// No description provided for @splashSlogan.
   ///
   /// In en, this message translates to:
-  /// **'Record Every Drop'**
+  /// **''**
   String get splashSlogan;
 
   /// No description provided for @splashSecurityTitle.
@@ -1873,7 +1873,7 @@ abstract class AppLocalizations {
   /// No description provided for @mineSlogan.
   ///
   /// In en, this message translates to:
-  /// **'Bee Accounting, Every Penny Counts'**
+  /// **''**
   String get mineSlogan;
 
   /// No description provided for @mineDisplayNameEditTitle.
@@ -2395,7 +2395,7 @@ abstract class AppLocalizations {
   /// No description provided for @mineShareWithFriends.
   ///
   /// In en, this message translates to:
-  /// **'Share BeeCount with friends'**
+  /// **'Share rancount with friends'**
   String get mineShareWithFriends;
 
   /// No description provided for @mineCopyPromoText.
@@ -2419,13 +2419,13 @@ abstract class AppLocalizations {
   /// No description provided for @sharePosterAppName.
   ///
   /// In en, this message translates to:
-  /// **'BeeCount'**
+  /// **'rancount'**
   String get sharePosterAppName;
 
   /// No description provided for @sharePosterSlogan.
   ///
   /// In en, this message translates to:
-  /// **'Smart Accounting, Beautiful Life'**
+  /// **''**
   String get sharePosterSlogan;
 
   /// No description provided for @sharePosterFeature1.
@@ -2569,7 +2569,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareGuidanceCopyText.
   ///
   /// In en, this message translates to:
-  /// **'Track my expenses with BeeCount - open source, free & ad-free! 🐝 Download: https://github.com/TNT-Likely/BeeCount'**
+  /// **'Track my expenses with rancount - open source, free & ad-free! Download: https://github.com/TNT-Likely/BeeCount'**
   String get shareGuidanceCopyText;
 
   /// No description provided for @shareGuidanceCopied.
@@ -3738,7 +3738,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryShareSubject.
   ///
   /// In en, this message translates to:
-  /// **'BeeCount Category Configuration'**
+  /// **'rancount Category Configuration'**
   String get categoryShareSubject;
 
   /// No description provided for @categoryShareFailed.
@@ -4836,13 +4836,13 @@ abstract class AppLocalizations {
   /// No description provided for @reminderIOSInstructions.
   ///
   /// In en, this message translates to:
-  /// **'🍎 iOS notification settings:\n• Settings > Notifications > Bee Accounting\n• Enable \"Allow Notifications\"\n• Set notification style: Banner or Alert\n• Enable sound and vibration\n\n⚠️ Important Note:\n• iOS local notifications depend on app process\n• Do not force quit app from task manager\n• Notifications work when app is in background or foreground\n• Force quitting will disable notifications\n\n💡 Usage Tips:\n• Simply press Home button to exit app\n• iOS will manage background apps automatically\n• Keep app in background to receive reminders'**
+  /// **'🍎 iOS notification settings:\n• Settings > Notifications > rancount\n• Enable \"Allow Notifications\"\n• Set notification style: Banner or Alert\n• Enable sound and vibration\n\n⚠️ Important Note:\n• iOS local notifications depend on app process\n• Do not force quit app from task manager\n• Notifications work when app is in background or foreground\n• Force quitting will disable notifications\n\n💡 Usage Tips:\n• Simply press Home button to exit app\n• iOS will manage background apps automatically\n• Keep app in background to receive reminders'**
   String get reminderIOSInstructions;
 
   /// No description provided for @reminderAndroidInstructions.
   ///
   /// In en, this message translates to:
-  /// **'If notifications don\'t work properly, check:\n• App is allowed to send notifications\n• Disable battery optimization/power saving for app\n• Allow app to run in background and auto-start\n• Android 12+ needs exact alarm permission\n\n📱 Xiaomi phone special settings:\n• Settings > App Management > Bee Accounting > Notification Management\n• Tap \"Recording Reminder\" channel\n• Set importance to \"Urgent\" or \"High\"\n• Enable \"Banner notifications\", \"Sound\", \"Vibration\"\n• Security Center > App Management > Permissions > Auto-start\n\n🔒 Lock background methods:\n• Find Bee Accounting in recent tasks\n• Pull down app card to show lock icon\n• Tap lock icon to prevent cleanup'**
+  /// **'If notifications don\'t work properly, check:\n• App is allowed to send notifications\n• Disable battery optimization/power saving for app\n• Allow app to run in background and auto-start\n• Android 12+ needs exact alarm permission\n\n📱 Xiaomi phone special settings:\n• Settings > App Management > rancount > Notification Management\n• Tap \"Recording Reminder\" channel\n• Set importance to \"Urgent\" or \"High\"\n• Enable \"Banner notifications\", \"Sound\", \"Vibration\"\n• Security Center > App Management > Permissions > Auto-start\n\n🔒 Lock background methods:\n• Find rancount in recent tasks\n• Pull down app card to show lock icon\n• Tap lock icon to prevent cleanup'**
   String get reminderAndroidInstructions;
 
   /// No description provided for @categoryDetailLoadFailed.
@@ -5396,7 +5396,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportShareText.
   ///
   /// In en, this message translates to:
-  /// **'BeeCount Export File'**
+  /// **'rancount Export File'**
   String get exportShareText;
 
   /// No description provided for @exportSuccessTitle.
@@ -6132,7 +6132,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateNotificationGuideStep2.
   ///
   /// In en, this message translates to:
-  /// **'Find \\\"BeeCount\\\" app'**
+  /// **'Find \\\"rancount\\\" app'**
   String get updateNotificationGuideStep2;
 
   /// No description provided for @updateNotificationGuideStep3.
@@ -7692,7 +7692,7 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to BeeCount'**
+  /// **'Welcome to rancount'**
   String get welcomeTitle;
 
   /// No description provided for @welcomeDescription.
@@ -7752,7 +7752,7 @@ abstract class AppLocalizations {
   /// No description provided for @welcomeCloudSyncDescription.
   ///
   /// In en, this message translates to:
-  /// **'BeeCount supports multiple sync methods - your data, your control'**
+  /// **'rancount supports multiple sync methods - your data, your control'**
   String get welcomeCloudSyncDescription;
 
   /// No description provided for @welcomeCloudSyncFeature1.
@@ -7908,7 +7908,7 @@ abstract class AppLocalizations {
   /// No description provided for @iosWidgetStep3.
   ///
   /// In en, this message translates to:
-  /// **'Search and select \"BeeCount\"'**
+  /// **'Search and select \"rancount\"'**
   String get iosWidgetStep3;
 
   /// No description provided for @iosWidgetStep4.
@@ -7932,7 +7932,7 @@ abstract class AppLocalizations {
   /// No description provided for @androidWidgetStep3.
   ///
   /// In en, this message translates to:
-  /// **'Find and long press \"BeeCount\" widget'**
+  /// **'Find and long press \"rancount\" widget'**
   String get androidWidgetStep3;
 
   /// No description provided for @androidWidgetStep4.
@@ -8136,13 +8136,13 @@ abstract class AppLocalizations {
   /// No description provided for @iosAutoShortcutStep3.
   ///
   /// In en, this message translates to:
-  /// **'Search and add \"BeeCount - Auto Billing\" action'**
+  /// **'Search and add \"rancount - Auto Billing\" action'**
   String get iosAutoShortcutStep3;
 
   /// No description provided for @iosAutoShortcutStep4.
   ///
   /// In en, this message translates to:
-  /// **'Set the screenshot parameter of \"BeeCount\" to the previous \"Screenshot\"'**
+  /// **'Set the screenshot parameter of \"rancount\" to the previous \"Screenshot\"'**
   String get iosAutoShortcutStep4;
 
   /// No description provided for @iosAutoShortcutStep5.
@@ -8952,13 +8952,13 @@ abstract class AppLocalizations {
   /// No description provided for @shareBillingGuide.
   ///
   /// In en, this message translates to:
-  /// **'When you see a payment screenshot in Alipay, WeChat, Photos, etc., tap \"Share\" and choose \"BeeCount\" to auto-recognize the amount, merchant, and time and create a transaction — no need to save the screenshot first.'**
+  /// **'When you see a payment screenshot in Alipay, WeChat, Photos, etc., tap \"Share\" and choose \"rancount\" to auto-recognize the amount, merchant, and time and create a transaction — no need to save the screenshot first.'**
   String get shareBillingGuide;
 
   /// No description provided for @shareBillingActionHint.
   ///
   /// In en, this message translates to:
-  /// **'Recognized automatically in the background after sharing — no need to open BeeCount'**
+  /// **'Recognized automatically in the background after sharing — no need to open rancount'**
   String get shareBillingActionHint;
 
   /// No description provided for @automation.
@@ -9348,7 +9348,7 @@ abstract class AppLocalizations {
   /// No description provided for @configExportShareSubject.
   ///
   /// In en, this message translates to:
-  /// **'BeeCount Config File'**
+  /// **'rancount Config File'**
   String get configExportShareSubject;
 
   /// No description provided for @configExportSuccess.
@@ -10674,7 +10674,7 @@ abstract class AppLocalizations {
   /// No description provided for @donationDescriptionDetail.
   ///
   /// In en, this message translates to:
-  /// **'Thank you for using BeeCount! If this app helps you, feel free to buy the developer a coffee as encouragement. Your support is my motivation to keep improving.'**
+  /// **'Thank you for using rancount! If this app helps you, feel free to buy the developer a coffee as encouragement. Your support is my motivation to keep improving.'**
   String get donationDescriptionDetail;
 
   /// No description provided for @donationNoFeatures.
@@ -10698,7 +10698,7 @@ abstract class AppLocalizations {
   /// No description provided for @donationThankYouMessage.
   ///
   /// In en, this message translates to:
-  /// **'Thank you for purchasing {productName}! Your support means a lot to me. I will continue to improve BeeCount to make it even better!'**
+  /// **'Thank you for purchasing {productName}! Your support means a lot to me. I will continue to improve rancount to make it even better!'**
   String donationThankYouMessage(String productName);
 
   /// No description provided for @aiQuickCommandFinancialHealthTitle.
@@ -11394,7 +11394,7 @@ abstract class AppLocalizations {
   /// No description provided for @tagShareSubject.
   ///
   /// In en, this message translates to:
-  /// **'BeeCount Tags Configuration'**
+  /// **'rancount Tags Configuration'**
   String get tagShareSubject;
 
   /// No description provided for @tagShareFailed.
@@ -12670,7 +12670,7 @@ abstract class AppLocalizations {
   /// No description provided for @appLockBiometricReason.
   ///
   /// In en, this message translates to:
-  /// **'Verify identity to unlock Bee Accounting'**
+  /// **'Verify identity to unlock rancount'**
   String get appLockBiometricReason;
 
   /// No description provided for @appLockTimeout.
@@ -13636,13 +13636,13 @@ abstract class AppLocalizations {
   /// No description provided for @sharedInviteInstruction.
   ///
   /// In en, this message translates to:
-  /// **'Send the code or short link to the other person. After they install BeeCount, they can tap the link or enter the code from \"Me → Join shared ledger\".'**
+  /// **'Send the code or short link to the other person. After they install rancount, they can tap the link or enter the code from \"Me → Join shared ledger\".'**
   String get sharedInviteInstruction;
 
   /// No description provided for @sharedInviteShareText.
   ///
   /// In en, this message translates to:
-  /// **'I\'m inviting you to BeeCount shared ledger \"{ledger}\".\n\nCode: {code}\nLink: {url}\n\nTap the link, or open BeeCount → Me → Join shared ledger and enter this code.'**
+  /// **'I\'m inviting you to rancount shared ledger \"{ledger}\".\n\nCode: {code}\nLink: {url}\n\nTap the link, or open rancount → Me → Join shared ledger and enter this code.'**
   String sharedInviteShareText(String ledger, String code, String url);
 
   /// No description provided for @sharedMembersPageTitle.

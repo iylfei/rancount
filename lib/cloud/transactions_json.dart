@@ -115,6 +115,10 @@ Future<String> exportTransactionsJson(BeeDatabase db, int ledgerId) async {
     if (t.accountId != null) usedAccountIds.add(t.accountId!);
     if (t.toAccountId != null) usedAccountIds.add(t.toAccountId!);
   }
+  // Repayment-only accounts (such as loans) may have no ledger transactions.
+  final plannedAccounts = await (db.select(db.accounts)
+        ..where((a) => a.repaymentSchedule.isNotNull())).get();
+  usedAccountIds.addAll(plannedAccounts.map((a) => a.id));
   final accounts = <Account>[];
   final accountIdToName = <int, String>{}; // 账户ID -> 名称映射
   for (final aid in usedAccountIds) {
@@ -131,6 +135,7 @@ Future<String> exportTransactionsJson(BeeDatabase db, int ledgerId) async {
             'type': a.type,
             'currency': a.currency,
             'initialBalance': a.initialBalance,
+            if (a.repaymentSchedule != null) 'repaymentSchedule': a.repaymentSchedule,
           })
       .toList();
 
@@ -320,6 +325,7 @@ ImportData parseJsonToImportData(String jsonStr) {
         type: acc['type'] as String?,
         currency: acc['currency'] as String?,
         initialBalance: (acc['initialBalance'] as num?)?.toDouble(),
+        repaymentSchedule: acc['repaymentSchedule'] as String?,
       ));
     }
   }

@@ -68,6 +68,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             Account? toAccount,
           })>>? _txStream;
   int? _txStreamLedgerId;
+  Object? _txStreamRepository;
 
   // 月初提醒状态
   bool _showLastMonthReminder = false;
@@ -1083,19 +1084,20 @@ class _HomePageState extends ConsumerState<HomePage> {
                 // ledgerId 变了或第一次进来才重建 stream;无关 setState(预算
                 // 提示卡片、月度提醒等)的 home rebuild 复用同一 stream 引用,
                 // StreamBuilder 不会重新订阅,不会闪到 fallback 数据。
-                if (_txStream == null || _txStreamLedgerId != ledgerId) {
+                if (_txStream == null || _txStreamLedgerId != ledgerId ||
+                    !identical(_txStreamRepository, repo)) {
                   _txStream = repo.transactionsWithCategoryAll(
                     ledgerId: ledgerId,
                   );
                   _txStreamLedgerId = ledgerId;
+                  _txStreamRepository = repo;
                 }
                 return _txStream;
               }(),
               builder: (context, snapshot) {
                 // Stream 数据到来前，使用预加载数据；到来后使用 Stream 数据
                 final streamData = snapshot.data;
-                final hasStreamData =
-                    streamData != null && streamData.isNotEmpty;
+                final hasStreamData = streamData != null;
 
                 // 如果 Stream 没数据，从预加载数据构建基础列表
                 final transactions = hasStreamData

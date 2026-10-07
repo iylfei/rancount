@@ -173,23 +173,6 @@ class AppPromoPoster extends StatelessWidget {
             letterSpacing: 3,
           ),
         ),
-        const SizedBox(height: 12),
-        // Slogan
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            l10n.sharePosterSlogan,
-            style: TextStyle(
-              fontSize: 20,
-              color: Colors.white.withValues(alpha: 0.95),
-              letterSpacing: 1,
-            ),
-          ),
-        ),
       ],
     );
   }

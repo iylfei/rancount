@@ -549,9 +549,14 @@ class MainActivity: FlutterFragmentActivity() {
 
             android.util.Log.d("MainActivity", "UPDATE_CRASH: APK文件大小: ${sourceFile.length()} 字节")
 
-            // 直接在缓存根目录创建APK，避免子目录配置问题
-            android.util.Log.d("MainActivity", "UPDATE_CRASH: 复制APK到缓存根目录")
-            val cachedApk = File(cacheDir, "install.apk")
+            val archiveInfo = packageManager.getPackageArchiveInfo(sourceFile.absolutePath, 0)
+            if (archiveInfo == null || archiveInfo.packageName != packageName) {
+                android.util.Log.e("MainActivity", "UPDATE_CRASH: 安装包无法解析或包名不匹配")
+                return false
+            }
+            // 每个版本使用不同的 FileProvider URI，避免安装器沿用旧 APK 的元数据。
+            val cachedApk = File(cacheDir, "install-${archiveInfo.versionCode}.apk")
+            android.util.Log.d("MainActivity", "UPDATE_CRASH: 目标版本: ${archiveInfo.versionName} (${archiveInfo.versionCode})")
             sourceFile.copyTo(cachedApk, overwrite = true)
             android.util.Log.d("MainActivity", "UPDATE_CRASH: APK已复制到: ${cachedApk.absolutePath}")
 

@@ -74,6 +74,7 @@ abstract class AccountRepository {
     String? note,
     bool clearMetadataFields = false,
     bool? hidden,
+    String? repaymentSchedule,
   });
 
   /// 隐藏 / 恢复账户(账户隐藏 #240)。内部走 [updateAccount] → 记

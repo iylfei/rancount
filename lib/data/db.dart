@@ -53,6 +53,7 @@ class Accounts extends Table {
   IntColumn get sortOrder =>
       integer().withDefault(const Constant(0))(); // 排序顺序，数字越小越靠前
   RealColumn get creditLimit => real().nullable()(); // 信用额度
+  TextColumn get repaymentSchedule => text().nullable()();
   IntColumn get billingDay => integer().nullable()(); // 账单日 (1-28)
   IntColumn get paymentDueDay => integer().nullable()(); // 还款日 (1-28)
   TextColumn get bankName => text().nullable()(); // 开户行
@@ -517,7 +518,7 @@ class BeeDatabase extends _$BeeDatabase {
   BeeDatabase.forTesting(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 34; // v34: 图片交易字段与退款关联
+  int get schemaVersion => 36; // v36: 按年月保存账户还款计划
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1278,6 +1279,18 @@ class BeeDatabase extends _$BeeDatabase {
                 'CREATE INDEX IF NOT EXISTS idx_transactions_refund_of '
                 'ON transactions (refund_of_sync_id);');
           }
+          if (from < 35) {
+            await customStatement(
+                'CREATE TABLE IF NOT EXISTS recent_transaction_records ('
+                'transaction_id INTEGER PRIMARY KEY, recorded_at INTEGER NOT NULL);');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_recent_transaction_records_time '
+                'ON recent_transaction_records (recorded_at);');
+          }
+          if (from < 36) {
+            await _addColumnIfMissing('accounts', 'repayment_schedule',
+                'ALTER TABLE accounts ADD COLUMN repayment_schedule TEXT;');
+          }
         },
         onCreate: (m) async {
           await m.createAll();
@@ -1288,6 +1301,12 @@ class BeeDatabase extends _$BeeDatabase {
           await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_transactions_refund_of '
               'ON transactions (refund_of_sync_id);');
+          await customStatement(
+              'CREATE TABLE IF NOT EXISTS recent_transaction_records ('
+              'transaction_id INTEGER PRIMARY KEY, recorded_at INTEGER NOT NULL);');
+          await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_recent_transaction_records_time '
+              'ON recent_transaction_records (recorded_at);');
         },
       );
 

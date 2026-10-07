@@ -182,6 +182,7 @@ class LocalAccountRepository implements AccountRepository {
     String? note,
     bool clearMetadataFields = false,
     bool? hidden,
+    String? repaymentSchedule,
   }) async {
     await (db.update(db.accounts)..where((a) => a.id.equals(id))).write(
       AccountsCompanion(
@@ -196,6 +197,8 @@ class LocalAccountRepository implements AccountRepository {
         cardLastFour: clearMetadataFields ? const d.Value(null) : (cardLastFour != null ? d.Value(cardLastFour) : const d.Value.absent()),
         note: clearMetadataFields ? const d.Value(null) : (note != null ? d.Value(note) : const d.Value.absent()),
         hidden: hidden == null ? const d.Value.absent() : d.Value(hidden),
+        repaymentSchedule: repaymentSchedule == null
+            ? const d.Value.absent() : d.Value(repaymentSchedule),
       ),
     );
   }

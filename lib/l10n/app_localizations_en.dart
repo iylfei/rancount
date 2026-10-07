@@ -13,7 +13,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiConsentBody =>
-      'AI features need to send related data to the third-party AI provider you configure:\n\n• Who it goes to: by default Zhipu GLM (open.bigmodel.cn, operated by Zhipu); if you configure another third-party AI service, it goes to the provider you entered.\n• What is sent: the content you actively use for recognition/chat — receipt images, voice recordings, text you type, plus the category names, account names and relevant transaction records needed to complete recognition/analysis.\n• Purpose: only for bill recognition, bookkeeping and chats you initiate; BeeCount itself does not collect or store this data.\n\nThe data is processed by that third-party provider under its own privacy policy. Enabling means you consent to the data sharing above.';
+      'AI features need to send related data to the third-party AI provider you configure:\n\n• Who it goes to: by default Zhipu GLM (open.bigmodel.cn, operated by Zhipu); if you configure another third-party AI service, it goes to the provider you entered.\n• What is sent: the content you actively use for recognition/chat — receipt images, voice recordings, text you type, plus the category names, account names and relevant transaction records needed to complete recognition/analysis.\n• Purpose: only for bill recognition, bookkeeping and chats you initiate; rancount itself does not collect or store this data.\n\nThe data is processed by that third-party provider under its own privacy policy. Enabling means you consent to the data sharing above.';
 
   @override
   String get aiConsentAgree => 'Agree & enable';
@@ -137,7 +137,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get voiceRecordingPermissionDeniedMessage =>
-      'Voice billing requires microphone permission. Please allow BeeCount to access the microphone in System Settings.';
+      'Voice billing requires microphone permission. Please allow rancount to access the microphone in System Settings.';
 
   @override
   String voiceRecordingStartFailed(String error) {
@@ -285,7 +285,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeSelectDate => 'Select date';
 
   @override
-  String get homeAppTitle => 'Bee Accounting';
+  String get homeAppTitle => 'rancount';
 
   @override
   String get homeSearch => 'Search';
@@ -546,10 +546,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get analyticsToday => 'Today';
 
   @override
-  String get splashAppName => 'Bee Accounting';
+  String get splashAppName => 'rancount';
 
   @override
-  String get splashSlogan => 'Record Every Drop';
+  String get splashSlogan => '';
 
   @override
   String get splashSecurityTitle => 'Open Source Data Security';
@@ -1000,7 +1000,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to delete this record?';
 
   @override
-  String get mineSlogan => 'Bee Accounting, Every Penny Counts';
+  String get mineSlogan => '';
 
   @override
   String get mineDisplayNameEditTitle => 'Set nickname';
@@ -1278,7 +1278,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mineShareApp => 'Share App';
 
   @override
-  String get mineShareWithFriends => 'Share BeeCount with friends';
+  String get mineShareWithFriends => 'Share rancount with friends';
 
   @override
   String get mineCopyPromoText => 'Copy Promo Text';
@@ -1290,10 +1290,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mineShareGenerating => 'Generating share poster...';
 
   @override
-  String get sharePosterAppName => 'BeeCount';
+  String get sharePosterAppName => 'rancount';
 
   @override
-  String get sharePosterSlogan => 'Smart Accounting, Beautiful Life';
+  String get sharePosterSlogan => '';
 
   @override
   String get sharePosterFeature1 => 'Data Security·You Control';
@@ -1368,7 +1368,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareGuidanceCopyText =>
-      'Track my expenses with BeeCount - open source, free & ad-free! 🐝 Download: https://github.com/TNT-Likely/BeeCount';
+      'Track my expenses with rancount - open source, free & ad-free! Download: https://github.com/TNT-Likely/BeeCount';
 
   @override
   String get shareGuidanceCopied => 'Text copied';
@@ -2009,7 +2009,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get categoryShareSubject => 'BeeCount Category Configuration';
+  String get categoryShareSubject => 'rancount Category Configuration';
 
   @override
   String get categoryShareFailed => 'Share failed';
@@ -2642,11 +2642,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reminderIOSInstructions =>
-      '🍎 iOS notification settings:\n• Settings > Notifications > Bee Accounting\n• Enable \"Allow Notifications\"\n• Set notification style: Banner or Alert\n• Enable sound and vibration\n\n⚠️ Important Note:\n• iOS local notifications depend on app process\n• Do not force quit app from task manager\n• Notifications work when app is in background or foreground\n• Force quitting will disable notifications\n\n💡 Usage Tips:\n• Simply press Home button to exit app\n• iOS will manage background apps automatically\n• Keep app in background to receive reminders';
+      '🍎 iOS notification settings:\n• Settings > Notifications > rancount\n• Enable \"Allow Notifications\"\n• Set notification style: Banner or Alert\n• Enable sound and vibration\n\n⚠️ Important Note:\n• iOS local notifications depend on app process\n• Do not force quit app from task manager\n• Notifications work when app is in background or foreground\n• Force quitting will disable notifications\n\n💡 Usage Tips:\n• Simply press Home button to exit app\n• iOS will manage background apps automatically\n• Keep app in background to receive reminders';
 
   @override
   String get reminderAndroidInstructions =>
-      'If notifications don\'t work properly, check:\n• App is allowed to send notifications\n• Disable battery optimization/power saving for app\n• Allow app to run in background and auto-start\n• Android 12+ needs exact alarm permission\n\n📱 Xiaomi phone special settings:\n• Settings > App Management > Bee Accounting > Notification Management\n• Tap \"Recording Reminder\" channel\n• Set importance to \"Urgent\" or \"High\"\n• Enable \"Banner notifications\", \"Sound\", \"Vibration\"\n• Security Center > App Management > Permissions > Auto-start\n\n🔒 Lock background methods:\n• Find Bee Accounting in recent tasks\n• Pull down app card to show lock icon\n• Tap lock icon to prevent cleanup';
+      'If notifications don\'t work properly, check:\n• App is allowed to send notifications\n• Disable battery optimization/power saving for app\n• Allow app to run in background and auto-start\n• Android 12+ needs exact alarm permission\n\n📱 Xiaomi phone special settings:\n• Settings > App Management > rancount > Notification Management\n• Tap \"Recording Reminder\" channel\n• Set importance to \"Urgent\" or \"High\"\n• Enable \"Banner notifications\", \"Sound\", \"Vibration\"\n• Security Center > App Management > Permissions > Auto-start\n\n🔒 Lock background methods:\n• Find rancount in recent tasks\n• Pull down app card to show lock icon\n• Tap lock icon to prevent cleanup';
 
   @override
   String get categoryDetailLoadFailed => 'Load failed';
@@ -2948,7 +2948,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportCsvHeaderAttachments => 'Attachments';
 
   @override
-  String get exportShareText => 'BeeCount Export File';
+  String get exportShareText => 'rancount Export File';
 
   @override
   String get exportSuccessTitle => 'Export Successful';
@@ -3366,7 +3366,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Go to System Settings > App Management';
 
   @override
-  String get updateNotificationGuideStep2 => 'Find \\\"BeeCount\\\" app';
+  String get updateNotificationGuideStep2 => 'Find \\\"rancount\\\" app';
 
   @override
   String get updateNotificationGuideStep3 => 'Enable notification permissions';
@@ -4214,7 +4214,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The previously downloaded installation package is incomplete or corrupted. Delete and re-download?';
 
   @override
-  String get welcomeTitle => 'Welcome to BeeCount';
+  String get welcomeTitle => 'Welcome to rancount';
 
   @override
   String get welcomeDescription =>
@@ -4250,7 +4250,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomeCloudSyncDescription =>
-      'BeeCount supports multiple sync methods - your data, your control';
+      'rancount supports multiple sync methods - your data, your control';
 
   @override
   String get welcomeCloudSyncFeature1 =>
@@ -4340,7 +4340,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get iosWidgetStep2 => 'Tap the \"+\" button in upper left corner';
 
   @override
-  String get iosWidgetStep3 => 'Search and select \"BeeCount\"';
+  String get iosWidgetStep3 => 'Search and select \"rancount\"';
 
   @override
   String get iosWidgetStep4 => 'Select medium widget and add to home screen';
@@ -4352,7 +4352,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get androidWidgetStep2 => 'Select \"Widgets\"';
 
   @override
-  String get androidWidgetStep3 => 'Find and long press \"BeeCount\" widget';
+  String get androidWidgetStep3 => 'Find and long press \"rancount\" widget';
 
   @override
   String get androidWidgetStep4 => 'Drag to suitable position on home screen';
@@ -4464,11 +4464,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get iosAutoShortcutStep3 =>
-      'Search and add \"BeeCount - Auto Billing\" action';
+      'Search and add \"rancount - Auto Billing\" action';
 
   @override
   String get iosAutoShortcutStep4 =>
-      'Set the screenshot parameter of \"BeeCount\" to the previous \"Screenshot\"';
+      'Set the screenshot parameter of \"rancount\" to the previous \"Screenshot\"';
 
   @override
   String get iosAutoShortcutStep5 =>
@@ -4955,11 +4955,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareBillingGuide =>
-      'When you see a payment screenshot in Alipay, WeChat, Photos, etc., tap \"Share\" and choose \"BeeCount\" to auto-recognize the amount, merchant, and time and create a transaction — no need to save the screenshot first.';
+      'When you see a payment screenshot in Alipay, WeChat, Photos, etc., tap \"Share\" and choose \"rancount\" to auto-recognize the amount, merchant, and time and create a transaction — no need to save the screenshot first.';
 
   @override
   String get shareBillingActionHint =>
-      'Recognized automatically in the background after sharing — no need to open BeeCount';
+      'Recognized automatically in the background after sharing — no need to open rancount';
 
   @override
   String get automation => 'Automation';
@@ -5168,7 +5168,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get configExportSubtitle => 'Export current config to YAML file';
 
   @override
-  String get configExportShareSubject => 'BeeCount Config File';
+  String get configExportShareSubject => 'rancount Config File';
 
   @override
   String get configExportSuccess => 'Config exported successfully';
@@ -5924,7 +5924,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get donationDescriptionDetail =>
-      'Thank you for using BeeCount! If this app helps you, feel free to buy the developer a coffee as encouragement. Your support is my motivation to keep improving.';
+      'Thank you for using rancount! If this app helps you, feel free to buy the developer a coffee as encouragement. Your support is my motivation to keep improving.';
 
   @override
   String get donationNoFeatures =>
@@ -5938,7 +5938,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String donationThankYouMessage(String productName) {
-    return 'Thank you for purchasing $productName! Your support means a lot to me. I will continue to improve BeeCount to make it even better!';
+    return 'Thank you for purchasing $productName! Your support means a lot to me. I will continue to improve rancount to make it even better!';
   }
 
   @override
@@ -6315,7 +6315,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tagShareSubject => 'BeeCount Tags Configuration';
+  String get tagShareSubject => 'rancount Tags Configuration';
 
   @override
   String get tagShareFailed => 'Share failed';
@@ -7027,8 +7027,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appLockBiometricDesc => 'Use Face ID or fingerprint to unlock';
 
   @override
-  String get appLockBiometricReason =>
-      'Verify identity to unlock Bee Accounting';
+  String get appLockBiometricReason => 'Verify identity to unlock rancount';
 
   @override
   String get appLockTimeout => 'Auto-lock Timeout';
@@ -7587,11 +7586,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sharedInviteInstruction =>
-      'Send the code or short link to the other person. After they install BeeCount, they can tap the link or enter the code from \"Me → Join shared ledger\".';
+      'Send the code or short link to the other person. After they install rancount, they can tap the link or enter the code from \"Me → Join shared ledger\".';
 
   @override
   String sharedInviteShareText(String ledger, String code, String url) {
-    return 'I\'m inviting you to BeeCount shared ledger \"$ledger\".\n\nCode: $code\nLink: $url\n\nTap the link, or open BeeCount → Me → Join shared ledger and enter this code.';
+    return 'I\'m inviting you to rancount shared ledger \"$ledger\".\n\nCode: $code\nLink: $url\n\nTap the link, or open rancount → Me → Join shared ledger and enter this code.';
   }
 
   @override

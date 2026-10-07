@@ -611,15 +611,6 @@ class LedgerSummaryPoster extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
-          // Slogan
-          Text(
-            l10n.sharePosterSlogan,
-            style: TextStyle(
-              color: primaryColor.withValues(alpha: 0.6),
-              fontSize: 12,
-            ),
-          ),
         ],
       ),
     );

@@ -58,17 +58,6 @@ class SplashPage extends ConsumerWidget {
                 ),
               ),
 
-              const SizedBox(height: 16),
-
-              // Slogan
-              Text(
-                AppLocalizations.of(context).splashSlogan,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: Colors.white.withOpacity(0.9),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-
               const Spacer(flex: 3),
 
               // 数据安全说明
@@ -179,14 +168,6 @@ class SplashPage extends ConsumerWidget {
                       style: text.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         letterSpacing: -0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.splashSlogan,
-                      textAlign: TextAlign.center,
-                      style: text.titleMedium?.copyWith(
-                        color: BeeTokens.textSecondary(context),
                       ),
                     ),
                     const SizedBox(height: 48),

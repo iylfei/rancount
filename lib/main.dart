@@ -1,6 +1,7 @@
 import 'services/billing/image_billing_cache.dart';
 import 'pages/automation/screenshot_dialog_app.dart';
 import 'package:flutter/material.dart';
+import 'data/external_write_refresh.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cloud_sync/flutter_cloud_sync.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -26,6 +27,7 @@ import 'services/system/reminder_monitor_service.dart';
 import 'providers/credit_card_reminder_providers.dart';
 import 'services/platform/image_share_handler_service.dart';
 import 'services/billing/background_sync_retry.dart';
+import 'services/attachment_service.dart' show attachmentListRefreshProvider;
 import 'pages/automation/image_draft_page.dart';
 import 'services/platform/app_link_service.dart';
 import 'services/system/logger_service.dart';
@@ -356,9 +358,14 @@ void _setupScreenshotCaptureHandler(ProviderContainer container) {
   _captureChannel.setMethodCallHandler((call) async {
     if (call.method == 'onDraftClosed') {
       // The dialog uses its own connection; Drift stream notifications are isolate-local.
-      container.invalidate(databaseProvider);
+      refreshExternalDatabaseWrites(container.read(databaseProvider));
+      container.read(cachedTransactionsProvider.notifier).state = null;
+      container.read(cachedTransactionsWithCategoryProvider.notifier).state = null;
       container.read(statsRefreshProvider.notifier).state++;
       container.read(syncGenerationProvider.notifier).state++;
+      container.read(tagListRefreshProvider.notifier).state++;
+      container.read(attachmentListRefreshProvider.notifier).state++;
+      container.read(homeSwitchToStreamProvider.notifier).state++;
       return;
     }
     if (call.method == 'onCaptureReady') {

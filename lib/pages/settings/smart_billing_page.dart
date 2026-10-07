@@ -385,7 +385,8 @@ class SmartBillingPage extends ConsumerWidget {
                         subtitle: l10n.smartBillingAutoTagsDesc,
                         trailing: Switch.adaptive(
                           value: ref.watch(smartBillingAutoTagsProvider),
-                          activeColor: Theme.of(context).colorScheme.primary,
+                          activeColor: Colors.white,
+                          activeTrackColor: Theme.of(context).colorScheme.primary,
                           onChanged: (value) {
                             ref
                                 .read(smartBillingAutoTagsProvider.notifier)
@@ -401,7 +402,8 @@ class SmartBillingPage extends ConsumerWidget {
                         subtitle: l10n.smartBillingAutoAttachmentDesc,
                         trailing: Switch.adaptive(
                           value: ref.watch(smartBillingAutoAttachmentProvider),
-                          activeColor: Theme.of(context).colorScheme.primary,
+                          activeColor: Colors.white,
+                          activeTrackColor: Theme.of(context).colorScheme.primary,
                           onChanged: (value) {
                             ref
                                 .read(

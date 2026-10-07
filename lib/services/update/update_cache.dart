@@ -3,6 +3,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:crypto/crypto.dart';
 import '../system/logger_service.dart';
+import 'update_asset_name.dart';
 
 /// 更新缓存管理类
 class UpdateCache {
@@ -34,12 +35,8 @@ class UpdateCache {
       }
       downloadDir ??= await getApplicationDocumentsDirectory();
 
-      // 从URL文件名提取版本号（格式如 beecount-0.8.1.apk）
-      String? version;
-      final versionMatch = RegExp(r'beecount-([0-9]+\.[0-9]+\.[0-9]+)\.apk')
-          .firstMatch(fileName);
-      if (versionMatch != null) {
-        version = versionMatch.group(1);
+      final version = UpdateAssetName.versionFromUrl(downloadUrl);
+      if (version != null) {
         logger.info('UpdateCache', '从URL提取的版本号: $version');
       }
 

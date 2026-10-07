@@ -12,6 +12,7 @@ import '../update/update_dialogs.dart';
 import '../update/update_downloader.dart';
 import '../update/update_installer.dart';
 import '../update/update_cache.dart';
+import '../update/update_asset_name.dart';
 
 /// 本地化UpdateResult消息的辅助函数
 String _localizeUpdateMessage(BuildContext context, String? message) {
@@ -92,13 +93,8 @@ class UpdateService {
 
       // 从URL中提取版本信息用于文件命名和缓存检查
       onProgress?.call(0.0, AppLocalizations.of(context).updateCheckingCache);
-      final uri = Uri.parse(downloadUrl);
-      final originalFileName = uri.pathSegments.last;
-      String? version;
-      final versionMatch = RegExp(r'beecount-([0-9]+\.[0-9]+\.[0-9]+)\.apk')
-          .firstMatch(originalFileName);
-      if (versionMatch != null) {
-        version = versionMatch.group(1);
+      final version = UpdateAssetName.versionFromUrl(downloadUrl);
+      if (version != null) {
         logger.info('UpdateService', '从URL提取的版本号: $version');
       }
 

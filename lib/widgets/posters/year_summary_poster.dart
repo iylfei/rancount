@@ -76,8 +76,6 @@ class YearSummaryPoster extends StatelessWidget {
 
                   const Spacer(),
 
-                  // 底部Logo和slogan
-                  _buildFooter(context),
                 ],
               ),
             ),
@@ -658,18 +656,4 @@ class YearSummaryPoster extends StatelessWidget {
     );
   }
 
-  /// 构建底部slogan
-  Widget _buildFooter(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Text(
-        l10n.sharePosterSlogan,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.7),
-          fontSize: 14,
-          letterSpacing: 1,
-        ),
-      ),
-    );
-  }
 }

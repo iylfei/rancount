@@ -438,7 +438,8 @@ class LocalTransactionRepository implements TransactionRepository {
   }) async {
     // v30:子仓收「已定值」直写;带折算的兜底(查账户/汇率)在聚合
     // LocalRepository 包装层(子仓拿不到汇率)。
-    return db.into(db.transactions).insert(TransactionsCompanion.insert(
+    return db.transaction(() async {
+      final id = await db.into(db.transactions).insert(TransactionsCompanion.insert(
           ledgerId: ledgerId,
           type: type,
           amount: amount,
@@ -460,6 +461,17 @@ class LocalTransactionRepository implements TransactionRepository {
           currencyCode: d.Value(currencyCode),
           nativeAmount: d.Value(nativeAmount),
         ));
+      final recordedAt = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      await db.customStatement(
+        'INSERT INTO recent_transaction_records (transaction_id, recorded_at) VALUES (?, ?)',
+        [id, recordedAt],
+      );
+      await db.customStatement(
+        'DELETE FROM recent_transaction_records WHERE recorded_at < ?',
+        [recordedAt - const Duration(hours: 24).inSeconds],
+      );
+      return id;
+    });
   }
 
   @override

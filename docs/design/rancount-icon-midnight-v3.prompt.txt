@@ -1,0 +1,35 @@
+Generator: built-in image_gen edit
+Initial reference: rancount-icon-indigo-v2.png
+
+Primary edit prompt
+
+Use case: precise-object-edit
+Asset type: one finished square RanCount app icon, refined material-and-lighting edition.
+Input image: rancount-icon-indigo-v2.png is the edit target. Preserve the existing folded capital R silhouette, its proportions, position, negative-space geometry, coin diameter and coin center position, full-square framing, and the current composition. Refine the entire rendering faithfully according to the following art direction. Do not redesign the mark.
+
+1. BACKGROUND — midnight ink velvet:
+Adjust the slate-blue background to extremely deep midnight petroleum navy, a restrained smooth gradient between #0A0F1D and #141C2B. A barely perceptible soft cool ambient halo lies just upper-left of the canvas center, around the coin and rolled-paper core. Apply an ultra-fine matte micrograin at only approximately 1.5% visual opacity, like an expensive notebook hard cover or deep-sea velvet. This microtexture must be almost invisible at normal size: finely resolved and uniform, never mottled, blurry, cloudy or smeared. The background recedes quietly and makes the subjects feel subtly suspended.
+
+2. CAPITAL R — premium handmade cotton cardstock:
+Base warm French ivory #F7F5EC; illuminated surfaces very clean pale cream; shadowed surfaces warm plaster/beige-gray #DDD7C9. Preserve the crisp clean R silhouette. Visibly substantial thickness of 350gsm specialty cotton cardstock at the left curled cylinder lip and the lower-right diagonal stroke. The precision-cut edges have an extremely fine approximately half-pixel bevel highlight and a barely discernible cotton-linen fibre softness, never ragged or fuzzy. The left upright looks like a receipt gently rolled between fingers; inner-to-outer transition is smooth, rounded, full and subtly elastic under tension, not a rigid plastic pipe. At the R waist's folded twist, fine ambient occlusion gently deepens inside the paper seam; the fold has layered depth without crushed black creases. Realistic two-part cast shadow: a short crisp contact shadow tight to the paper edge, plus a broad very soft diffusion shadow spreading approximately 20 pixels at 1024px scale. Keep the warm ivory paper bright and tactile, with fine subtle fibres rather than noisy grain.
+
+3. COIN — truly minted, microrelief collectible:
+Keep the ¥ symbol legible. Coin material is dense solid brass / 18K gold with restrained slightly matte champagne-cool-gold highlights #F3DC9B transitioning naturally to antique warm bronze-ochre shaded areas #A4732C. Avoid saturated yellow, orange glare, plastic plating and self-emission. The face has precise faint concentric anisotropic brushed-metal reflection, with actual metallic specular response. Crisp fine vertical coin reeding around the thick edge: tiny upper-left-facing ridge tips catch glints, lower-right reeding settles into controlled shadow. Inside the outer rim, a hairline concentric recessed groove separates the rim from the central relief field. Centered ¥ symbol is physically minted shallow raised relief with a clear trapezoidal cross-section, sloping bevel sides, a razor-fine reflective line on its upper edges, and extremely thin lower-edge shadows that communicate tangible relief. Detailed but clean, readable and structurally plausible, without engravings or extra text.
+
+4. MUTUAL LIGHTING — integrate coin into curled-paper space:
+Coin is seated spatially inside the R loop, not pasted onto the background. Add extremely faint pale-gold reflected bounce light from the metal onto the ivory R's inner curved wall. The upper paper-loop edge contributes a delicate soft crescent-shaped occlusion shadow onto the coin's upper-left quadrant. Achieve this natural lighting relationship without moving or deforming the R or coin. Keep the coin's key highlights and ¥ relief readable. One consistent soft studio key light from upper left, restrained secondary fill, realistic shared depth and contact.
+
+Composition/framing: straight-on view, original square composition, one icon only, artwork fills square canvas to all edges, platform supplies the outer mask.
+Constraints: retain the exact visual identity and layout of the reference. Outstanding fine material definition and precise edge rendering. No change to R topology, no extra paper sheets, no wordmark, no watermark, no currency text beyond ¥, no extra coins or ornaments, no rounded-corner frame, no mockup, no presentation board, no neon glow, no bloom, no cloudy background. Do not interpret minute fibre texture or velvet micrograin as overall blur.
+
+Targeted coin-material and mutual-lighting refinement prompt
+
+Use case: precise-object-edit
+Asset type: final material refinement of the RanCount icon.
+Edit target: the provided latest icon. Preserve the R shape, ivory cotton-paper material, paper texture, all composition, midnight-navy velvet background, soft upper-left ambient halo, crop, size, coin position, coin outline and ¥ topology exactly. Change only the coin's metallic color and the mutual lighting between the coin and the inside of the R loop.
+
+The current coin is still too bright yellow-polished gold. Re-render its face as restrained low-saturation pale champagne cold gold (#F3DC9B), with darker antique brass / bronze-ochre (#A4732C) only on the lower-right side and thickness. Clear finely concentric anisotropic brushed-metal reflections, dense heavy real minted metal. The pale-gold face must visibly be more muted and sophisticated, approximately one third less yellow saturation than the reference, never silver or gray. Keep finely reeded edge, raised rim, hairline recessed concentric groove, and the shallow trapezoidal-beveled minted ¥ with crisp top-edge specular highlights and thin lower-edge relief shadows.
+
+Essential lighting interaction: across the upper-left portion of the coin face put a clearly discernible yet delicate soft crescent-shaped cool occlusion shadow cast by the overhanging upper paper loop. This is an actual thin arcing shadow on the coin itself, never a black drawn curve and never an added object. Keep it restrained, not covering the ¥. At the same time add a very faint pale champagne reflected bounce-light tint to the R's inner ivory curved wall nearest the coin, with smooth natural falloff and no visible glowing halo. The two subjects should visually inhabit the same three-dimensional space. This is reflected light only, not a self-luminous gold coin.
+
+Keep everything else exactly as in the reference. One full-bleed square icon; no extra text, no new objects, no crop or frame changes.

@@ -1,0 +1,11 @@
+Generator: built-in image_gen
+
+Use case: logo-brand
+Asset type: finished square application icon artwork for RanCount, a personal expense-tracking and bookkeeping app. Generate one single icon, 1024x1024.
+Primary request: a distinctive, beautifully crafted app icon whose central emblem combines a capital R with a folded ledger / receipt. The R must be immediately legible and occupy most of the canvas. Design it as a single thick sculptural ivory ribbon, with the upright subtly suggesting a small ledger spine and the lower diagonal like a elegantly folded paper corner. One small warm-gold circular inset inside the upper R counter suggests a coin without a currency symbol. The R silhouette should remain bold and uncluttered at tiny launcher size.
+Scene/backdrop: a solid full-bleed deep jade-to-teal green square background, with extremely subtle smooth tonal variation. The artwork itself fills the square to the edges, no outer canvas, no mockup, no preset rounded-square border, no rounded corners; the platform supplies its own mask. Keep all emblem details centered within the central 65 percent safe area.
+Style/medium: premium contemporary app-brand illustration, softly sculpted satin ceramic and folded paper, very restrained dimensionality, precise rounded edges, broad clean forms. Beautiful gentle lighting from upper left with subtle short shadows. Sophisticated, friendly and calm.
+Color palette: deep jade teal background, warm ivory R, one muted champagne gold coin accent. High clear foreground-background contrast.
+Composition: square, straight-on frontal emblem, visually balanced center, generous breathing room, flat perspective with slight bevel depth only.
+Text: only the emblem-shaped capital R; no wordmark, no letters elsewhere, no numbers.
+Avoid: bee motifs, tiny ledger lines, charts, extra sparkles, scattered coins, extraneous ornaments, glossy plastic, heavy dark shadow, metallic chrome, multiple concepts, presentation boards, phones, screenshots, watermarks.

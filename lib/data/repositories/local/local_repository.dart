@@ -1997,6 +1997,7 @@ class LocalRepository extends BaseRepository {
     String? note,
     bool clearMetadataFields = false,
     bool? hidden,
+    String? repaymentSchedule,
   }) async {
     final account =
         changeTracker != null ? await _accountRepo.getAccount(id) : null;
@@ -2015,6 +2016,7 @@ class LocalRepository extends BaseRepository {
       note: note,
       clearMetadataFields: clearMetadataFields,
       hidden: hidden,
+      repaymentSchedule: repaymentSchedule,
     );
     if (account?.syncId != null) {
       await changeTracker!.recordUserGlobalChange(

@@ -14,6 +14,7 @@ import 'package:flutter_cloud_sync/flutter_cloud_sync.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:beecount/widgets/ui/wheel_date_picker.dart';
 import '../../data/db.dart';
+import '../../data/repositories/local/local_repository.dart';
 import '../../providers/shared_ledger_providers.dart';
 import '../../styles/tokens.dart';
 import '../../l10n/app_localizations.dart';
@@ -28,6 +29,7 @@ import 'account_selector.dart';
 import '../currency/currency_picker_sheet.dart';
 import '../currency/currency_flag.dart';
 import '../ui/toast.dart';
+import '../ui/recent_duplicate_dialog.dart';
 import 'tag_chip.dart';
 import '../../pages/attachment/attachment_preview_page.dart';
 
@@ -1258,6 +1260,37 @@ class _AmountEditorSheetState extends ConsumerState<AmountEditorSheet> {
                                       }
                                       nativeAmount = total.abs() * r;
                                     }
+
+                                    if (widget.editingTransactionId == null) {
+                                      try {
+                                        final repository =
+                                            ref.read(repositoryProvider);
+                                        if (repository is LocalRepository) {
+                                          final proceed =
+                                              await confirmRecentDuplicate(
+                                            context: context,
+                                            repository: repository,
+                                            amount: total.abs(),
+                                          );
+                                          if (!context.mounted || !proceed) {
+                                            if (mounted) {
+                                              setState(
+                                                  () => _isSubmitting = false);
+                                            }
+                                            return;
+                                          }
+                                        }
+                                      } catch (error) {
+                                        if (context.mounted) {
+                                          setState(() => _isSubmitting = false);
+                                          showToast(context,
+                                              '${AppLocalizations.of(context).commonError}: $error');
+                                        }
+                                        return;
+                                      }
+                                    }
+
+                                    if (!context.mounted) return;
 
                                     if (LiquidTheme.isActive(context)) {
                                       GlassFeedback.impact(context);

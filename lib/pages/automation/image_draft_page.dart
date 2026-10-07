@@ -1,5 +1,4 @@
 import 'package:beecount/widgets/ui/bee_sheet.dart';
-import 'package:beecount/widgets/ui/bee_alert_dialog.dart';
 import '../../widgets/biz/transaction_glass.dart';
 import '../../styles/liquid_theme.dart';
 import '../../widgets/ui/liquid_glass.dart';
@@ -14,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../ai/core/bill_info.dart';
 import '../../data/db.dart';
+import '../../data/repositories/local/local_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers.dart';
 import '../../providers/ai_chat_providers.dart';
@@ -25,6 +25,7 @@ import '../transaction/transaction_editor_page.dart';
 import '../../utils/beijing_time.dart';
 import '../../utils/category_utils.dart';
 import '../../widgets/category_icon.dart';
+import '../../widgets/ui/recent_duplicate_dialog.dart';
 
 class ImageDraftPage extends ConsumerStatefulWidget {
   final File? image;
@@ -246,21 +247,6 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
     return null;
   }
 
-  Future<bool> _isPossibleDuplicate(BillInfo bill, int ledgerId) async {
-    final time = bill.time!;
-    final rows =
-        await ref.read(repositoryProvider).getTransactionsByLedgerInRange(
-              ledgerId: ledgerId,
-              start: time.subtract(const Duration(minutes: 2)),
-              end: time.add(const Duration(minutes: 2)),
-            );
-    return rows.any(
-      (Transaction tx) =>
-          tx.type == bill.type!.name &&
-          (tx.amount - bill.amount!.abs()).abs() < 0.01,
-    );
-  }
-
   Future<void> _confirm() async {
     if (_saving || _confirmPending) return;
     final session = _session;
@@ -349,30 +335,13 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
           final alreadySaved = await ref
               .read(repositoryProvider)
               .getTransactionBySyncId(entry.id);
-          if (alreadySaved == null &&
-              await _isPossibleDuplicate(entry.bill, session.ledgerId)) {
-            if (!mounted) return;
-            final proceed = await showDialog<bool>(
+          if (!mounted) return;
+          final repository = ref.read(repositoryProvider);
+          if (alreadySaved == null && repository is LocalRepository) {
+            final proceed = await confirmRecentDuplicate(
               context: context,
-              builder: (context) => BeeAlertDialog(
-                title: Text(_label('疑似重复账单', 'Possible duplicate')),
-                content: Text(
-                  _label(
-                    '相同时间和金额附近已有一笔账单，仍要保存吗？',
-                    'A transaction with a similar time and amount exists. Save anyway?',
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(_label('跳过', 'Skip')),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: Text(_label('仍然保存', 'Save anyway')),
-                  ),
-                ],
-              ),
+              repository: repository,
+              amount: entry.bill.amount!.abs(),
             );
             if (proceed != true) continue;
           }
@@ -413,13 +382,15 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
           }
         }
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _label('已保存 $savedCount 笔', 'Saved $savedCount transactions'),
+        if (savedCount > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _label('已保存 $savedCount 笔', 'Saved $savedCount transactions'),
+              ),
             ),
-          ),
-        );
+          );
+        }
         if (_session!.entries.every(
           (entry) => entry.saved || !entry.selected,
         )) {

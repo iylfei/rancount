@@ -13,6 +13,7 @@ import '../../widgets/ui/capsule_switcher.dart';
 import '../../widgets/biz/amount_text.dart';
 import '../../widgets/biz/format_money.dart';
 import '../../widgets/biz/section_card.dart';
+import '../../widgets/biz/repayment_summary.dart';
 import '../../widgets/biz/product_promo_card.dart';
 import '../../data/db.dart' as db;
 import '../../l10n/app_localizations.dart';
@@ -506,6 +507,9 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                   valueColor: BeeTokens.expenseColor(context, ref),
                 ),
               ),
+              Container(width: 1, height: 28.0.scaled(context, ref),
+                color: BeeTokens.divider(context)),
+              const Expanded(child: RepaymentSummary()),
             ],
           )
         else
@@ -575,6 +579,7 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
               ],
             ),
           ),
+        if (!isSingleCurrency) const RepaymentSummary(),
         // 总资产/总负债数字跟下面的 Divider 之间留出呼吸空间,不然视觉上紧贴着
         // 横线很挤。
         SizedBox(height: 20.0.scaled(context, ref)),
@@ -858,6 +863,9 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                 useCompact: useCompact,
               ),
             ),
+            Container(width: 1, height: 28.0.scaled(context, ref),
+              color: BeeTokens.divider(context)),
+            const Expanded(child: RepaymentSummary()),
           ],
         ),
         // 汇率折算脚注已折叠进「详情」弹窗(见 _showNetWorthConversionDetail），首屏不再展示。

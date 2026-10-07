@@ -934,6 +934,7 @@ class AccountItem {
   final String? bankName; // 开户行
   final String? cardLastFour; // 卡号后四位
   final String? note; // 备注
+  final String? repaymentSchedule;
 
   const AccountItem({
     required this.name,
@@ -947,6 +948,7 @@ class AccountItem {
     this.bankName,
     this.cardLastFour,
     this.note,
+    this.repaymentSchedule,
   });
 
   Map<String, dynamic> toMap() {
@@ -963,6 +965,7 @@ class AccountItem {
     if (bankName != null) map['bank_name'] = bankName;
     if (cardLastFour != null) map['card_last_four'] = cardLastFour;
     if (note != null) map['note'] = note;
+    if (repaymentSchedule != null) map['repayment_schedule'] = repaymentSchedule;
     return map;
   }
 
@@ -979,6 +982,7 @@ class AccountItem {
       bankName: map['bank_name'] as String?,
       cardLastFour: map['card_last_four'] as String?,
       note: map['note'] as String?,
+      repaymentSchedule: map['repayment_schedule'] as String?,
     );
   }
 
@@ -995,6 +999,7 @@ class AccountItem {
       bankName: account.bankName,
       cardLastFour: account.cardLastFour,
       note: account.note,
+      repaymentSchedule: account.repaymentSchedule,
     );
   }
 }
@@ -2693,6 +2698,7 @@ class ConfigExportService {
                 item.createdAt != null ? DateTime.parse(item.createdAt!) : null),
             updatedAt: d.Value(DateTime.now()),
             creditLimit: d.Value(item.creditLimit),
+            repaymentSchedule: d.Value(item.repaymentSchedule),
             billingDay: d.Value(item.billingDay),
             paymentDueDay: d.Value(item.paymentDueDay),
             bankName: d.Value(item.bankName),

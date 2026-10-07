@@ -398,6 +398,9 @@ extension SyncEngineApplyExt on SyncEngine {
         cardLastFour: d.Value(payload['cardLastFour'] as String?),
         note: d.Value(payload['note'] as String?),
         hidden: hidden == null ? const d.Value.absent() : d.Value(hidden),
+        repaymentSchedule: payload.containsKey('repaymentSchedule')
+            ? d.Value(payload['repaymentSchedule'] as String?)
+            : const d.Value.absent(),
       ));
       logger.debug('SyncEngine', 'pull: 更新账户 $syncId');
     } else {
@@ -419,6 +422,7 @@ extension SyncEngineApplyExt on SyncEngine {
               note: d.Value(payload['note'] as String?),
               syncId: d.Value(syncId),
               hidden: d.Value(hidden ?? false),
+              repaymentSchedule: d.Value(payload['repaymentSchedule'] as String?),
             ),
           );
       activePullCache?.putAccount(syncId, localId);

@@ -18,12 +18,14 @@ class ImportAccount {
   final String? type;
   final String? currency;
   final double? initialBalance;
+  final String? repaymentSchedule;
 
   const ImportAccount({
     required this.name,
     this.type,
     this.currency,
     this.initialBalance,
+    this.repaymentSchedule,
   });
 }
 
@@ -259,6 +261,9 @@ class DataImportService {
             initialBalance: acc.initialBalance ?? 0.0,
           );
           accountNameToId[acc.name] = id;
+          if (acc.repaymentSchedule != null) {
+            await repo.updateAccount(id, repaymentSchedule: acc.repaymentSchedule);
+          }
           created++;
         }
       }

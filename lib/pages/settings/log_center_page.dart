@@ -292,7 +292,7 @@ class _LogCenterPageState extends ConsumerState<LogCenterPage> {
       final text = logger.exportAsText();
       await Share.share(
         text,
-        subject: 'BeeCount 日志导出',
+        subject: 'rancount 日志导出',
       );
     } catch (e) {
       if (mounted) {
