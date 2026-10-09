@@ -518,7 +518,7 @@ class BeeDatabase extends _$BeeDatabase {
   BeeDatabase.forTesting(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 36; // v36: 按年月保存账户还款计划
+  int get schemaVersion => 37; // v37: 本机对账草稿与修改审计
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1291,9 +1291,11 @@ class BeeDatabase extends _$BeeDatabase {
             await _addColumnIfMissing('accounts', 'repayment_schedule',
                 'ALTER TABLE accounts ADD COLUMN repayment_schedule TEXT;');
           }
+          if (from < 37) await _createReconciliationTables();
         },
         onCreate: (m) async {
           await m.createAll();
+          await _createReconciliationTables();
           await customStatement(
               'CREATE UNIQUE INDEX IF NOT EXISTS idx_rate_override_pair '
               'ON exchange_rate_overrides (base_currency, quote_currency);');
@@ -1314,6 +1316,15 @@ class BeeDatabase extends _$BeeDatabase {
         'CREATE VIRTUAL TABLE IF NOT EXISTS agent_memory_fts '
         'USING fts5(memory_id UNINDEXED, content)',
       );
+
+  Future<void> _createReconciliationTables() async {
+    // Device-local evidence and audits are excluded from Cloud sync payloads.
+    await customStatement('CREATE TABLE IF NOT EXISTS reconciliation_sessions ('
+        'id TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at INTEGER NOT NULL);');
+    await customStatement('CREATE TABLE IF NOT EXISTS reconciliation_audits ('
+        'id TEXT PRIMARY KEY, session_id TEXT NOT NULL, payload TEXT NOT NULL, '
+        'created_at INTEGER NOT NULL);');
+  }
 
   /// Migration helper: 列不存在再 ALTER ADD,避免 partial state 重跑时
   /// "duplicate column" 把启动卡死。

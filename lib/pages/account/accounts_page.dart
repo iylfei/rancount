@@ -29,6 +29,7 @@ import '../currency/exchange_rate_page.dart';
 import 'account_edit_page.dart';
 import 'account_detail_page.dart';
 import 'net_worth_trend_page.dart';
+import 'reconciliation_page.dart';
 
 class AccountsPage extends ConsumerStatefulWidget {
   final bool asTab;
@@ -174,6 +175,20 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                         : 8.0.scaled(context, ref),
                   ),
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: SectionCard(
+                        margin: EdgeInsets.zero,
+                        child: ListTile(
+                          leading: const Icon(Icons.manage_search),
+                          title: const Text('AI 对账'),
+                          subtitle: const Text('核对多个账户的近期流水，审核后修正记账'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => Navigator.push(context, MaterialPageRoute(
+                            builder: (_) => const ReconciliationPage())),
+                        ),
+                      ),
+                    ),
                     if (accounts.isEmpty)
                       SizedBox(
                         height: MediaQuery.of(context).size.height * 0.4,

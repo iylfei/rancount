@@ -313,8 +313,10 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                   // 估值账户：显示估值卡片
                   _buildValuationCard(context, ref, account, statsAsync,
                       currencyCode, primaryColor, l10n),
-                  if (canPlanRepayments(account, balance: statsAsync.valueOrNull?.balance))
+                  if (canPlanRepayments(account, balance: statsAsync.valueOrNull?.balance)) ...[
+                    SizedBox(height: 16.0.scaled(context, ref)),
                     SectionCard(child: RepaymentSummary(account: account)),
+                  ],
                 ] else ...[
                   // 信用卡不显示"收入/支出"卡(概念错位),概览卡=欠款/额度/还款即主卡;
                   // 其它可交易账户仍显示 余额/收入/支出
@@ -335,8 +337,10 @@ class _AccountDetailPageState extends ConsumerState<AccountDetailPage> {
                     l10n,
                   ),
 
-                  if (canPlanRepayments(account, balance: statsAsync.valueOrNull?.balance))
+                  if (canPlanRepayments(account, balance: statsAsync.valueOrNull?.balance)) ...[
+                    SizedBox(height: 16.0.scaled(context, ref)),
                     SectionCard(child: RepaymentSummary(account: account)),
+                  ],
                   SizedBox(height: 8.0.scaled(context, ref)),
 
                   // 图表区域（支出分布/收入分布 切换;信用卡仅消费分布）
