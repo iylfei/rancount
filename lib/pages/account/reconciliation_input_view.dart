@@ -310,6 +310,7 @@ class _ScreenshotTile extends StatelessWidget {
               File(source['path']),
               width: 92,
               height: 112,
+              cacheWidth: (92 * MediaQuery.devicePixelRatioOf(context)).round(),
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => const SizedBox(
                 height: 112,
