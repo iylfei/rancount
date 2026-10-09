@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:beecount/services/reconciliation/reconciliation_engine.dart';
@@ -38,6 +39,122 @@ void main() {
       DateTime.utc(2026, 10, 8, 2, 30, 55),
     );
   });
+
+  test(
+    'debt input is positive while stored balances retain accounting signs',
+    () {
+      final a = ReconciliationAccount(
+        id: 3,
+        name: '花呗',
+        type: 'credit_card',
+        currency: 'CNY',
+        balanceAt: end,
+      );
+      expect(a.balanceFromInput('123.45'), -12345);
+      expect(a.balanceFromInput('0'), 0);
+      expect(a.balanceFromInput(''), isNull);
+      expect(() => a.balanceFromInput('-1'), throwsFormatException);
+      expect(a.displayBalance(-12345), 12345);
+      expect(a.deltaText(-100), '欠款增加 1.00');
+      expect(a.deltaText(100), '欠款减少 1.00');
+      expect(ReconciliationAccount.fromJson(a.toJson()).isLiability, isTrue);
+    },
+  );
+
+  test(
+    'missing evidence defaults to no movement without fabricating balance',
+    () async {
+      final s = session();
+      s.accounts.single.actualBalance = null;
+      s.refreshEvidenceCompleteness();
+      final txs = <Json>[
+        {
+          'id': 7,
+          'type': 'expense',
+          'amountCents': 1000,
+          'accountId': 1,
+          'happenedAt': start.toIso8601String(),
+        },
+      ];
+      final r = reconciliationReports(s, txs, {1: 10000}).single;
+      expect(r.periodDifference, 1000);
+      expect(r.actualBalance, isNull);
+      expect(r.openingDifference, isNull);
+      await ReconciliationEngine(
+        chat: (_) async => throw StateError('no AI needed'),
+      ).analyze(s, txs, {1: 10000}, [], [], []);
+      expect(s.proposals, isEmpty);
+      expect(s.summary, contains('无余额变动'));
+      expect(s.issues.any((i) => i.contains('#7')), isTrue);
+    },
+  );
+
+  test(
+    'unreadable uploads remain incomplete; valid manual rows are evidence',
+    () {
+      final s = session();
+      s.sources = [
+        {'id': 'a', 'accountId': 1, 'recognized': false},
+      ];
+      s.refreshEvidenceCompleteness();
+      expect(s.accounts.single.complete, isFalse);
+      s.sources.single['recognized'] = true;
+      s.sources.single['warnings'] = ['未识别到交易'];
+      s.refreshEvidenceCompleteness();
+      expect(s.accounts.single.complete, isFalse);
+      s.sources.clear();
+      s.rows.add(
+        StatementRow(
+          id: 'm',
+          accountId: 1,
+          sourceIds: [],
+          time: start,
+          delta: -100,
+        ),
+      );
+      s.refreshEvidenceCompleteness();
+      expect(s.accounts.single.complete, isTrue);
+      s.rows.single.delta = null;
+      s.refreshEvidenceCompleteness();
+      expect(s.accounts.single.complete, isFalse);
+    },
+  );
+
+  test(
+    'credit screenshot uses total debt and signs for repayment and consumption',
+    () async {
+      final a = ReconciliationAccount(
+        id: 3,
+        name: '花呗',
+        type: 'credit_card',
+        currency: 'CNY',
+        balanceAt: end,
+      );
+      final rows = await StatementRecognizer(
+        vision: (_, prompt) async {
+          expect(prompt, contains('包括未出账'));
+          expect(prompt, contains('还款、退款'));
+          expect(prompt, contains('不能用作 balanceAfter'));
+          return jsonEncode({
+            'rows': [
+              {
+                'time': '2026-10-05T08:00:00+08:00',
+                'delta': '-20.00',
+                'balanceAfter': '-120.00',
+              },
+              {
+                'time': '2026-10-05T09:00:00+08:00',
+                'delta': '50.00',
+                'balanceAfter': '-70.00',
+              },
+            ],
+          });
+        },
+      ).recognize(File('unused.png'), {'id': 'a'}, a);
+      expect(rows.map((r) => r.delta), [-2000, 5000]);
+      expect(rows.last.balanceAfter, -7000);
+    },
+  );
 
   test('overlap merge preserves two identical rows from one screenshot', () {
     StatementRow row(String id, String source) => StatementRow(

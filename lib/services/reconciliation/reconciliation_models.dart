@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../utils/beijing_time.dart';
+import '../../utils/account_type_utils.dart';
 
 typedef Json = Map<String, dynamic>;
 
@@ -66,6 +67,7 @@ class ReconciliationAccount {
   final int id;
   final String name;
   final String currency;
+  final String type;
   final String? syncId;
   int? actualBalance;
   DateTime balanceAt;
@@ -75,16 +77,38 @@ class ReconciliationAccount {
     required this.id,
     required this.name,
     required this.currency,
+    this.type = 'other',
     this.syncId,
     required this.balanceAt,
     this.actualBalance,
     this.complete = false,
   });
 
+  bool get isLiability => isLiabilityType(type);
+
+  int displayBalance(int netBalance) => isLiability ? -netBalance : netBalance;
+
+  int? balanceFromInput(String value) {
+    final cents = moneyCents(value);
+    if (isLiability && cents != null && cents < 0) {
+      throw const FormatException('总欠款请填写零或正数');
+    }
+    return cents == null
+        ? null
+        : isLiability
+        ? -cents
+        : cents;
+  }
+
+  String deltaText(int delta) => isLiability
+      ? '${delta < 0 ? '欠款增加' : '欠款减少'} ${moneyText(delta.abs())}'
+      : '${delta > 0 ? '+' : ''}${moneyText(delta)}';
+
   Json toJson() => {
     'id': id,
     'name': name,
     'currency': currency,
+    'type': type,
     'syncId': syncId,
     'actualBalance': actualBalance,
     'balanceAt': balanceAt.toIso8601String(),
@@ -95,6 +119,7 @@ class ReconciliationAccount {
     id: j['id'],
     name: j['name'],
     currency: j['currency'],
+    type: j['type'] ?? 'other',
     syncId: j['syncId'],
     actualBalance: j['actualBalance'],
     balanceAt: DateTime.parse(j['balanceAt']),
@@ -206,6 +231,26 @@ class ReconciliationSession {
        issues = issues ?? [];
 
   bool get applied => audit != null && audit!['undone'] != true;
+
+  /// No supplied evidence means no movement. Uploaded but unreadable evidence
+  /// remains incomplete, rather than silently becoming an empty statement.
+  void refreshEvidenceCompleteness() {
+    for (final a in accounts) {
+      a.complete =
+          sources
+              .where((s) => s['accountId'] == a.id)
+              .every(
+                (s) =>
+                    s['recognized'] == true &&
+                    (s['warnings'] as List? ?? []).isEmpty,
+              ) &&
+          rows
+              .where((r) => r.accountId == a.id)
+              .every(
+                (r) => r.time != null && r.delta != null && r.warnings.isEmpty,
+              );
+    }
+  }
 
   void invalidate() {
     if (applied) throw StateError('请先撤销已应用的修改，或新建对账');

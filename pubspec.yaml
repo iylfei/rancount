@@ -1,7 +1,7 @@
 name: beecount
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.8+2019
+version: 0.1.9+2020
 
 environment:
   sdk: ^3.8.0

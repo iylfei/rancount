@@ -91,6 +91,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
   Future<void> _save() {
     final s = _session;
     if (s == null) return Future.value();
+    if (!s.applied) s.refreshEvidenceCompleteness();
     final copy = ReconciliationSession.fromJson(
       jsonObject(jsonDecode(jsonEncode(s.toJson()))),
     );
@@ -124,6 +125,17 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
   Future<void> _open(ReconciliationSession session) => _run(() async {
     _session = await _store.load(session.id);
     _snapshot = await _store.snapshot();
+    final s = _session;
+    if (s != null && !s.applied) {
+      final previous = s.accounts.map((a) => a.complete).toList();
+      s.refreshEvidenceCompleteness();
+      if (s.accounts.indexed.any(
+        (pair) => previous[pair.$1] != pair.$2.complete,
+      )) {
+        s.invalidate();
+        await _save();
+      }
+    }
     _inputErrors.clear();
     _info = null;
     if (mounted && _session != null) {
@@ -185,7 +197,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     final s = _session!;
     final snapshot = await _store.snapshot();
     final available = snapshot.accounts
-        .where((a) => isTradableType(a.type) && !isLiabilityType(a.type))
+        .where((a) => isTradableType(a.type))
         .toList();
     if (!mounted) return;
     final result = await selectReconciliationAccounts(
@@ -226,6 +238,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
                 id: a.id,
                 name: a.name,
                 currency: a.currency,
+                type: a.type,
                 syncId: a.syncId,
                 balanceAt: s.end,
               ),
@@ -249,7 +262,6 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     s.end = range.end;
     final cleared = <String>[];
     for (final a in s.accounts) {
-      a.complete = false;
       if (a.balanceAt.isBefore(s.start) || a.balanceAt.isAfter(s.end)) {
         if (a.actualBalance != null) cleared.add(a.name);
         a.actualBalance = null;
@@ -260,7 +272,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
       }
     }
     _info = cleared.isEmpty
-        ? '期间已更新，请重新确认各账户流水是否完整。'
+        ? '期间已更新，请检查流水资料是否覆盖新的期间。'
         : '期间已更新。${cleared.join('、')}原余额时间不在新期间内，请重新填写余额。';
     await _save();
   });
@@ -270,7 +282,6 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     for (final image in images) {
       await _store.addImage(_session!, account.id, File(image.path));
     }
-    if (images.isNotEmpty) account.complete = false;
     await _save();
   });
 
@@ -289,17 +300,16 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     if (value == null || !mounted) return;
     s.invalidate();
     account.balanceAt = value;
-    account.complete = false;
     await _save();
   });
 
   void _balance(ReconciliationAccount account, String value) {
     _session!.invalidate();
     try {
-      account.actualBalance = moneyCents(value);
+      account.actualBalance = account.balanceFromInput(value);
       _inputErrors.remove(account.id);
-    } catch (_) {
-      _inputErrors[account.id] = '请填写有效金额，最多两位小数';
+    } on FormatException catch (e) {
+      _inputErrors[account.id] = e.message;
     }
     setState(() {});
     unawaited(_save());
@@ -319,7 +329,6 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
         final i = s.rows.indexWhere((r) => r.id == row.id);
         if (i < 0) {
           s.rows.add(row);
-          account.complete = false;
         } else {
           s.rows[i] = row;
         }
@@ -330,8 +339,6 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     if (!await _confirm('移除对账流水', '这条流水将从对账资料中移除，账本记录不受影响。', '移除')) return;
     _session!.invalidate();
     _session!.rows.remove(row);
-    _session!.accounts.singleWhere((a) => a.id == row.accountId).complete =
-        false;
     await _save();
   });
 
@@ -341,22 +348,13 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
           return;
         }
         await _store.removeImage(_session!, source['id']);
-        account.complete = false;
         await _save();
       });
 
   String? get _notReady {
     final s = _session!;
     if (_inputErrors.isNotEmpty) return '请修正实际余额的输入';
-    final missing = s.accounts.where(
-      (a) =>
-          !s.sources.any((src) => src['accountId'] == a.id) &&
-          !s.rows.any((r) => r.accountId == a.id) &&
-          !(a.complete && a.actualBalance != null),
-    );
-    return missing.isEmpty
-        ? null
-        : '${missing.take(2).map((a) => a.name).join('、')}${missing.length > 2 ? '等 ${missing.length} 个账户' : ''}还没有流水资料；期间无交易时，请填写余额并勾选确认。';
+    return s.accounts.isEmpty ? '请选择至少一个对账账户' : null;
   }
 
   Future<void> _analyze() => _run(() async {
@@ -677,17 +675,11 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
           onTime: () => _balanceTime(a),
           onManual: () => _row(a),
           onBalance: (v) => _balance(a, v),
-          onComplete: (v) {
-            s.invalidate();
-            a.complete = v;
-            setState(() {});
-            unawaited(_save());
-          },
           onRemoveImage: (src) => _removeImage(a, src),
           onEditRow: (r) => _row(a, r),
           onRemoveRow: _removeRow,
         ),
-      const ReconciliationNotice('分析会将截图和相关记账数据发送到你配置的 AI 服务。截图副本和草稿保存在本机。'),
+      const ReconciliationNotice('未添加截图或手动流水的账户按期间无变动核对。分析会使用截图记账中配置的 AI 服务。'),
     ];
   }
 
@@ -699,9 +691,9 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
         s.fingerprint == _snapshot?.fingerprint &&
         count > 0;
     final hint = _step == 0
-        ? (s.accounts.isEmpty ? '请选择至少一个资金账户' : '草稿自动保存在本机')
+        ? (s.accounts.isEmpty ? '请选择至少一个对账账户' : '草稿自动保存在本机')
         : _step == 1
-        ? (_notReady ?? '${s.accounts.length} 个账户已添加资料，可以开始分析')
+        ? (_notReady ?? '已选择 ${s.accounts.length} 个账户，可以开始分析')
         : s.applied
         ? '本次修改已应用，可撤销'
         : s.fingerprint != _snapshot?.fingerprint

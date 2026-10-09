@@ -189,6 +189,28 @@ class AIProviderFactory {
             screenshotVisionOptions(config.baseUrl, config.visionModel));
   }
 
+  /// Use a caller-owned model configuration without requiring a global text provider.
+  static Future<String> chatWithConfig(
+    String prompt,
+    AIServiceProviderConfig config, {
+    String? systemPrompt,
+    double temperature = 0.1,
+  }) async {
+    if (!config.isValid ||
+        !config.supportsText ||
+        Uri.tryParse(config.baseUrl)?.hasScheme != true) {
+      throw AIException('对账 AI 服务配置不完整');
+    }
+    return _chatOpenAI(
+      config,
+      prompt,
+      systemPrompt,
+      temperature,
+      isolated: true,
+      requestOptions: screenshotVisionOptions(config.baseUrl, config.textModel),
+    );
+  }
+
   /// Vendor-specific options are restricted to the documented official endpoint.
   @visibleForTesting
   static Map<String, dynamic> screenshotVisionOptions(
@@ -609,9 +631,23 @@ class AIProviderFactory {
     AIServiceProviderConfig config,
     String prompt,
     String? systemPrompt,
-    double temperature,
-  ) async {
-    final dio = _getDio(config);
+    double temperature, {
+    bool isolated = false,
+    Map<String, dynamic> requestOptions = const {},
+  }) async {
+    final dio = isolated
+        ? Dio(
+            BaseOptions(
+              baseUrl: config.baseUrl,
+              connectTimeout: const Duration(seconds: 60),
+              receiveTimeout: const Duration(seconds: 60),
+              headers: {
+                'Authorization': 'Bearer ${config.apiKey}',
+                'Content-Type': 'application/json',
+              },
+            ),
+          )
+        : _getDio(config);
 
     final messages = <Map<String, dynamic>>[];
     if (systemPrompt != null && systemPrompt.isNotEmpty) {
@@ -624,6 +660,7 @@ class AIProviderFactory {
         'model': config.textModel,
         'messages': messages,
         'temperature': temperature,
+        ...requestOptions,
       });
 
       final data = response.data as Map<String, dynamic>;
@@ -632,6 +669,8 @@ class AIProviderFactory {
       return message['content'] as String;
     } on DioException catch (e) {
       throw AIException(_extractDioError(e));
+    } finally {
+      if (isolated) dio.close();
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/db.dart';
 import '../../utils/beijing_time.dart';
+import '../../utils/account_type_utils.dart';
 import 'reconciliation_ui.dart';
 
 Future<Set<int>?> selectReconciliationAccounts(
@@ -20,7 +21,7 @@ Future<Set<int>?> selectReconciliationAccounts(
             .toList();
         return ReconciliationSheet(
           title: '选择对账账户',
-          subtitle: '可同时选择支付宝、微信、银行卡和现金等资金账户',
+          subtitle: '可同时核对资金账户、信用卡和花呗',
           body: Column(
             children: [
               Padding(
@@ -36,9 +37,7 @@ Future<Set<int>?> selectReconciliationAccounts(
               Expanded(
                 child: visible.isEmpty
                     ? Center(
-                        child: Text(
-                          accounts.isEmpty ? '暂无可对账的资金账户' : '没有找到该账户',
-                        ),
+                        child: Text(accounts.isEmpty ? '暂无可对账账户' : '没有找到该账户'),
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -51,7 +50,9 @@ Future<Set<int>?> selectReconciliationAccounts(
                             child: CheckboxListTile(
                               controlAffinity: ListTileControlAffinity.leading,
                               title: Text(a.name),
-                              subtitle: Text(a.currency),
+                              subtitle: Text(
+                                '${getAccountTypeLabel(context, a.type)} · ${a.currency}',
+                              ),
                               value: selected.contains(a.id),
                               onChanged: (v) => change(() {
                                 if (v == true) {

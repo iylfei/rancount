@@ -59,8 +59,8 @@ class ReconciliationResultView extends StatelessWidget {
             ),
           ),
         const ReconciliationHeading(
-          '各账户余额',
-          description: '同一账户的账面余额和实际余额按相同时间核对。',
+          '账户余额与欠款',
+          description: '按相同时间核对；信用卡、花呗显示总欠款。',
         ),
         for (final report in reports)
           _BalanceReport(report: report, applied: session.applied),
@@ -115,6 +115,8 @@ class _BalanceReport extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = report;
+    final debt = r.account.isLiability;
+    String display(int value) => moneyText(r.account.displayBalance(value));
     return ReconciliationCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,33 +131,33 @@ class _BalanceReport extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
-          _ValueRow('账面余额', moneyText(r.bookBalance)),
+          _ValueRow(debt ? '账面总欠款' : '账面余额', display(r.bookBalance)),
           _ValueRow(
-            '实际余额',
-            r.actualBalance == null ? '未提供' : moneyText(r.actualBalance!),
+            debt ? '实际总欠款' : '实际余额',
+            r.actualBalance == null ? '未提供' : display(r.actualBalance!),
           ),
           if (r.actualBalance != null)
-            _ValueRow('当前差额', moneyText(r.actualBalance! - r.bookBalance)),
+            _ValueRow('当前差额', display(r.actualBalance! - r.bookBalance)),
           if (!applied) ...[
             const Divider(height: 24),
             _ValueRow(
               '应用已选建议后',
-              moneyText(r.projectedBalance),
+              display(r.projectedBalance),
               highlighted: true,
             ),
             if (r.actualBalance != null)
               _ValueRow(
                 '预计剩余差额',
-                moneyText(r.actualBalance! - r.projectedBalance),
+                display(r.actualBalance! - r.projectedBalance),
               ),
           ],
           if (r.periodDifference != null) ...[
             const Divider(height: 24),
-            _ValueRow('期间流水差额', moneyText(r.periodDifference!)),
+            _ValueRow('期间流水差额', display(r.periodDifference!)),
           ],
           if (r.openingDifference != null && r.openingDifference != 0)
             ReconciliationNotice(
-              '开始日期之前已有差额 ${moneyText(r.openingDifference!)}。需要更早的流水证据，暂不调整余额。',
+              '开始日期之前已有差额 ${display(r.openingDifference!)}。需要更早的流水证据，暂不调整余额。',
               warning: true,
             ),
           for (final warning in r.warnings)
@@ -282,7 +284,7 @@ class _ProposalCard extends StatelessWidget {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    '${session.accounts.where((a) => a.id == row.accountId).firstOrNull?.name ?? ''} · ${row.delta == null ? '金额待确认' : moneyText(row.delta!)}',
+                    '${session.accounts.where((a) => a.id == row.accountId).firstOrNull?.name ?? ''} · ${row.delta == null ? '金额待确认' : session.accounts.singleWhere((a) => a.id == row.accountId).deltaText(row.delta!)}',
                   ),
                   subtitle: Text(
                     '${row.time == null ? '时间待确认' : reconciliationDate(row.time!, time: true)}\n${row.description}',

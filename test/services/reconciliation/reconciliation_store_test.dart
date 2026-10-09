@@ -116,6 +116,58 @@ void main() {
   };
 
   test(
+    'credit consumption, linked refund and bank repayment apply and undo atomically',
+    () async {
+      final credit = await repo.createAccount(
+        ledgerId: ledger,
+        name: '花呗',
+        type: 'credit_card',
+        initialBalance: -100,
+      );
+      final s = await plan([
+        {'id': 'purchase', 'after': draft(account: credit, amount: 2000)},
+        {
+          'id': 'refund',
+          'after': {
+            ...draft(account: credit, amount: -500),
+            'refundOfMutationId': 'purchase',
+          },
+        },
+        {
+          'id': 'repay',
+          'after': draft(
+            account: bank,
+            to: credit,
+            type: 'transfer',
+            amount: 5000,
+          ),
+        },
+      ]);
+      s.accounts.add(
+        ReconciliationAccount(
+          id: credit,
+          name: '花呗',
+          currency: 'CNY',
+          type: 'credit_card',
+          balanceAt: date,
+          complete: true,
+        ),
+      );
+      await store.save(s);
+      await store.apply(s);
+      expect(await repo.getAccountBalance(credit), -65);
+      expect(await repo.getAccountBalance(bank), 150);
+      expect((await store.snapshot()).transactions, hasLength(3));
+      final pending = await db.select(db.localChanges).get();
+      expect(pending.where((c) => c.entityType == 'transaction'), hasLength(3));
+      await store.undo(s);
+      expect(await repo.getAccountBalance(credit), -100);
+      expect(await repo.getAccountBalance(bank), 200);
+      expect((await store.snapshot()).transactions, isEmpty);
+    },
+  );
+
+  test(
     'cross-ledger snapshot includes excluded transactions and more than 20 records',
     () async {
       for (var i = 0; i < 25; i++) {

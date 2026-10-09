@@ -228,6 +228,8 @@ class ReconciliationStore {
           .firstOrNull;
       if (current == null ||
           current.currency != account.currency ||
+          !isTradableType(current.type) ||
+          isLiabilityType(current.type) != account.isLiability ||
           (account.syncId != null
               ? current.syncId != account.syncId
               : current.name != account.name)) {
@@ -304,7 +306,6 @@ class ReconciliationStore {
             time.isAfter(s.end) ||
             account == null ||
             !isTradableType(account.type) ||
-            isLiabilityType(account.type) ||
             !selected.contains(account.id) ||
             ledger == null ||
             (before != null && before.ledgerId != ledger.id)) {
@@ -320,7 +321,6 @@ class ReconciliationStore {
                 toAccount.id == account.id ||
                 !selected.contains(toAccount.id) ||
                 !isTradableType(toAccount.type) ||
-                isLiabilityType(toAccount.type) ||
                 toAccount.currency != account.currency)) {
           throw StateError('转账需要两个不同的、已选择的同币种日常账户');
         }
@@ -394,7 +394,7 @@ class ReconciliationStore {
       } else {
         if (before == null) throw StateError('删除操作缺少原记录');
         if (s.accounts.any((a) => !a.complete)) {
-          throw StateError('删除建议需要确认各账户期间流水完整');
+          throw StateError('流水资料仍有未识别或待确认内容，暂不能应用删除建议');
         }
         working.remove(before.id);
       }

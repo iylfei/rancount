@@ -45,6 +45,7 @@ class ReconciliationService {
     }
     final snapshot = await store.snapshot();
     store.assertIdentity(s, snapshot);
+    s.refreshEvidenceCompleteness();
     s.fingerprint = snapshot.fingerprint;
     await engine.analyze(
       s,

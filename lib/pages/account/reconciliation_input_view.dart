@@ -24,7 +24,7 @@ class ReconciliationSetupView extends StatelessWidget {
     children: [
       const ReconciliationHeading(
         '先确定要核对的账户和期间',
-        description: '选择近期流水有交集的资金账户，可以一起检查账户之间的转账。',
+        description: '把资金账户和信用卡、花呗一起选择，可以检查转账与还款。',
       ),
       ReconciliationCard(
         child: Column(
@@ -37,7 +37,7 @@ class ReconciliationSetupView extends StatelessWidget {
                   ? '请选择一个或多个账户'
                   : session.accounts.map((a) => a.name).join('、'),
               hint: session.accounts.isEmpty
-                  ? '支持支付宝、微信、银行卡和现金'
+                  ? '支持支付宝、微信、银行卡、现金、信用卡和花呗'
                   : '已选择 ${session.accounts.length} 个账户',
               onTap: locked ? null : onAccounts,
             ),
@@ -53,7 +53,7 @@ class ReconciliationSetupView extends StatelessWidget {
           ],
         ),
       ),
-      const ReconciliationNotice('下一步按账户添加流水截图，并填写实际余额。修改建议会先展示给你审核。'),
+      const ReconciliationNotice('下一步添加流水截图，并补充实际余额或总欠款。修改建议会先展示给你审核。'),
     ],
   );
 }
@@ -67,7 +67,6 @@ class ReconciliationAccountInput extends StatelessWidget {
   final VoidCallback onTime;
   final VoidCallback onManual;
   final ValueChanged<String> onBalance;
-  final ValueChanged<bool> onComplete;
   final ValueChanged<Json> onRemoveImage;
   final ValueChanged<StatementRow> onEditRow;
   final ValueChanged<StatementRow> onRemoveRow;
@@ -80,7 +79,6 @@ class ReconciliationAccountInput extends StatelessWidget {
     required this.onTime,
     required this.onManual,
     required this.onBalance,
-    required this.onComplete,
     required this.onRemoveImage,
     required this.onEditRow,
     required this.onRemoveRow,
@@ -124,7 +122,7 @@ class ReconciliationAccountInput extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             empty
-                ? '尚未添加流水资料'
+                ? '未添加流水，按期间无变动核对'
                 : '${sources.length} 张截图 · ${rows.length} 条已识别／补充流水',
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -163,40 +161,31 @@ class ReconciliationAccountInput extends StatelessWidget {
             enabled: !locked,
             initialValue: account.actualBalance == null
                 ? ''
-                : moneyText(account.actualBalance!),
+                : moneyText(account.displayBalance(account.actualBalance!)),
             decoration: InputDecoration(
-              labelText: '实际余额（选填）',
+              labelText: account.isLiability ? '当前总欠款（选填）' : '实际余额（选填）',
               suffixText: account.currency,
               hintText: '查看该账户后填写',
               errorText: balanceError,
-              helperText: '完整流水中有交易后余额时，可以留空',
+              helperText: account.isLiability
+                  ? '填写正数，包含未出账欠款；勿填可用额度或本期账单'
+                  : '完整流水中有交易后余额时，可以留空',
               helperMaxLines: 2,
             ),
-            keyboardType: const TextInputType.numberWithOptions(
+            keyboardType: TextInputType.numberWithOptions(
               decimal: true,
-              signed: true,
+              signed: !account.isLiability,
             ),
             onChanged: onBalance,
           ),
           const SizedBox(height: 16),
           ReconciliationField(
-            label: '余额对应时间 · 北京时间',
+            label: '${account.isLiability ? '总欠款' : '余额'}对应时间 · 北京时间',
             value: reconciliationDate(account.balanceAt, time: true),
             icon: Icons.schedule,
             onTap: locked ? null : onTime,
           ),
           const SizedBox(height: 12),
-          CheckboxListTile(
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-            title: Text(empty ? '这个期间内没有余额变动' : '已添加这个期间的全部流水'),
-            subtitle: Text(
-              empty ? '没有交易时，请填写上方实际余额。' : '从开始日期到余额对应时间，包含充值、提现、转账和退款。',
-            ),
-            value: account.complete,
-            onChanged: locked ? null : (value) => onComplete(value!),
-          ),
-          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: locked ? null : onManual,
             icon: const Icon(Icons.edit_note_outlined),
@@ -220,7 +209,7 @@ class ReconciliationAccountInput extends StatelessWidget {
                     ),
                     subtitle: Text(
                       '${row.time == null ? '时间待确认' : reconciliationDate(row.time!, time: true)}'
-                      '${row.balanceAfter == null ? '' : '\n交易后余额 ${moneyText(row.balanceAfter!)}'}'
+                      '${row.balanceAfter == null ? '' : '\n交易后${account.isLiability ? '总欠款' : '余额'} ${moneyText(account.displayBalance(row.balanceAfter!))}'}'
                       '${row.warnings.isEmpty ? '' : '\n${row.warnings.join('；')}'}',
                     ),
                     onTap: locked ? null : () => onEditRow(row),
@@ -230,7 +219,7 @@ class ReconciliationAccountInput extends StatelessWidget {
                         Text(
                           row.delta == null
                               ? '金额待确认'
-                              : '${row.delta! > 0 ? '+' : ''}${moneyText(row.delta!)}',
+                              : account.deltaText(row.delta!),
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         if (!locked)

@@ -16,7 +16,7 @@ Future<StatementRow?> editReconciliationStatement(
   final balance = TextEditingController(
     text: existing?.balanceAfter == null
         ? ''
-        : moneyText(existing!.balanceAfter!),
+        : moneyText(account.displayBalance(existing!.balanceAfter!)),
   );
   final description = TextEditingController(text: existing?.description ?? '');
   var incoming = (existing?.delta ?? -1) > 0;
@@ -41,15 +41,15 @@ Future<StatementRow?> editReconciliationStatement(
                 ),
                 const SizedBox(height: 8),
                 SegmentedButton<bool>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: false,
-                      label: Text('流出'),
+                      label: Text(account.isLiability ? '欠款增加' : '流出'),
                       icon: Icon(Icons.north_east),
                     ),
                     ButtonSegment(
                       value: true,
-                      label: Text('流入'),
+                      label: Text(account.isLiability ? '欠款减少' : '流入'),
                       icon: Icon(Icons.south_west),
                     ),
                   ],
@@ -62,7 +62,9 @@ Future<StatementRow?> editReconciliationStatement(
                   decoration: InputDecoration(
                     labelText: '变动金额',
                     suffixText: account.currency,
-                    helperText: '填写正数，方向由上方的流入／流出决定',
+                    helperText: account.isLiability
+                        ? '填写正数；消费增加欠款，还款和退款减少欠款'
+                        : '填写正数，方向由上方的流入／流出决定',
                   ),
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
@@ -103,16 +105,16 @@ Future<StatementRow?> editReconciliationStatement(
                 TextFormField(
                   controller: balance,
                   decoration: InputDecoration(
-                    labelText: '交易后余额（选填）',
+                    labelText: account.isLiability ? '交易后总欠款（选填）' : '交易后余额（选填）',
                     suffixText: account.currency,
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(
+                  keyboardType: TextInputType.numberWithOptions(
                     decimal: true,
-                    signed: true,
+                    signed: !account.isLiability,
                   ),
                   validator: (v) {
                     try {
-                      moneyCents(v);
+                      account.balanceFromInput(v ?? '');
                       return null;
                     } catch (e) {
                       return '$e';
@@ -146,7 +148,7 @@ Future<StatementRow?> editReconciliationStatement(
                   sourceIds: existing?.sourceIds ?? [],
                   time: time,
                   delta: moneyCents(amount.text)! * (incoming ? 1 : -1),
-                  balanceAfter: moneyCents(balance.text),
+                  balanceAfter: account.balanceFromInput(balance.text),
                   description: description.text.trim(),
                   orderId: existing?.orderId,
                 ),
