@@ -7,14 +7,12 @@ import 'package:collection/collection.dart';
 import '../../providers.dart';
 import '../../services/billing/post_processor.dart';
 import '../../services/currency/rate_math.dart';
-import '../../services/marketing/product_promos.dart';
 import '../../widgets/ui/ui.dart';
 import '../../widgets/ui/capsule_switcher.dart';
 import '../../widgets/biz/amount_text.dart';
 import '../../widgets/biz/format_money.dart';
 import '../../widgets/biz/section_card.dart';
 import '../../widgets/biz/repayment_summary.dart';
-import '../../widgets/biz/product_promo_card.dart';
 import '../../data/db.dart' as db;
 import '../../l10n/app_localizations.dart';
 import '../../styles/tokens.dart';
@@ -124,18 +122,20 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
             title: l10n.accountsTitle,
             showBack: !widget.asTab,
             compact: true,
-            // 顺序(左 → 右):加号 / 蜜蜂家当入口 / 设置。
-            // 设置放最右边(Material 设计惯例,溢出 / 设置类放最右),
-            // 蜜蜂家当放中间,顺手能点到但不抢主操作位。
             actions: [
               IconButton(
                 onPressed: () => _addAccount(context, ref, ledgerId),
                 icon: const Icon(Icons.add),
                 tooltip: l10n.accountAddTooltip,
               ),
-              // 蜜蜂家当 BeeAssets 入口 — 行为走 ProductPromoLauncher
-              // (iOS 跳商店 / Android 弹窗)。
-              _BeeAssetsHeaderEntry(),
+              IconButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ReconciliationPage()),
+                ),
+                icon: const Icon(Icons.fact_check_outlined),
+                tooltip: 'AI 对账',
+              ),
               IconButton(
                 onPressed: () => _showSettingsSheet(
                   context,
@@ -175,20 +175,6 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                         : 8.0.scaled(context, ref),
                   ),
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: SectionCard(
-                        margin: EdgeInsets.zero,
-                        child: ListTile(
-                          leading: const Icon(Icons.manage_search),
-                          title: const Text('AI 对账'),
-                          subtitle: const Text('核对多个账户的近期流水，审核后修正记账'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => const ReconciliationPage())),
-                        ),
-                      ),
-                    ),
                     if (accounts.isEmpty)
                       SizedBox(
                         height: MediaQuery.of(context).size.height * 0.4,
@@ -2883,28 +2869,6 @@ class _CompactDefaultAccount extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// 资产管理页 header 右上角的「蜜蜂家当」入口。
-///
-/// 用 Material 标准的 Premium / 进阶版图标(`workspace_premium_outlined`),
-/// 跟 setting / add 等 outlined 图标视觉重量完全一致;语义上暗示「升级 /
-/// 进阶版本」,鼓励点击。颜色自适应 header 背景。点击进入介绍弹窗。
-class _BeeAssetsHeaderEntry extends StatelessWidget {
-  const _BeeAssetsHeaderEntry();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final info = beeAssetsPromo(context);
-    final texts = buildPromoTexts(context, l10n.aboutBeeAssets);
-
-    return IconButton(
-      onPressed: () => ProductPromoLauncher.open(context, info, texts),
-      tooltip: info.title,
-      icon: const Icon(Icons.auto_awesome_outlined),
     );
   }
 }
