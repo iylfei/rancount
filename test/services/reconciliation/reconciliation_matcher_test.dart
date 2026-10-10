@@ -350,4 +350,65 @@ void main() {
       expect(s.issues.single, contains('#1'));
     },
   );
+  test(
+    'truncated JSON automatically splits the batch without dropping primary rows',
+    () async {
+      final s = session(
+        List.generate(4, (i) => row('r$i', delta: -(i + 1) * 100)),
+      );
+      final handled = <String>[];
+      var calls = 0;
+      await ReconciliationEngine(
+        chat: (prompt) async {
+          calls++;
+          final data = jsonObject(
+            jsonDecode(prompt.substring(prompt.indexOf('\n{') + 1)),
+          );
+          final ids = List<String>.from(data['primaryIds']);
+          if (ids.length > 2) return '{"proposals":[{"reason":"cut';
+          handled.addAll(ids);
+          return '{"summary":"已核对","proposals":[],"issues":[]}';
+        },
+      ).analyze(s, [], {}, [], [], []);
+      expect(calls, 3);
+      expect(handled, ['r0', 'r1', 'r2', 'r3']);
+    },
+  );
+
+  test('optional summary failure preserves all validated results', () async {
+    final s = session(
+      List.generate(13, (i) => row('r$i', delta: -(i + 1) * 100)),
+    );
+    var calls = 0;
+    await ReconciliationEngine(
+      chat: (prompt) async {
+        calls++;
+        if (!prompt.contains('primaryIds')) {
+          throw StateError('summary unavailable');
+        }
+        return '{"proposals":[],"issues":[]}';
+      },
+    ).analyze(s, [], {}, [], [], []);
+    expect(calls, 3);
+    expect(s.summary, contains('已生成 0 组修改建议'));
+    expect(s.summary, contains('13 条流水'));
+  });
+
+  test(
+    'platform and merchant aliases remain candidates and cannot justify double additions',
+    () {
+      final r = row('a', description: '平台付款-收款企业');
+      final t = tx(1, merchant: '平台店铺名称');
+      final matcher = ReconciliationMatcher([r], [t]);
+      expect(matcher.confirmed, isEmpty);
+      expect(matcher.comparison(r)['sameAccountAndDirectionIds'], [1]);
+      expect(
+        () => matcher.checkAdditions(
+          [addition('new', tx(2, merchant: '收款企业'))],
+          [r],
+        ),
+        throwsStateError,
+      );
+    },
+  );
 }

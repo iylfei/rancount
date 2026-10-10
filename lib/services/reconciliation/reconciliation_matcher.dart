@@ -20,6 +20,12 @@ class ReconciliationMatcher {
                 RegExp('退款|退货|退票').hasMatch(row.description))) {
           return false;
         }
+        final merchant = t['merchant']?.toString().trim() ?? '';
+        if (merchant.isNotEmpty &&
+            !row.description.contains(merchant) &&
+            !_hasOrder(row, t)) {
+          return false;
+        }
         return _gap(row, t) <= const Duration(seconds: 90) || _hasOrder(row, t);
       }).toList();
       for (final t in strong[row.id]!) {
@@ -81,12 +87,8 @@ class ReconciliationMatcher {
       }).toList();
 
   bool _conflictingDetails(StatementRow row, Json t) {
-    final merchant = t['merchant']?.toString().trim() ?? '';
-    if (merchant.isNotEmpty &&
-        row.description.isNotEmpty &&
-        !row.description.contains(merchant)) {
-      return true;
-    }
+    // Platform/payee aliases are not proof of a different payment. Keep such
+    // records as candidates even when the displayed merchant names differ.
     final order = row.orderId;
     final recordedOrders = _orders(_details(t));
     return order != null &&

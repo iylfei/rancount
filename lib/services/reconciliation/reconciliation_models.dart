@@ -5,7 +5,7 @@ import '../../utils/account_type_utils.dart';
 
 typedef Json = Map<String, dynamic>;
 
-const reconciliationAnalysisVersion = 1;
+const reconciliationAnalysisVersion = 2;
 
 /// Reconciliation uses integer minor units; SQLite doubles are converted only
 /// at the accounting boundary. Unknown screenshot values remain unknown.

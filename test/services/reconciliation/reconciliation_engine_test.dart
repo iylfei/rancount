@@ -333,7 +333,7 @@ void main() {
       );
       await engine.analyze(s, [], {1: 0, 2: 0}, [], [], []);
       expect(primary.toSet(), hasLength(45));
-      expect(calls, 3);
+      expect(calls, 5);
       expect(s.summary, contains('完整报告'));
     },
   );

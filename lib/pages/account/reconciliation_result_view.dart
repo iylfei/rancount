@@ -35,7 +35,9 @@ class ReconciliationResultView extends StatelessWidget {
             Text('需要重新核对', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             Text(
-              session.fingerprint != snapshot.fingerprint
+              session.fingerprint == null
+                  ? '还没有完整的分析结果。请继续核对流水与当前账本，再查看修改建议。'
+                  : session.fingerprint != snapshot.fingerprint
                   ? '你新增、修改或同步了记账记录，之前的建议已过期。重新分析会与当前账本比较，避免重复补记。'
                   : '对账匹配规则已更新，请重新核对已有记录。之前的建议暂不可使用。',
             ),
