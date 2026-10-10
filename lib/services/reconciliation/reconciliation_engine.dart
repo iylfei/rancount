@@ -157,6 +157,13 @@ class ReconciliationEngine {
         )
         .toList();
     final matcher = ReconciliationMatcher(rows, transactions);
+    for (final row in rows.where(
+      (r) => r.warnings.contains('未确认交易用卡尾号，请核对账户归属'),
+    )) {
+      s.issues.add(
+        '${s.accounts.singleWhere((a) => a.id == row.accountId).name}：${row.description}，未确认交易用卡尾号，请核对原图。',
+      );
+    }
     s.matches = rows
         .where((r) => matcher.confirmed.containsKey(r.id))
         .map(
@@ -215,6 +222,7 @@ class ReconciliationEngine {
 考虑漏记、重复、金额错误、支付账户错误、时间错误、转账误记及退款。金额相同不是充分匹配依据。
 rowComparisons 逐行列出已有候选。confirmedMatches 已按账户、金额、方向、时间或完整订单号一对一核对，不能再补记。
 sameAccountAndDirectionIds 非空时不能声称本地无对应记录；先检查时间误差、订单时间与付款时间、备注和退款类型，优先修正已有记录。相同金额但账户或时间不同的候选也要核对，不能直接新增。
+timePrecision=day 只证明交易日期，minute 只证明时分，补出的零点或秒数不能用于修正已有精确时刻。同日已有记录不得仅因零点与实际付款时刻不同生成修改；修改账户、金额或性质时保留已有更精确时间。银行卡尾号按 accounts.cardLast4 区分，同一截图内其他卡交易已筛除，未确认交易用卡的流水只能列入待核对，不能生成修改操作。
 本地 transfer 的转出、转入两侧分别抵扣账户变动，不能因本地没有 income/expense 类型就判漏记。若转账性质不符，必须在同组修改或替换原 transfer，不能保留原转账再新增同一账户变动。
 候选包含期间边界前后的记录以便发现错记日期，不能修改期间外的记录，须进入 issues 待确认。
 金额计算使用整数分；说明中的金额使用 amountText/deltaText 的元，日期使用北京时间字段，不把 UTC 日期当截图日期。
@@ -286,6 +294,11 @@ ${jsonEncode({
           if (ids.any(matcher.confirmed.containsKey)) {
             throw StateError('建议包含已匹配的流水，不应重复补记或修改');
           }
+          if (ids.any(
+            (id) => evidence[id]!.warnings.contains('未确认交易用卡尾号，请核对账户归属'),
+          )) {
+            throw StateError('流水的银行卡归属未确认，请先核对原图中的交易用卡');
+          }
           final mutations = jsonObjects(p['mutations']);
           if (mutations.isEmpty) throw StateError('修改建议为空');
           final txIds = mutations
@@ -344,6 +357,22 @@ ${jsonEncode({
                 throw StateError('建议的金额、类型、账本或时间格式无效');
               }
               if (before != null) normalized['ledgerId'] = before['ledgerId'];
+              if (before != null) {
+                final oldTime = evidenceTime(before['happenedAt'])!;
+                final newTime = evidenceTime(normalized['happenedAt'])!;
+                if (ids
+                    .map((id) => evidence[id]!)
+                    .any(
+                      (r) =>
+                          ['day', 'minute'].contains(r.timePrecision) &&
+                          transactionDelta(normalized, r.accountId) ==
+                              r.delta &&
+                          r.sameKnownTime(oldTime) &&
+                          r.sameKnownTime(newTime),
+                    )) {
+                  normalized['happenedAt'] = before['happenedAt'];
+                }
+              }
               normalized.remove('id');
               normalized.remove('syncId');
               if (normalized['refundOfMutationId'] != null) {
@@ -352,6 +381,25 @@ ${jsonEncode({
               }
               m['after'] = normalized;
             }
+          }
+          mutations.removeWhere((m) {
+            if (m['transactionId'] == null || m['after'] == null) return false;
+            final before = transactions.singleWhere(
+              (t) => t['id'] == m['transactionId'],
+            );
+            final after = jsonObject(m['after']);
+            return {...before.keys, ...after.keys}
+                .where((key) => !['id', 'syncId'].contains(key))
+                .every(
+                  (key) => key == 'happenedAt'
+                      ? evidenceTime(before[key]) == evidenceTime(after[key])
+                      : jsonEncode(before[key]) == jsonEncode(after[key]),
+                );
+          });
+          if (mutations.isEmpty) {
+            rejected = true;
+            rejectedEvidence.addAll(ids);
+            continue;
           }
           matcher.checkAdditions(mutations, ids.map((id) => evidence[id]!));
           s.proposals.add({
@@ -369,7 +417,8 @@ ${jsonEncode({
               (p['evidenceIds'] as List).whereType<String>(),
             );
           }
-          s.issues.add('${p['title'] ?? 'AI 建议'}：$error');
+          final reason = error is StateError ? error.message : error.toString();
+          s.issues.add('建议未纳入：$reason');
         }
       }
       for (final issue in batchIssues) {

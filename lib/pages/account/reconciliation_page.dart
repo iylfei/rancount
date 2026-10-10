@@ -18,6 +18,7 @@ import '../../utils/account_type_utils.dart';
 import '../../widgets/ai/ai_privacy_consent_dialog.dart';
 import '../../widgets/ui/ui.dart';
 import 'reconciliation_edit_dialog.dart';
+import 'reconciliation_card_sheet.dart';
 import 'reconciliation_input_view.dart';
 import 'reconciliation_result_view.dart';
 import 'reconciliation_setup_sheet.dart';
@@ -285,6 +286,23 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     for (final image in images) {
       await _store.addImage(_session!, account.id, File(image.path));
     }
+    await _save();
+  });
+
+  Future<void> _cards() => _run(() async {
+    final s = _session!;
+    final values = await selectReconciliationCards(context, s.accounts);
+    if (values == null || !mounted) return;
+    if (!s.accounts.any(
+      (a) => values.containsKey(a.id) && values[a.id] != a.cardLast4,
+    )) {
+      return;
+    }
+    s.invalidate();
+    for (final a in s.accounts) {
+      if (values.containsKey(a.id)) a.cardLast4 = values[a.id];
+    }
+    _info = '卡尾号已保存，下一次分析会重新识别相关银行卡截图。';
     await _save();
   });
 
@@ -661,6 +679,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
           locked: locked,
           onAccounts: _accounts,
           onPeriod: _period,
+          onCards: _cards,
         ),
       ];
     }

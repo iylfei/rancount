@@ -183,6 +183,119 @@ void main() {
     );
   });
 
+  test(
+    'same mixed screenshot is partitioned by actual card, not upload account',
+    () async {
+      final mixed = jsonEncode({
+        'rows': [
+          {
+            'time': '2026-10-05T00:00:00+08:00',
+            'timePrecision': 'day',
+            'cardLast4': '9053',
+            'cardKind': 'bank_card',
+            'description': '储蓄卡消费',
+            'delta': '-10.00',
+          },
+          {
+            'time': '2026-10-05T09:00:00+08:00',
+            'timePrecision': 'minute',
+            'cardLast4': '0803',
+            'cardKind': 'credit_card',
+            'description': '信用卡消费',
+            'delta': '-20.00',
+          },
+        ],
+      });
+      final recognizer = StatementRecognizer(
+        vision: (_, prompt) async {
+          expect(prompt, contains('上传位置不能证明'));
+          return mixed;
+        },
+      );
+      final debit = ReconciliationAccount(
+        id: 1,
+        name: '储蓄卡',
+        type: 'bank_card',
+        currency: 'CNY',
+        cardLast4: '9053',
+        balanceAt: end,
+      );
+      final credit = ReconciliationAccount(
+        id: 2,
+        name: '信用卡',
+        type: 'credit_card',
+        currency: 'CNY',
+        cardLast4: '0803',
+        balanceAt: end,
+      );
+      final a = <String, dynamic>{'id': 'debit'};
+      final b = <String, dynamic>{'id': 'credit'};
+      final debitRows = await recognizer.recognize(File('same.png'), a, debit);
+      final creditRows = await recognizer.recognize(
+        File('same.png'),
+        b,
+        credit,
+      );
+      expect(debitRows.single.delta, -1000);
+      expect(debitRows.single.timePrecision, 'day');
+      expect(creditRows.single.delta, -2000);
+      expect(creditRows.single.timePrecision, 'minute');
+      expect(a['excludedOtherCards'], 1);
+      expect(b['excludedOtherCards'], 1);
+      expect(ReconciliationAccount.fromJson(debit.toJson()).cardLast4, '9053');
+    },
+  );
+
+  test(
+    'unidentified card remains visible but cannot become an executable suggestion',
+    () async {
+      final a = ReconciliationAccount(
+        id: 1,
+        name: '银行卡',
+        type: 'bank_card',
+        currency: 'CNY',
+        cardLast4: '9053',
+        balanceAt: end,
+      );
+      final rows = await StatementRecognizer(
+        vision: (_, __) async => jsonEncode({
+          'rows': [
+            {'time': '2026-10-05T09:00:00+08:00', 'delta': '-10.00'},
+          ],
+        }),
+      ).recognize(File('same.png'), {'id': 'a'}, a);
+      expect(rows.single.warnings, contains('未确认交易用卡尾号，请核对账户归属'));
+      final s = session()
+        ..accounts = [a]
+        ..rows = rows;
+      await ReconciliationEngine(
+        chat: (_) async => jsonEncode({
+          'proposals': [
+            {
+              'title': '补记消费',
+              'evidenceIds': [rows.single.id],
+              'mutations': [
+                {
+                  'id': 'new',
+                  'after': {
+                    'ledgerId': 1,
+                    'type': 'expense',
+                    'accountId': 1,
+                    'amountCents': 1000,
+                    'happenedAt': rows.single.time!.toIso8601String(),
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      ).analyze(s, [], {}, [], [], []);
+      expect(s.proposals, isEmpty);
+      expect(s.issues.join(), contains('银行卡归属未确认'));
+      expect(s.issues.join(), isNot(contains('补记消费：')));
+    },
+  );
+
   test('opening difference is separated from period omission', () {
     final s = session()
       ..rows = [

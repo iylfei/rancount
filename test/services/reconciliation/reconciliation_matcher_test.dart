@@ -14,6 +14,7 @@ void main() {
     int seconds = 0,
     String description = '商家付款',
     String? order,
+    String precision = 'second',
   }) => StatementRow(
     id: id,
     accountId: account,
@@ -22,6 +23,7 @@ void main() {
     delta: delta,
     description: description,
     orderId: order,
+    timePrecision: precision,
   );
   Json tx(
     int id, {
@@ -409,6 +411,95 @@ void main() {
         ),
         throwsStateError,
       );
+    },
+  );
+
+  test(
+    'date-only evidence matches a unique known merchant without replacing payment time',
+    () {
+      final r = row('a', description: '铁路12306', precision: 'day');
+      final matcher = ReconciliationMatcher(
+        [r],
+        [tx(1, seconds: 3600, merchant: '铁路12306')],
+      );
+      expect(matcher.confirmed, hasLength(1));
+      expect(
+        ReconciliationMatcher([r], [tx(1, seconds: 3600)]).confirmed,
+        isEmpty,
+      );
+      expect(
+        ReconciliationMatcher(
+          [r],
+          [
+            tx(1, seconds: 3600, merchant: '铁路12306'),
+            tx(2, seconds: 7200, merchant: '铁路12306'),
+          ],
+        ).confirmed,
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'coarse time cannot turn an existing exact time into midnight or fabricated seconds',
+    () async {
+      final r = row('a', precision: 'day');
+      final existing = tx(1, seconds: 3600);
+      final s = session([r]);
+      await ReconciliationEngine(
+        chat: (_) async => jsonEncode({
+          'summary': '需要修正零点时间',
+          'proposals': [
+            {
+              'title': '修正时间',
+              'evidenceIds': ['a'],
+              'mutations': [
+                {'id': 'edit', 'transactionId': 1, 'after': tx(1)},
+              ],
+            },
+          ],
+        }),
+      ).analyze(s, [existing], {}, [], [], []);
+      expect(s.proposals, isEmpty);
+      expect(s.summary, isNot(contains('需要修正零点时间')));
+      final changed = session([row('a', delta: -2200, precision: 'day')]);
+      await ReconciliationEngine(
+        chat: (_) async => jsonEncode({
+          'proposals': [
+            {
+              'title': '修正金额',
+              'evidenceIds': ['a'],
+              'mutations': [
+                {
+                  'id': 'edit',
+                  'transactionId': 1,
+                  'after': tx(1, amount: 2200),
+                },
+              ],
+            },
+          ],
+        }),
+      ).analyze(changed, [existing], {}, [], [], []);
+      expect(
+        changed.proposals.single['mutations'].single['after']['amountCents'],
+        2200,
+      );
+      expect(
+        changed.proposals.single['mutations'].single['after']['happenedAt'],
+        existing['happenedAt'],
+      );
+    },
+  );
+
+  test(
+    'legacy cached midnight is coarse but manual midnight remains explicit',
+    () {
+      final data = row('a', seconds: -39600).toJson()..remove('timePrecision');
+      expect(StatementRow.fromJson(data).timePrecision, 'day');
+      data['sourceIds'] = <String>[];
+      expect(StatementRow.fromJson(data).timePrecision, 'second');
+      data['timePrecision'] = 'minute';
+      expect(StatementRow.fromJson(data).timePrecision, 'minute');
     },
   );
 }

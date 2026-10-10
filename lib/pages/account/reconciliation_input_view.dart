@@ -10,12 +10,14 @@ class ReconciliationSetupView extends StatelessWidget {
   final bool locked;
   final VoidCallback onAccounts;
   final VoidCallback onPeriod;
+  final VoidCallback onCards;
   const ReconciliationSetupView({
     super.key,
     required this.session,
     required this.locked,
     required this.onAccounts,
     required this.onPeriod,
+    required this.onCards,
   });
 
   @override
@@ -50,6 +52,23 @@ class ReconciliationSetupView extends StatelessWidget {
               hint: '截止 ${reconciliationDate(session.end, time: true)} · 北京时间',
               onTap: locked ? null : onPeriod,
             ),
+            if (session.accounts.any(
+              (a) => ['bank_card', 'credit_card'].contains(a.type),
+            )) ...[
+              const SizedBox(height: 16),
+              ReconciliationField(
+                label: '混合银行卡流水（选填）',
+                icon: Icons.credit_card,
+                value: session.accounts.any((a) => a.cardLast4 != null)
+                    ? session.accounts
+                          .where((a) => a.cardLast4 != null)
+                          .map((a) => '${a.name} · ${a.cardLast4}')
+                          .join('、')
+                    : '设置银行卡尾号',
+                hint: '储蓄卡、信用卡在同一张图中显示时，用尾号区分',
+                onTap: locked ? null : onCards,
+              ),
+            ],
           ],
         ),
       ),
@@ -208,7 +227,8 @@ class ReconciliationAccountInput extends StatelessWidget {
                       row.description.isEmpty ? '未识别交易描述' : row.description,
                     ),
                     subtitle: Text(
-                      '${row.time == null ? '时间待确认' : reconciliationDate(row.time!, time: true)}'
+                      '${row.time == null ? '时间待确认' : reconciliationDate(row.time!, time: row.timePrecision != 'day')}'
+                      '${row.timePrecision == 'day' ? ' · 仅日期' : ''}'
                       '${row.balanceAfter == null ? '' : '\n交易后${account.isLiability ? '总欠款' : '余额'} ${moneyText(account.displayBalance(row.balanceAfter!))}'}'
                       '${row.warnings.isEmpty ? '' : '\n${row.warnings.join('；')}'}',
                     ),

@@ -150,4 +150,73 @@ void main() {
       expect((await store.load(saved.id))!.fingerprint, snapshot.fingerprint);
     },
   );
+
+  test(
+    'card mapping refreshes legacy OCR once and replaces only its own cached rows',
+    () async {
+      session.accounts.single.cardLast4 = '9053';
+      session.rows.add(
+        StatementRow(
+          id: 'manual:keep',
+          accountId: session.accounts.single.id,
+          sourceIds: [],
+          time: time,
+          delta: -200,
+        ),
+      );
+      var recognitions = 0;
+      final recognizer = StatementRecognizer(
+        vision: (_, prompt) async {
+          recognitions++;
+          expect(prompt, contains('9053'));
+          return jsonEncode({
+            'rows': [
+              {
+                'time': time.toIso8601String(),
+                'cardLast4': '9053',
+                'delta': '-30.00',
+              },
+            ],
+          });
+        },
+      );
+      final service = ReconciliationService(
+        store,
+        recognizer: recognizer,
+        engine: ReconciliationEngine(
+          chat: (_) async => '{"proposals":[],"issues":[]}',
+        ),
+      );
+      await service.analyze(session);
+      expect(recognitions, 1);
+      expect(session.rows.map((r) => r.delta).toSet(), {-200, -3000});
+      expect(session.sources.single['accountCardLast4'], '9053');
+      expect(
+        session.sources.single['cardRecognitionVersion'],
+        StatementRecognizer.cardRecognitionVersion,
+      );
+      await service.analyze(session);
+      expect(recognitions, 1);
+    },
+  );
+
+  test(
+    'failed card re-recognition preserves previous evidence for retry',
+    () async {
+      session.accounts.single.cardLast4 = '9053';
+      await expectLater(
+        ReconciliationService(
+          store,
+          recognizer: StatementRecognizer(
+            vision: (_, __) async => throw StateError('识别暂时失败'),
+          ),
+          engine: ReconciliationEngine(chat: (_) async => '{"proposals":[]}'),
+        ).analyze(session),
+        throwsStateError,
+      );
+      expect(session.rows.single.delta, -1000);
+      expect(session.rows.single.sourceIds, ['image']);
+      expect(session.sources.single['cardRecognitionVersion'], isNull);
+    },
+  );
 }

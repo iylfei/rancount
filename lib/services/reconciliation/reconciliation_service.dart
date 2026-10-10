@@ -28,16 +28,30 @@ class ReconciliationService {
     await store.save(s);
     for (var i = 0; i < s.sources.length; i++) {
       final source = s.sources[i];
-      if (source['recognized'] == true) continue;
-      onProgress?.call('识别截图 ${i + 1} / ${s.sources.length}');
       final account = s.accounts.singleWhere(
         (a) => a.id == source['accountId'],
       );
+      final needsCardCheck =
+          (account.cardLast4 != null &&
+              source['cardRecognitionVersion'] !=
+                  StatementRecognizer.cardRecognitionVersion) ||
+          (source['cardRecognitionVersion'] ==
+                  StatementRecognizer.cardRecognitionVersion &&
+              source['accountCardLast4'] != account.cardLast4);
+      if (source['recognized'] == true && !needsCardCheck) continue;
+      onProgress?.call('识别截图 ${i + 1} / ${s.sources.length}');
       final rows = await recognizer.recognize(
         File(source['path']),
         source,
         account,
       );
+      // Replace this source only after successful recognition. Keep manual
+      // additions and evidence contributed by other screenshots.
+      s.rows.removeWhere((r) {
+        if (!r.sourceIds.contains(source['id'])) return false;
+        r.sourceIds.remove(source['id']);
+        return r.sourceIds.isEmpty && !r.id.startsWith('manual:');
+      });
       s.rows.addAll(rows);
       s.rows = mergeStatementRows(s.rows);
       source['recognized'] = true;

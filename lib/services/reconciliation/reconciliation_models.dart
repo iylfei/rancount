@@ -5,7 +5,7 @@ import '../../utils/account_type_utils.dart';
 
 typedef Json = Map<String, dynamic>;
 
-const reconciliationAnalysisVersion = 2;
+const reconciliationAnalysisVersion = 3;
 
 /// Reconciliation uses integer minor units; SQLite doubles are converted only
 /// at the accounting boundary. Unknown screenshot values remain unknown.
@@ -74,6 +74,7 @@ class ReconciliationAccount {
   int? actualBalance;
   DateTime balanceAt;
   bool complete;
+  String? cardLast4;
 
   ReconciliationAccount({
     required this.id,
@@ -84,6 +85,7 @@ class ReconciliationAccount {
     required this.balanceAt,
     this.actualBalance,
     this.complete = false,
+    this.cardLast4,
   });
 
   bool get isLiability => isLiabilityType(type);
@@ -115,6 +117,7 @@ class ReconciliationAccount {
     'actualBalance': actualBalance,
     'balanceAt': balanceAt.toIso8601String(),
     'complete': complete,
+    'cardLast4': cardLast4,
   };
 
   factory ReconciliationAccount.fromJson(Json j) => ReconciliationAccount(
@@ -126,6 +129,7 @@ class ReconciliationAccount {
     actualBalance: j['actualBalance'],
     balanceAt: DateTime.parse(j['balanceAt']),
     complete: j['complete'] == true,
+    cardLast4: j['cardLast4'],
   );
 }
 
@@ -139,6 +143,7 @@ class StatementRow {
   String description;
   final String? orderId;
   final List<String> warnings;
+  final String timePrecision;
 
   StatementRow({
     required this.id,
@@ -150,6 +155,7 @@ class StatementRow {
     this.description = '',
     this.orderId,
     List<String>? warnings,
+    this.timePrecision = 'second',
   }) : warnings = warnings ?? [];
 
   Json toJson() => {
@@ -162,6 +168,7 @@ class StatementRow {
     'description': description,
     'orderId': orderId,
     'warnings': warnings,
+    'timePrecision': timePrecision,
   };
 
   factory StatementRow.fromJson(Json j) => StatementRow(
@@ -174,7 +181,20 @@ class StatementRow {
     description: j['description'] ?? '',
     orderId: j['orderId'],
     warnings: List<String>.from(j['warnings'] ?? []),
+    timePrecision: j['timePrecision'] ?? legacyTimePrecision(j),
   );
+
+  bool sameKnownTime(DateTime value) {
+    if (time == null) return false;
+    final a = beijingTime(time!);
+    final b = beijingTime(value);
+    if (a.year != b.year || a.month != b.month || a.day != b.day) return false;
+    if (timePrecision == 'day') return true;
+    if (timePrecision == 'minute') {
+      return a.hour == b.hour && a.minute == b.minute;
+    }
+    return time == value;
+  }
 
   String? get identity {
     if (time == null || delta == null) return null;
@@ -189,6 +209,17 @@ class StatementRow {
     if (balanceAfter == null) return null;
     return '$accountId:${time!.toIso8601String()}:$delta:$balanceAfter:$description';
   }
+}
+
+// Older OCR supplied midnight when only a date was visible. Treat this as
+// coarse evidence rather than overwriting a recorded exact payment time.
+String legacyTimePrecision(Json row) {
+  final time = evidenceTime(row['time']);
+  if (time != null && (row['sourceIds'] as List? ?? []).isNotEmpty) {
+    final local = beijingTime(time);
+    if (local.hour == 0 && local.minute == 0 && local.second == 0) return 'day';
+  }
+  return 'second';
 }
 
 class ReconciliationSession {

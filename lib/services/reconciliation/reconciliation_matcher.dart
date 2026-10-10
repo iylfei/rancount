@@ -14,6 +14,7 @@ class ReconciliationMatcher {
     final claims = <String, List<String>>{};
     for (final row in rows) {
       strong[row.id] = compatible(row).where((t) {
+        if (row.warnings.contains('未确认交易用卡尾号，请核对账户归属')) return false;
         // Transfers and refunds recorded as income still need semantic review.
         if (t['type'] == 'transfer' ||
             (t['type'] == 'income' &&
@@ -26,7 +27,14 @@ class ReconciliationMatcher {
             !_hasOrder(row, t)) {
           return false;
         }
-        return _gap(row, t) <= const Duration(seconds: 90) || _hasOrder(row, t);
+        if (row.timePrecision == 'day' || row.timePrecision == 'minute') {
+          return row.sameKnownTime(evidenceTime(t['happenedAt'])!) &&
+              (_hasOrder(row, t) ||
+                  (merchant.isNotEmpty && row.description.contains(merchant)));
+        }
+        return (row.timePrecision != 'unknown' &&
+                _gap(row, t) <= const Duration(seconds: 90)) ||
+            _hasOrder(row, t);
       }).toList();
       for (final t in strong[row.id]!) {
         claims.putIfAbsent('${t['id']}:${row.accountId}', () => []).add(row.id);
