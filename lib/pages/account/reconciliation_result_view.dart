@@ -13,6 +13,7 @@ class ReconciliationResultView extends StatelessWidget {
   final ValueChanged<Json> onSelect;
   final void Function(Json proposal, Json mutation) onEdit;
   final VoidCallback onStatements;
+  final VoidCallback onReanalyze;
   const ReconciliationResultView({
     super.key,
     required this.session,
@@ -21,10 +22,43 @@ class ReconciliationResultView extends StatelessWidget {
     required this.onSelect,
     required this.onEdit,
     required this.onStatements,
+    required this.onReanalyze,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (!session.applied && !session.hasCurrentAnalysis(snapshot.fingerprint)) {
+      return ReconciliationCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('需要重新核对', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Text(
+              session.fingerprint != snapshot.fingerprint
+                  ? '你新增、修改或同步了记账记录，之前的建议已过期。重新分析会与当前账本比较，避免重复补记。'
+                  : '对账匹配规则已更新，请重新核对已有记录。之前的建议暂不可使用。',
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '截图和已识别的流水已保留，无需重新上传。',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: locked ? null : onReanalyze,
+              icon: const Icon(Icons.refresh),
+              label: const Text('重新分析并审核'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: locked ? null : onStatements,
+              child: const Text('查看流水资料'),
+            ),
+          ],
+        ),
+      );
+    }
     final reports = reconciliationReports(
       session,
       snapshot.transactions,
@@ -34,8 +68,6 @@ class ReconciliationResultView extends StatelessWidget {
     final selected = session.proposals
         .where((p) => p['selected'] == true)
         .length;
-    final stale =
-        !session.applied && session.fingerprint != snapshot.fingerprint;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -45,8 +77,6 @@ class ReconciliationResultView extends StatelessWidget {
               ? '下面保留本次分析和修改内容。'
               : '找到 ${session.proposals.length} 组建议，已选 $selected 组。选择后可查看余额变化。',
         ),
-        if (stale)
-          const ReconciliationNotice('记账数据已变化，请返回流水资料重新分析。', warning: true),
         if (session.summary.isNotEmpty)
           ReconciliationCard(
             child: Column(

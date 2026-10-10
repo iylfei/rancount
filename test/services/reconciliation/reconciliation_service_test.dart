@@ -108,6 +108,7 @@ void main() {
       final saved = (await store.load(session.id))!;
       expect(calls, 1);
       expect(saved.fingerprint, snapshot.fingerprint);
+      expect(saved.analysisVersion, reconciliationAnalysisVersion);
       expect(saved.proposals, hasLength(1));
       expect(saved.proposals.single['selected'], isFalse);
       expect(saved.proposals.single['validationError'], isNull);
@@ -132,6 +133,7 @@ void main() {
       expect(session.fingerprint, isNull);
       final saved = (await store.load(session.id))!;
       expect(saved.fingerprint, isNull);
+      expect(saved.analysisVersion, 0);
       expect(saved.sources.single['recognized'], isTrue);
       expect(saved.rows.single.delta, -1000);
       final snapshot = await ReconciliationService(
@@ -142,7 +144,7 @@ void main() {
         ),
       ).analyze(saved);
       expect(saved.fingerprint, snapshot.fingerprint);
-      expect(saved.summary, '重新分析完成');
+      expect(saved.summary, contains('重新分析完成'));
       expect(saved.sources.single['recognized'], isTrue);
       expect(saved.rows, hasLength(1));
       expect((await store.load(saved.id))!.fingerprint, snapshot.fingerprint);

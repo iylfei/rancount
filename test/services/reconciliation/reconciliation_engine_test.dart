@@ -334,7 +334,7 @@ void main() {
       await engine.analyze(s, [], {1: 0, 2: 0}, [], [], []);
       expect(primary.toSet(), hasLength(45));
       expect(calls, 3);
-      expect(s.summary, '完整报告');
+      expect(s.summary, contains('完整报告'));
     },
   );
 

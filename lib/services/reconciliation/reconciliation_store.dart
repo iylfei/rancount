@@ -11,6 +11,7 @@ import '../../data/db.dart';
 import '../../data/repositories/local/local_repository.dart';
 import '../../utils/account_type_utils.dart';
 import 'reconciliation_models.dart';
+import 'reconciliation_matcher.dart';
 
 Json reconciliationTransaction(Transaction t) => {
   'id': t.id,
@@ -401,6 +402,7 @@ class ReconciliationStore {
       result.add((m, before, after));
     }
     _validateRefunds(working.values);
+    assertNoDuplicateAdditions(mutations, snap.transactions);
     return result;
   }
 
@@ -447,7 +449,8 @@ class ReconciliationStore {
         throw StateError('修改计划已变化，请重新保存并核对');
       }
       final snap = await snapshot();
-      if (snap.fingerprint != s.fingerprint) {
+      if (!s.hasCurrentAnalysis(snap.fingerprint) ||
+          persisted.analysisVersion != reconciliationAnalysisVersion) {
         throw StateError('记账或同步数据已变化，请重新分析');
       }
       final prepared = await _prepare(s, snap);

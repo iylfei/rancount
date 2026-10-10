@@ -70,6 +70,7 @@ class ReconciliationService {
       onProgress: onProgress,
     );
     s.fingerprint = snapshot.fingerprint;
+    s.analysisVersion = reconciliationAnalysisVersion;
     for (final source in s.sources) {
       s.issues.addAll(
         List<String>.from(

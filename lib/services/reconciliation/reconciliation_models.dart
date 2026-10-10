@@ -5,6 +5,8 @@ import '../../utils/account_type_utils.dart';
 
 typedef Json = Map<String, dynamic>;
 
+const reconciliationAnalysisVersion = 1;
+
 /// Reconciliation uses integer minor units; SQLite doubles are converted only
 /// at the accounting boundary. Unknown screenshot values remain unknown.
 int? moneyCents(Object? value) {
@@ -203,6 +205,8 @@ class ReconciliationSession {
   List<String> issues;
   String summary;
   String? fingerprint;
+  int analysisVersion;
+  List<Json> matches;
   Json? audit;
 
   ReconciliationSession({
@@ -219,6 +223,8 @@ class ReconciliationSession {
     List<String>? issues,
     this.summary = '',
     this.fingerprint,
+    this.analysisVersion = 0,
+    List<Json>? matches,
     this.audit,
   }) : createdAt = createdAt ?? DateTime.now().toUtc(),
        start =
@@ -228,9 +234,15 @@ class ReconciliationSession {
        sources = sources ?? [],
        rows = rows ?? [],
        proposals = proposals ?? [],
+       matches = matches ?? [],
        issues = issues ?? [];
 
   bool get applied => audit != null && audit!['undone'] != true;
+
+  bool hasCurrentAnalysis(String? currentFingerprint) =>
+      analysisVersion == reconciliationAnalysisVersion &&
+      fingerprint != null &&
+      fingerprint == currentFingerprint;
 
   /// No supplied evidence means no movement. Uploaded but unreadable evidence
   /// remains incomplete, rather than silently becoming an empty statement.
@@ -258,6 +270,8 @@ class ReconciliationSession {
     issues = [];
     summary = '';
     fingerprint = null;
+    analysisVersion = 0;
+    matches = [];
   }
 
   Json toJson() => {
@@ -274,6 +288,8 @@ class ReconciliationSession {
     'issues': issues,
     'summary': summary,
     'fingerprint': fingerprint,
+    'analysisVersion': analysisVersion,
+    'matches': matches,
     'audit': audit,
   };
 
@@ -293,6 +309,8 @@ class ReconciliationSession {
     issues: List<String>.from(j['issues'] ?? []),
     summary: j['summary'] ?? '',
     fingerprint: j['fingerprint'],
+    analysisVersion: j['analysisVersion'] ?? 0,
+    matches: jsonObjects(j['matches']),
     audit: j['audit'] == null ? null : jsonObject(j['audit']),
   );
 }

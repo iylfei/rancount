@@ -361,8 +361,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
   }
 
   bool get _hasAnalysis =>
-      _session?.fingerprint != null &&
-      _session!.fingerprint == _snapshot?.fingerprint;
+      _session?.hasCurrentAnalysis(_snapshot?.fingerprint) == true;
 
   Future<void> _review() => _run(() async {
     if (_notReady != null) throw StateError(_notReady!);
@@ -623,7 +622,9 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
                 : s.audit?['undone'] == true
                 ? '已撤销'
                 : s.fingerprint != null
-                ? '已分析 · 待审核'
+                ? s.analysisVersion == reconciliationAnalysisVersion
+                      ? '已分析 · 待审核'
+                      : '分析需更新 · 截图已保留'
                 : '草稿 · 可继续'}',
           ),
           isThreeLine: true,
@@ -676,6 +677,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
           },
           onEdit: _edit,
           onStatements: () => _go(1),
+          onReanalyze: _review,
         ),
       ];
     }
@@ -706,11 +708,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
 
   Widget _footer(BuildContext context, ReconciliationSession s) {
     final count = s.proposals.where((p) => p['selected'] == true).length;
-    final canApply =
-        !_busy &&
-        s.fingerprint != null &&
-        s.fingerprint == _snapshot?.fingerprint &&
-        count > 0;
+    final canApply = !_busy && _hasAnalysis && count > 0;
     final hint = _step == 0
         ? (s.accounts.isEmpty ? '请选择至少一个对账账户' : '草稿自动保存在本机')
         : _step == 1
@@ -722,8 +720,8 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
                   : '流水资料已准备，继续分析即可生成审核建议'))
         : s.applied
         ? '本次修改已应用，可撤销'
-        : s.fingerprint != _snapshot?.fingerprint
-        ? '记账数据已变化，请重新分析'
+        : !_hasAnalysis
+        ? '分析结果需更新，已识别的流水会保留'
         : count == 0
         ? '请查看明细并勾选要应用的建议'
         : '已选择 $count 组修改建议';
@@ -779,8 +777,14 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
               ],
               if (_step == 2 && !s.applied)
                 FilledButton(
-                  onPressed: canApply ? _apply : null,
-                  child: Text('应用已选建议（$count 组）'),
+                  onPressed: !_hasAnalysis
+                      ? _busy || _notReady != null
+                            ? null
+                            : _review
+                      : canApply
+                      ? _apply
+                      : null,
+                  child: Text(!_hasAnalysis ? '重新分析并审核' : '应用已选建议（$count 组）'),
                 ),
               if (_step == 2 && s.applied)
                 OutlinedButton(

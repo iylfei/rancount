@@ -79,6 +79,7 @@ void main() {
       start: DateTime.utc(2026, 10, 1),
       end: DateTime.utc(2026, 10, 9),
       fingerprint: snapshot.fingerprint,
+      analysisVersion: reconciliationAnalysisVersion,
       accounts: [
         ReconciliationAccount(
           id: wallet,
@@ -261,6 +262,40 @@ void main() {
   });
 
   test(
+    'duplicate new suggestions reject manual records without ledger writes',
+    () async {
+      await repo.addTransaction(
+        ledgerId: ledger,
+        type: 'expense',
+        amount: 10,
+        accountId: wallet,
+        happenedAt: date.subtract(const Duration(seconds: 9)),
+      );
+      final s = await plan([
+        {'id': 'new', 'after': draft()},
+      ]);
+      await store.save(s);
+      await expectLater(store.validate(s), throwsStateError);
+      await expectLater(store.apply(s), throwsStateError);
+      expect(await db.select(db.transactions).get(), hasLength(1));
+      expect((await store.load(s.id))!.audit, isNull);
+    },
+  );
+
+  test(
+    'old analysis rules cannot apply even if the ledger fingerprint is unchanged',
+    () async {
+      final s = await plan([
+        {'id': 'new', 'after': draft()},
+      ]);
+      s.analysisVersion = 0;
+      await store.save(s);
+      await expectLater(store.apply(s), throwsStateError);
+      expect(await db.select(db.transactions).get(), isEmpty);
+    },
+  );
+
+  test(
     'reusing an account ID after data replacement cannot reuse old evidence',
     () async {
       final s = await plan([
@@ -301,7 +336,7 @@ void main() {
         {'id': 'first', 'after': draft()},
         {
           'id': 'second',
-          'after': {...draft(), 'note': 'reject'},
+          'after': {...draft(amount: 1100), 'note': 'reject'},
         },
       ]);
       await store.save(s);

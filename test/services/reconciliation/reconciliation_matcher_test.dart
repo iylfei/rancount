@@ -1,0 +1,353 @@
+import 'dart:convert';
+
+import 'package:beecount/services/reconciliation/reconciliation_engine.dart';
+import 'package:beecount/services/reconciliation/reconciliation_matcher.dart';
+import 'package:beecount/services/reconciliation/reconciliation_models.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  final at = DateTime.utc(2026, 10, 5, 3);
+  StatementRow row(
+    String id, {
+    int account = 1,
+    int delta = -1000,
+    int seconds = 0,
+    String description = '商家付款',
+    String? order,
+  }) => StatementRow(
+    id: id,
+    accountId: account,
+    sourceIds: [id],
+    time: at.add(Duration(seconds: seconds)),
+    delta: delta,
+    description: description,
+    orderId: order,
+  );
+  Json tx(
+    int id, {
+    int account = 1,
+    int amount = 1000,
+    int seconds = 0,
+    String type = 'expense',
+    int? to,
+    String? note,
+    String? merchant,
+  }) => {
+    'id': id,
+    'ledgerId': 1,
+    'syncId': 'sync$id',
+    'accountId': account,
+    'toAccountId': to,
+    'amountCents': amount,
+    'type': type,
+    'note': note,
+    'merchant': merchant,
+    'happenedAt': at.add(Duration(seconds: seconds)).toIso8601String(),
+  };
+  ReconciliationSession session(List<StatementRow> rows) =>
+      ReconciliationSession(
+        id: 'test',
+        defaultLedgerId: 1,
+        start: at.subtract(const Duration(days: 1)),
+        end: at.add(const Duration(days: 1)),
+        rows: rows,
+        accounts: [
+          ReconciliationAccount(
+            id: 1,
+            name: '钱包',
+            currency: 'CNY',
+            balanceAt: at.add(const Duration(days: 1)),
+            complete: true,
+          ),
+          ReconciliationAccount(
+            id: 2,
+            name: '银行卡',
+            currency: 'CNY',
+            balanceAt: at.add(const Duration(days: 1)),
+            complete: true,
+          ),
+        ],
+      );
+  Json addition(String id, Json after) => {'id': id, 'after': after};
+
+  test(
+    'already recorded expense and income within seconds skip missing-record inference',
+    () async {
+      final rows = [
+        row('a', delta: -14320, seconds: 9),
+        row('b', delta: -1500),
+        row('c', delta: 54720, seconds: 1),
+        row('d', delta: 13680, seconds: 1),
+      ];
+      final records = [
+        tx(1, amount: 14320),
+        tx(2, amount: 1500),
+        tx(3, amount: 54720, type: 'income'),
+        tx(4, amount: 13680, type: 'income'),
+      ];
+      final s = session(rows);
+      await ReconciliationEngine(
+        chat: (_) async => throw StateError('all rows already match'),
+      ).analyze(s, records, {}, [], [], []);
+      expect(s.matches, hasLength(4));
+      expect(s.proposals, isEmpty);
+      expect(s.issues, isEmpty);
+      expect(s.summary, contains('4 条已与账本记录匹配'));
+    },
+  );
+
+  test('matching is one-to-one, signed and account-specific', () {
+    expect(
+      ReconciliationMatcher([row('a'), row('b')], [tx(1)]).confirmed,
+      isEmpty,
+    );
+    expect(
+      ReconciliationMatcher([row('a')], [tx(1), tx(2)]).confirmed,
+      isEmpty,
+    );
+    expect(
+      ReconciliationMatcher([row('a', account: 2)], [tx(1)]).confirmed,
+      isEmpty,
+    );
+    expect(
+      ReconciliationMatcher([row('a', delta: 1000)], [tx(1)]).confirmed,
+      isEmpty,
+    );
+    expect(
+      ReconciliationMatcher([row('a', seconds: 86400)], [tx(1)]).confirmed,
+      isEmpty,
+    );
+  });
+
+  test(
+    'distinct merchants or full order numbers cannot be swallowed by equal amounts',
+    () {
+      expect(
+        ReconciliationMatcher(
+          [row('a', description: '商家甲')],
+          [tx(1, merchant: '商家乙')],
+        ).confirmed,
+        isEmpty,
+      );
+      expect(
+        ReconciliationMatcher(
+          [row('a', order: '12345678901')],
+          [tx(1, note: '订单号: 12345678902')],
+        ).confirmed,
+        isEmpty,
+      );
+      expect(
+        ReconciliationMatcher(
+          [row('a', order: '12345678901', seconds: 3600)],
+          [tx(1, note: '订单号: 12345678901')],
+        ).confirmed,
+        hasLength(1),
+      );
+    },
+  );
+
+  test(
+    'transfers and legacy income refunds retain semantic review candidates',
+    () {
+      final transfer = tx(1, type: 'transfer', to: 2);
+      final rows = [row('out'), row('in', account: 2, delta: 1000)];
+      final matcher = ReconciliationMatcher(rows, [transfer]);
+      expect(matcher.confirmed, isEmpty);
+      expect(matcher.comparison(rows.last)['sameAccountAndDirectionIds'], [1]);
+      final refund = row('refund', delta: 1000, description: '火车票退款');
+      expect(
+        ReconciliationMatcher([refund], [tx(1, type: 'income')]).confirmed,
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'model additions with a nearby recorded candidate become checks, not executable omissions',
+    () async {
+      final s = session([row('a', delta: -440, seconds: 1800)]);
+      await ReconciliationEngine(
+        chat: (prompt) async {
+          final data = jsonObject(
+            jsonDecode(prompt.substring(prompt.indexOf('\n{') + 1)),
+          );
+          expect(
+            jsonObjects(
+              data['rowComparisons'],
+            ).single['sameAccountAndDirectionIds'],
+            [1],
+          );
+          expect(
+            jsonObjects(data['localTransactions']).single['amountText'],
+            '4.40',
+          );
+          return jsonEncode({
+            'summary': '本地缺少这笔支出',
+            'issues': [
+              {
+                'text': '本地缺少这笔支出',
+                'evidenceIds': ['a'],
+              },
+            ],
+            'proposals': [
+              {
+                'title': '补记',
+                'evidenceIds': ['a'],
+                'mutations': [
+                  addition('new', tx(2, amount: 440, seconds: 1800)),
+                ],
+              },
+            ],
+          });
+        },
+      ).analyze(s, [tx(1, amount: 440)], {}, [], [], []);
+      expect(s.proposals, isEmpty);
+      expect(s.issues.single, contains('#1'));
+      expect(s.summary, isNot(contains('本地缺少')));
+    },
+  );
+
+  test(
+    'boundary records remain candidates rather than creating duplicate additions',
+    () async {
+      final s = session([row('a', seconds: 86400)])
+        ..start = at.add(const Duration(seconds: 86400));
+      final existing = tx(1, seconds: 86391);
+      await ReconciliationEngine(
+        chat: (_) async => throw StateError('already recorded'),
+      ).analyze(s, [existing], {}, [], [], []);
+      expect(s.matches, hasLength(1));
+    },
+  );
+
+  test(
+    'addition guards both transfer legs, projected changes and within-plan duplicates',
+    () {
+      final transfer = tx(1, type: 'transfer', to: 2);
+      expect(
+        () => assertNoDuplicateAdditions(
+          [addition('new', tx(2, account: 2, type: 'income'))],
+          [transfer],
+        ),
+        throwsStateError,
+      );
+      expect(
+        () => assertNoDuplicateAdditions([
+          addition('a', tx(2)),
+          addition('b', tx(3)),
+        ], []),
+        throwsStateError,
+      );
+      // Reclassifying a transfer removes its old legs before assessing additions.
+      expect(
+        () => assertNoDuplicateAdditions(
+          [
+            {'id': 'replace', 'transactionId': 1, 'after': tx(1)},
+            addition('income', tx(2, account: 2, type: 'income')),
+          ],
+          [transfer],
+        ),
+        returnsNormally,
+      );
+      expect(
+        () => assertNoDuplicateAdditions(
+          [
+            {'id': 'edit', 'transactionId': 1, 'after': tx(1)},
+            addition('duplicate', tx(2)),
+          ],
+          [transfer],
+        ),
+        throwsStateError,
+      );
+      expect(
+        () => assertNoDuplicateAdditions(
+          [addition('new', tx(2, merchant: '乙'))],
+          [tx(1, merchant: '甲')],
+        ),
+        returnsNormally,
+      );
+    },
+  );
+
+  test(
+    'real omissions are retained and dated corrections modify the existing record',
+    () async {
+      final s = session([
+        row('missing', delta: -2200),
+        row('dated', seconds: 1800),
+      ]);
+      await ReconciliationEngine(
+        chat: (_) async => jsonEncode({
+          'proposals': [
+            {
+              'title': '新增',
+              'evidenceIds': ['missing'],
+              'mutations': [addition('new', tx(2, amount: 2200))],
+            },
+            {
+              'title': '修正时间',
+              'evidenceIds': ['dated'],
+              'mutations': [
+                {
+                  'id': 'edit',
+                  'transactionId': 1,
+                  'after': tx(1, seconds: 1800),
+                },
+              ],
+            },
+          ],
+        }),
+      ).analyze(s, [tx(1)], {}, [], [], []);
+      expect(s.proposals, hasLength(2));
+      expect(s.proposals.last['mutations'].single['transactionId'], 1);
+    },
+  );
+
+  test(
+    'old reports require fresh analysis while evidence and applied audits survive',
+    () {
+      final s = session([row('a')])..fingerprint = 'same';
+      final old = ReconciliationSession.fromJson(
+        s.toJson()..remove('analysisVersion'),
+      );
+      expect(old.hasCurrentAnalysis('same'), isFalse);
+      old.analysisVersion = reconciliationAnalysisVersion;
+      expect(old.hasCurrentAnalysis('same'), isTrue);
+      expect(old.hasCurrentAnalysis('changed'), isFalse);
+      old.invalidate();
+      expect(old.rows, hasLength(1));
+      expect(old.matches, isEmpty);
+      expect(old.analysisVersion, 0);
+    },
+  );
+  test(
+    'a bulk group retains genuine omissions while rejecting existing dated entries',
+    () async {
+      final s = session([
+        row('existing', seconds: 36000),
+        row('missing', delta: -2200),
+      ]);
+      await ReconciliationEngine(
+        chat: (_) async => jsonEncode({
+          'proposals': [
+            {
+              'title': '全部漏记',
+              'evidenceIds': ['existing', 'missing'],
+              'mutations': [
+                addition('duplicate', tx(2, seconds: 36000)),
+                addition('real', tx(3, amount: 2200)),
+              ],
+            },
+          ],
+        }),
+      ).analyze(s, [tx(1)], {}, [], [], []);
+      expect(s.proposals, hasLength(1));
+      expect(s.proposals.single['evidenceIds'], ['missing']);
+      expect(
+        s.proposals.single['mutations'].single['after']['amountCents'],
+        2200,
+      );
+      expect(s.issues.single, contains('#1'));
+    },
+  );
+}
