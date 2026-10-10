@@ -223,6 +223,7 @@ class ReconciliationEngine {
 rowComparisons 逐行列出已有候选。confirmedMatches 已按账户、金额、方向、时间或完整订单号一对一核对，不能再补记。
 sameAccountAndDirectionIds 非空时不能声称本地无对应记录；先检查时间误差、订单时间与付款时间、备注和退款类型，优先修正已有记录。相同金额但账户或时间不同的候选也要核对，不能直接新增。
 timePrecision=day 只证明交易日期，minute 只证明时分，补出的零点或秒数不能用于修正已有精确时刻。同日已有记录不得仅因零点与实际付款时刻不同生成修改；修改账户、金额或性质时保留已有更精确时间。银行卡尾号按 accounts.cardLast4 区分，同一截图内其他卡交易已筛除，未确认交易用卡的流水只能列入待核对，不能生成修改操作。
+支出与同额入账可能是消费和他人报销两笔独立交易，不能只因金额相同把已有支出改为收入或更换支付账户。金额或账户性质修正必须有订单、商家等关联依据，无法证明时列入 issues。
 本地 transfer 的转出、转入两侧分别抵扣账户变动，不能因本地没有 income/expense 类型就判漏记。若转账性质不符，必须在同组修改或替换原 transfer，不能保留原转账再新增同一账户变动。
 候选包含期间边界前后的记录以便发现错记日期，不能修改期间外的记录，须进入 issues 待确认。
 金额计算使用整数分；说明中的金额使用 amountText/deltaText 的元，日期使用北京时间字段，不把 UTC 日期当截图日期。
@@ -388,12 +389,39 @@ ${jsonEncode({
               (t) => t['id'] == m['transactionId'],
             );
             final after = jsonObject(m['after']);
-            return {...before.keys, ...after.keys}
+            final unchanged = {...before.keys, ...after.keys}
                 .where((key) => !['id', 'syncId'].contains(key))
                 .every(
                   (key) => key == 'happenedAt'
                       ? evidenceTime(before[key]) == evidenceTime(after[key])
                       : jsonEncode(before[key]) == jsonEncode(after[key]),
+                );
+            if (unchanged) return true;
+            final coarse = ids
+                .map((id) => evidence[id]!)
+                .any(
+                  (r) =>
+                      ['day', 'minute'].contains(r.timePrecision) &&
+                      transactionDelta(after, r.accountId) == r.delta &&
+                      r.sameKnownTime(evidenceTime(before['happenedAt'])!),
+                );
+            // Reconciliation must not invent note/merchant edits to keep a
+            // discarded coarse-time correction alive as an apparent issue.
+            return coarse &&
+                [
+                  'ledgerId',
+                  'type',
+                  'amountCents',
+                  'accountId',
+                  'toAccountId',
+                  'categoryId',
+                  'refundOfSyncId',
+                  'excludeFromStats',
+                  'happenedAt',
+                ].every(
+                  (key) => key == 'happenedAt'
+                      ? evidenceTime(before[key]) == evidenceTime(after[key])
+                      : before[key] == after[key],
                 );
           });
           if (mutations.isEmpty) {
@@ -402,6 +430,7 @@ ${jsonEncode({
             continue;
           }
           matcher.checkAdditions(mutations, ids.map((id) => evidence[id]!));
+          matcher.checkCorrections(mutations, ids.map((id) => evidence[id]!));
           s.proposals.add({
             ...p,
             'id': idPrefix,

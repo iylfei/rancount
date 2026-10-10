@@ -479,7 +479,16 @@ void main() {
             },
           ],
         }),
-      ).analyze(changed, [existing], {}, [], [], []);
+      ).analyze(
+        changed,
+        [
+          {...existing, 'merchant': '商家付款'},
+        ],
+        {},
+        [],
+        [],
+        [],
+      );
       expect(
         changed.proposals.single['mutations'].single['after']['amountCents'],
         2200,
@@ -500,6 +509,76 @@ void main() {
       expect(StatementRow.fromJson(data).timePrecision, 'second');
       data['timePrecision'] = 'minute';
       expect(StatementRow.fromJson(data).timePrecision, 'minute');
+    },
+  );
+
+  test(
+    'same-amount reimbursement cannot overwrite a separate recorded expense',
+    () {
+      final incoming = row(
+        'reimbursement',
+        account: 2,
+        delta: 5150,
+        description: '转账-来自朋友',
+      );
+      final existing = tx(1, amount: 5150, merchant: '火锅鸡');
+      final matcher = ReconciliationMatcher([incoming], [existing]);
+      expect(
+        () => matcher.checkCorrections(
+          [
+            {
+              'id': 'change',
+              'transactionId': 1,
+              'after': tx(1, account: 2, amount: 5150, type: 'income'),
+            },
+          ],
+          [incoming],
+        ),
+        throwsStateError,
+      );
+    },
+  );
+
+  test(
+    'date-only unrelated amount cannot replace a recorded discounted purchase',
+    () {
+      final r = row(
+        'purchase',
+        delta: -13444,
+        precision: 'day',
+        description: '京东理然个护',
+      );
+      final existing = tx(1, amount: 1, seconds: 3600, merchant: '京东健康');
+      expect(
+        () => ReconciliationMatcher([r], [existing]).checkCorrections(
+          [
+            {'id': 'change', 'transactionId': 1, 'after': tx(1, amount: 13444)},
+          ],
+          [r],
+        ),
+        throwsStateError,
+      );
+    },
+  );
+
+  test(
+    'refund reclassification preserves positive balance movement and matching original link',
+    () {
+      final r = row('refund', delta: 800, description: '拼多多退款');
+      final existing = tx(1, amount: 800, type: 'income');
+      expect(
+        () => ReconciliationMatcher([r], [existing]).checkCorrections(
+          [
+            {
+              'id': 'change',
+              'transactionId': 1,
+              'after': {...tx(1, amount: -800), 'refundOfSyncId': 'original'},
+            },
+          ],
+          [r],
+        ),
+        returnsNormally,
+      );
     },
   );
 }

@@ -153,6 +153,56 @@ class ReconciliationMatcher {
     }
     assertNoDuplicateAdditions(mutations, transactions);
   }
+
+  void checkCorrections(List<Json> mutations, Iterable<StatementRow> evidence) {
+    for (final m in mutations) {
+      if (m['transactionId'] == null || m['after'] == null) continue;
+      final before = transactions.singleWhere(
+        (t) => t['id'] == m['transactionId'],
+      );
+      final after = jsonObject(m['after']);
+      final afterTime = evidenceTime(after['happenedAt'])!;
+      final anchors = evidence
+          .where(
+            (r) =>
+                transactionDelta(after, r.accountId) == r.delta &&
+                (['day', 'minute'].contains(r.timePrecision)
+                    ? r.sameKnownTime(afterTime)
+                    : afterTime.difference(r.time!).abs() <=
+                          const Duration(seconds: 90)),
+          )
+          .toList();
+      if (anchors.isEmpty) throw StateError('修改后的账户、金额、方向或时间与引用流水不符，请核对原记录');
+      final detailsLinked = anchors.any((r) {
+        final merchant = before['merchant']?.toString().trim() ?? '';
+        final item = before['itemDescription']?.toString().trim() ?? '';
+        return _hasOrder(r, before) ||
+            (merchant.length >= 3 && r.description.contains(merchant)) ||
+            (item.length >= 4 && r.description.contains(item));
+      });
+      final changedNature =
+          before['accountId'] != after['accountId'] ||
+          before['toAccountId'] != after['toAccountId'] ||
+          anchors.any(
+            (r) => transactionDelta(before, r.accountId).sign != r.delta!.sign,
+          );
+      if (changedNature && !detailsLinked) {
+        throw StateError(
+          '已有记录 #${before['id']} 的账户或收支性质变更缺少订单、商家等关联依据。相同金额不能证明是同一笔，请核对是否独立收款、报销或转账。',
+        );
+      }
+      if ((before['amountCents'] as int).abs() !=
+              (after['amountCents'] as int).abs() &&
+          !detailsLinked &&
+          !anchors.any(
+            (r) =>
+                r.timePrecision == 'second' &&
+                _gap(r, before) <= const Duration(seconds: 90),
+          )) {
+        throw StateError('已有记录 #${before['id']} 的金额修正缺少关联依据，请先核对订单或精确付款时间。');
+      }
+    }
+  }
 }
 
 /// Models sometimes return a bulk list of independent additions. Validate

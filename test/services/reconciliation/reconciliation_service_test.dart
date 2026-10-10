@@ -114,6 +114,7 @@ void main() {
       expect(saved.proposals.single['validationError'], isNull);
       expect(snapshot.transactions, isEmpty);
       expect(saved.rows, hasLength(1));
+      expect(saved.rows.single.timePrecision, 'minute');
     },
   );
 

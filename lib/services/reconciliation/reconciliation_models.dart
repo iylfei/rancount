@@ -5,7 +5,7 @@ import '../../utils/account_type_utils.dart';
 
 typedef Json = Map<String, dynamic>;
 
-const reconciliationAnalysisVersion = 3;
+const reconciliationAnalysisVersion = 4;
 
 /// Reconciliation uses integer minor units; SQLite doubles are converted only
 /// at the accounting boundary. Unknown screenshot values remain unknown.
@@ -143,7 +143,7 @@ class StatementRow {
   String description;
   final String? orderId;
   final List<String> warnings;
-  final String timePrecision;
+  String timePrecision;
 
   StatementRow({
     required this.id,

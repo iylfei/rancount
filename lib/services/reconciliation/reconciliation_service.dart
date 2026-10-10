@@ -59,6 +59,22 @@ class ReconciliationService {
     }
     final snapshot = await store.snapshot();
     store.assertIdentity(s, snapshot);
+    // Legacy OCR padded minute-only timestamps with :00. Its original
+    // sources have no precision metadata, so preserve known payment seconds.
+    for (final row in s.rows) {
+      if (row.time == null ||
+          row.timePrecision != 'second' ||
+          row.sourceIds.isEmpty) {
+        continue;
+      }
+      final legacy = row.sourceIds.every(
+        (id) => s.sources.any(
+          (source) =>
+              source['id'] == id && source['cardRecognitionVersion'] == null,
+        ),
+      );
+      if (legacy && row.time!.second == 0) row.timePrecision = 'minute';
+    }
     s.refreshEvidenceCompleteness();
     await engine.analyze(
       s,
