@@ -77,7 +77,10 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
       await _pendingSave;
       await action();
     } catch (e) {
-      if (mounted) _error = '$e';
+      if (mounted) {
+        _error = '$e';
+        if (_scroll.hasClients) _scroll.jumpTo(0);
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -357,7 +360,23 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     return s.accounts.isEmpty ? '请选择至少一个对账账户' : null;
   }
 
-  Future<void> _analyze() => _run(() async {
+  bool get _hasAnalysis =>
+      _session?.fingerprint != null &&
+      _session!.fingerprint == _snapshot?.fingerprint;
+
+  Future<void> _review() => _run(() async {
+    if (_notReady != null) throw StateError(_notReady!);
+    _snapshot = await _store.snapshot();
+    if (_session!.applied || _hasAnalysis) {
+      if (mounted) _go(2);
+      return;
+    }
+    await _performAnalysis();
+  });
+
+  Future<void> _analyze() => _run(_performAnalysis);
+
+  Future<void> _performAnalysis() async {
     if (_notReady != null) throw StateError(_notReady!);
     if (!await ensureAiPrivacyConsent(context, ref) || !mounted) return;
     try {
@@ -377,7 +396,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
       await _save();
       rethrow;
     }
-  });
+  }
 
   Future<void> _apply() => _run(() async {
     final s = _session!;
@@ -557,8 +576,10 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
                   _busy ||
                       s.applied && i != 2 ||
                       i == 1 && s.accounts.isEmpty ||
-                      i == 2 && s.fingerprint == null
+                      i == 2 && s.accounts.isEmpty
                   ? null
+                  : i == 2
+                  ? _review
                   : () => _go(i),
               child: Text('${i + 1} ${['设置', '流水', '审核'][i]}'),
             ),
@@ -693,7 +714,12 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     final hint = _step == 0
         ? (s.accounts.isEmpty ? '请选择至少一个对账账户' : '草稿自动保存在本机')
         : _step == 1
-        ? (_notReady ?? '已选择 ${s.accounts.length} 个账户，可以开始分析')
+        ? (_notReady ??
+              (_hasAnalysis
+                  ? '已有分析结果，可以进入审核'
+                  : s.sources.any((source) => source['recognized'] != true)
+                  ? '先识别截图，再核对记账记录并生成建议'
+                  : '流水资料已准备，继续分析即可生成审核建议'))
         : s.applied
         ? '本次修改已应用，可撤销'
         : s.fingerprint != _snapshot?.fingerprint
@@ -723,18 +749,34 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
                   onPressed: _busy || s.accounts.isEmpty ? null : () => _go(1),
                   child: const Text('下一步：添加流水'),
                 ),
-              if (_step == 1)
+              if (_step == 1) ...[
                 FilledButton.icon(
-                  onPressed: _busy || _notReady != null ? null : _analyze,
-                  icon: const Icon(Icons.manage_search),
+                  onPressed: _busy || _notReady != null ? null : _review,
+                  icon: Icon(
+                    _hasAnalysis
+                        ? Icons.fact_check_outlined
+                        : Icons.manage_search,
+                  ),
                   label: Text(
                     _busy
                         ? '处理中…'
-                        : s.fingerprint == null
+                        : _hasAnalysis
+                        ? '下一步：审核建议'
+                        : s.sources.any(
+                            (source) => source['recognized'] != true,
+                          )
                         ? '开始识别并分析'
-                        : '重新分析',
+                        : '下一步：分析并审核',
                   ),
                 ),
+                if (_hasAnalysis) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: _busy ? null : _analyze,
+                    child: const Text('重新分析'),
+                  ),
+                ],
+              ],
               if (_step == 2 && !s.applied)
                 FilledButton(
                   onPressed: canApply ? _apply : null,

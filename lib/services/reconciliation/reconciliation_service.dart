@@ -46,7 +46,6 @@ class ReconciliationService {
     final snapshot = await store.snapshot();
     store.assertIdentity(s, snapshot);
     s.refreshEvidenceCompleteness();
-    s.fingerprint = snapshot.fingerprint;
     await engine.analyze(
       s,
       snapshot.transactions,
@@ -70,6 +69,7 @@ class ReconciliationService {
           .toList(),
       onProgress: onProgress,
     );
+    s.fingerprint = snapshot.fingerprint;
     for (final source in s.sources) {
       s.issues.addAll(
         List<String>.from(
