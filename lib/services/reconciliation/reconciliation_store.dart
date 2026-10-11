@@ -12,6 +12,7 @@ import '../../data/repositories/local/local_repository.dart';
 import '../../utils/account_type_utils.dart';
 import 'reconciliation_models.dart';
 import 'reconciliation_matcher.dart';
+import 'reconciliation_evidence.dart';
 
 Json reconciliationTransaction(Transaction t) => {
   'id': t.id,
@@ -121,6 +122,7 @@ class ReconciliationStore {
     }
     final file = File(p.join(directory.path, '$id$extension'));
     await file.writeAsBytes(bytes, flush: true);
+    s.accounts.singleWhere((a) => a.id == accountId).clearCoverage();
     s.sources.add({
       'id': id,
       'accountId': accountId,
@@ -135,8 +137,16 @@ class ReconciliationStore {
   Future<void> removeImage(ReconciliationSession s, String id) async {
     s.invalidate();
     final source = s.sources.singleWhere((src) => src['id'] == id);
+    final affected = {
+      source['accountId'],
+      ...s.rows.where((r) => r.sourceIds.contains(id)).map((r) => r.accountId),
+    };
+    for (final a in s.accounts.where((a) => affected.contains(a.id))) {
+      a.clearCoverage();
+    }
     s.sources.remove(source);
     s.rows.removeWhere((r) {
+      if (!r.sourceIds.contains(id)) return false;
       r.sourceIds.remove(id);
       return r.sourceIds.isEmpty;
     });
@@ -255,6 +265,24 @@ class ReconciliationStore {
         .where((p) => p['selected'] == true)
         .expand((p) => jsonObjects(p['mutations']))
         .toList();
+    for (final proposal in s.proposals.where((p) => p['selected'] == true)) {
+      final evidenceIds = List<String>.from(proposal['evidenceIds'] ?? []);
+      if (proposal['certainty'] == 'needs_confirmation' ||
+          s.questions.any(
+            (q) =>
+                q['kind'] == 'purpose' &&
+                List<String>.from(
+                  q['evidenceIds'] ?? [],
+                ).any(evidenceIds.contains),
+          ) ||
+          s.rows.any(
+            (r) =>
+                evidenceIds.contains(r.id) &&
+                !reconciliationRowEligible(s, snap.transactions, r),
+          )) {
+        throw StateError('建议涉及尚未确认的交易，请补充资金账户、记账起点或用途后重新分析');
+      }
+    }
     final working = {for (final t in snap.records) t.id: t};
     final accounts = {for (final a in snap.accounts) a.id: a};
     final ledgers = {
@@ -283,6 +311,12 @@ class ReconciliationStore {
         before?.toAccountId,
       ].whereType<int>()) {
         if (!selected.contains(id)) throw StateError('建议涉及未选择的账户，请加入对账后重新分析');
+        final baseline = s.accounts
+            .singleWhere((a) => a.id == id)
+            .initialBalanceAt;
+        if (baseline != null && before!.happenedAt.isBefore(baseline)) {
+          throw StateError('原记录早于初始余额对应日期，不能作为本期修改应用');
+        }
       }
       Transaction? after;
       if (m['after'] != null) {
@@ -316,7 +350,6 @@ class ReconciliationStore {
             (category == null || category.kind != type)) {
           throw StateError('分类与交易类型不一致');
         }
-        if (type != 'expense' && amount < 0) throw StateError('收入和转账金额必须为正数');
         if (type == 'transfer' &&
             (toAccount == null ||
                 toAccount.id == account.id ||
@@ -325,6 +358,15 @@ class ReconciliationStore {
                 toAccount.currency != account.currency)) {
           throw StateError('转账需要两个不同的、已选择的同币种日常账户');
         }
+        for (final id in [account.id, toAccount?.id].whereType<int>()) {
+          final baseline = s.accounts
+              .singleWhere((a) => a.id == id)
+              .initialBalanceAt;
+          if (baseline != null && time.isBefore(baseline)) {
+            throw StateError('交易早于初始余额对应日期，不能重复补入历史流水');
+          }
+        }
+        if (type != 'expense' && amount < 0) throw StateError('收入和转账金额必须为正数');
         String? refund = a['refundOfSyncId'];
         if (a['refundOfMutationId'] != null) {
           if (!ids.contains(a['refundOfMutationId'])) {

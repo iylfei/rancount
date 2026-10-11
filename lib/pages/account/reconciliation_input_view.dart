@@ -85,6 +85,7 @@ class ReconciliationAccountInput extends StatelessWidget {
   final VoidCallback onImages;
   final VoidCallback onTime;
   final VoidCallback onManual;
+  final VoidCallback onEvidence;
   final ValueChanged<String> onBalance;
   final ValueChanged<Json> onRemoveImage;
   final ValueChanged<StatementRow> onEditRow;
@@ -97,6 +98,7 @@ class ReconciliationAccountInput extends StatelessWidget {
     required this.onImages,
     required this.onTime,
     required this.onManual,
+    required this.onEvidence,
     required this.onBalance,
     required this.onRemoveImage,
     required this.onEditRow,
@@ -146,6 +148,29 @@ class ReconciliationAccountInput extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
+          if (!empty) ...[
+            ReconciliationField(
+              label: '流水范围与初始余额日期',
+              icon: Icons.fact_check_outlined,
+              value:
+                  account.covers(
+                    account.initialBalanceAt != null &&
+                            account.initialBalanceAt!.isAfter(session.start)
+                        ? account.initialBalanceAt!
+                        : session.start,
+                    account.balanceAt.isBefore(session.end)
+                        ? account.balanceAt
+                        : session.end,
+                  )
+                  ? '已确认完整流水'
+                  : '完整范围待确认',
+              hint: account.initialBalanceAt == null
+                  ? '初始余额日期尚未确认'
+                  : '记账起点 ${reconciliationDate(account.initialBalanceAt!)}',
+              onTap: locked ? null : onEvidence,
+            ),
+            const SizedBox(height: 16),
+          ],
           OutlinedButton.icon(
             onPressed: locked ? null : onImages,
             icon: const Icon(Icons.add_photo_alternate_outlined),

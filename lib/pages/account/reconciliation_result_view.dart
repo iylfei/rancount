@@ -5,6 +5,7 @@ import '../../services/reconciliation/reconciliation_engine.dart';
 import '../../services/reconciliation/reconciliation_models.dart';
 import '../../services/reconciliation/reconciliation_store.dart';
 import 'reconciliation_ui.dart';
+import 'reconciliation_questions_view.dart';
 
 class ReconciliationResultView extends StatelessWidget {
   final ReconciliationSession session;
@@ -14,6 +15,7 @@ class ReconciliationResultView extends StatelessWidget {
   final void Function(Json proposal, Json mutation) onEdit;
   final VoidCallback onStatements;
   final VoidCallback onReanalyze;
+  final ValueChanged<Json> onQuestion;
   const ReconciliationResultView({
     super.key,
     required this.session,
@@ -23,42 +25,54 @@ class ReconciliationResultView extends StatelessWidget {
     required this.onEdit,
     required this.onStatements,
     required this.onReanalyze,
+    required this.onQuestion,
   });
 
   @override
   Widget build(BuildContext context) {
     if (!session.applied && !session.hasCurrentAnalysis(snapshot.fingerprint)) {
-      return ReconciliationCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('需要重新核对', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            Text(
-              session.fingerprint == null
-                  ? '还没有完整的分析结果。请继续核对流水与当前账本，再查看修改建议。'
-                  : session.fingerprint != snapshot.fingerprint
-                  ? '你新增、修改或同步了记账记录，之前的建议已过期。重新分析会与当前账本比较，避免重复补记。'
-                  : '对账匹配规则已更新，请重新核对已有记录。之前的建议暂不可使用。',
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ReconciliationCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('需要重新核对', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 12),
+                Text(
+                  session.fingerprint == null
+                      ? '还没有完整的分析结果。请继续核对流水与当前账本，再查看修改建议。'
+                      : session.fingerprint != snapshot.fingerprint
+                      ? '你新增、修改或同步了记账记录，之前的建议已过期。重新分析会与当前账本比较，避免重复补记。'
+                      : '对账匹配规则已更新，请重新核对已有记录。之前的建议暂不可使用。',
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '截图和已识别的流水已保留，无需重新上传。',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: locked ? null : onReanalyze,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('重新分析并审核'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: locked ? null : onStatements,
+                  child: const Text('查看流水资料'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              '截图和已识别的流水已保留，无需重新上传。',
-              style: Theme.of(context).textTheme.bodySmall,
+          ),
+          if (session.questions.isNotEmpty)
+            ReconciliationQuestionsView(
+              session: session,
+              locked: locked,
+              onAnswer: onQuestion,
             ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: locked ? null : onReanalyze,
-              icon: const Icon(Icons.refresh),
-              label: const Text('重新分析并审核'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: locked ? null : onStatements,
-              child: const Text('查看流水资料'),
-            ),
-          ],
-        ),
+        ],
       );
     }
     final reports = reconciliationReports(
@@ -96,6 +110,12 @@ class ReconciliationResultView extends StatelessWidget {
         ),
         for (final report in reports)
           _BalanceReport(report: report, applied: session.applied),
+        if (session.questions.isNotEmpty)
+          ReconciliationQuestionsView(
+            session: session,
+            locked: locked,
+            onAnswer: onQuestion,
+          ),
         if (session.issues.isNotEmpty)
           ReconciliationCard(
             padding: EdgeInsets.zero,
@@ -163,6 +183,16 @@ class _BalanceReport extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
+          ReconciliationNotice(r.status, warning: r.status != '已对齐'),
+          Text(
+            '流水核对起点 ${reconciliationDate(r.periodStart)}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          if (r.pendingRows > 0 || r.pendingRecords > 0)
+            Text(
+              '尚未对应：${r.pendingRows} 条外部流水、${r.pendingRecords} 条账本记录',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           _ValueRow(debt ? '账面总欠款' : '账面余额', display(r.bookBalance)),
           _ValueRow(
             debt ? '实际总欠款' : '实际余额',

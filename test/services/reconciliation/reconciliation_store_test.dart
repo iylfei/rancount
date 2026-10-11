@@ -117,6 +117,75 @@ void main() {
   };
 
   test(
+    'apply rejects unknown funding even if a suggestion was fabricated',
+    () async {
+      final s = await plan([
+        {'id': 'add', 'after': draft()},
+      ]);
+      s.accounts.first.initialBalanceAt = s.start;
+      s.rows = [
+        StatementRow(
+          id: 'r',
+          accountId: wallet,
+          sourceIds: ['image'],
+          time: date,
+          delta: -1000,
+          accountConfirmed: false,
+        ),
+      ];
+      s.proposals.single['evidenceIds'] = ['r'];
+      await store.save(s);
+      await expectLater(store.apply(s), throwsStateError);
+      expect((await store.snapshot()).transactions, isEmpty);
+    },
+  );
+
+  test(
+    'unanswered purpose and low certainty block applications at the store boundary',
+    () async {
+      final s = await plan([
+        {'id': 'add', 'after': draft()},
+      ]);
+      s.proposals.single['evidenceIds'] = ['r'];
+      s.questions = [
+        {
+          'kind': 'purpose',
+          'evidenceIds': ['r'],
+        },
+      ];
+      await store.save(s);
+      await expectLater(store.apply(s), throwsStateError);
+      s.questions.clear();
+      s.proposals.single['certainty'] = 'needs_confirmation';
+      await store.save(s);
+      await expectLater(store.apply(s), throwsStateError);
+      expect((await store.snapshot()).transactions, isEmpty);
+    },
+  );
+
+  test(
+    'opening balance date blocks historical additions including the transfer destination',
+    () async {
+      for (final type in ['expense', 'transfer']) {
+        final s = await plan([
+          {
+            'id': 'add',
+            'after': draft(type: type, to: type == 'transfer' ? bank : null),
+          },
+        ]);
+        s.accounts
+            .singleWhere((a) => a.id == (type == 'transfer' ? bank : wallet))
+            .initialBalanceAt = date.add(
+          const Duration(days: 1),
+        );
+        await store.save(s);
+        await expectLater(store.apply(s), throwsStateError);
+      }
+      expect((await store.snapshot()).transactions, isEmpty);
+    },
+  );
+
+  test(
     'credit consumption, linked refund and bank repayment apply and undo atomically',
     () async {
       final credit = await repo.createAccount(

@@ -14,6 +14,7 @@ class ReconciliationMatcher {
     final claims = <String, List<String>>{};
     for (final row in rows) {
       strong[row.id] = compatible(row).where((t) {
+        if (!row.accountConfirmed) return false;
         if (row.warnings.contains('未确认交易用卡尾号，请核对账户归属')) return false;
         // Transfers and refunds recorded as income still need semantic review.
         if (t['type'] == 'transfer' ||
@@ -116,6 +117,48 @@ class ReconciliationMatcher {
     ).map((t) => t['id']).toList(),
   };
 
+  /// Semantic review can confirm transfers and payee aliases, but cannot
+  /// invent a linkage or let two rows claim the same account movement.
+  bool confirmReviewed(StatementRow row, int transactionId) {
+    if (!row.accountConfirmed || row.warnings.isNotEmpty) return false;
+    bool knownLink(StatementRow r, Json t) {
+      if (_hasOrder(r, t)) return true;
+      if (['day', 'minute'].contains(r.timePrecision)) {
+        final merchant = t['merchant']?.toString().trim() ?? '';
+        return r.sameKnownTime(evidenceTime(t['happenedAt'])!) &&
+            merchant.isNotEmpty &&
+            r.description.contains(merchant);
+      }
+      return r.timePrecision == 'second' &&
+          _gap(r, t) <= const Duration(seconds: 90);
+    }
+
+    final options = compatible(
+      row,
+      unclaimedOnly: true,
+    ).where((t) => knownLink(row, t)).toList();
+    if (options.length != 1 || options.single['id'] != transactionId) {
+      return false;
+    }
+    final target = options.single;
+    if (target['type'] == 'income' &&
+        RegExp('退款|退货|退票').hasMatch(row.description)) {
+      return false;
+    }
+    if (rows.any(
+      (other) =>
+          other.id != row.id &&
+          other.accountId == row.accountId &&
+          compatible(
+            other,
+          ).any((t) => t['id'] == transactionId && knownLink(other, target)),
+    )) {
+      return false;
+    }
+    confirmed[row.id] = target;
+    return true;
+  }
+
   /// A same-account, same-direction record within two days is a possible date
   /// correction, not proven missing income/expense. Keep it out of additions
   /// until the ambiguity is resolved; other days remain model candidates.
@@ -129,6 +172,7 @@ class ReconciliationMatcher {
       final after = jsonObject(m['after']);
       var anchored = false;
       for (final row in evidence) {
+        if (!row.accountConfirmed) continue;
         if (transactionDelta(after, row.accountId) != row.delta ||
             evidenceTime(after['happenedAt'])!.difference(row.time!).abs() >
                 const Duration(seconds: 90)) {
@@ -165,6 +209,7 @@ class ReconciliationMatcher {
       final anchors = evidence
           .where(
             (r) =>
+                r.accountConfirmed &&
                 transactionDelta(after, r.accountId) == r.delta &&
                 (['day', 'minute'].contains(r.timePrecision)
                     ? r.sameKnownTime(afterTime)

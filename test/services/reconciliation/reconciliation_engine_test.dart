@@ -20,6 +20,9 @@ void main() {
         name: '钱包',
         currency: 'CNY',
         balanceAt: end,
+        initialBalanceAt: start,
+        coverageStart: start,
+        coverageEnd: end,
         actualBalance: 8000,
         complete: true,
       ),
@@ -49,6 +52,9 @@ void main() {
         type: 'credit_card',
         currency: 'CNY',
         balanceAt: end,
+        initialBalanceAt: start,
+        coverageStart: start,
+        coverageEnd: end,
       );
       expect(a.balanceFromInput('123.45'), -12345);
       expect(a.balanceFromInput('0'), 0);
@@ -77,7 +83,7 @@ void main() {
         },
       ];
       final r = reconciliationReports(s, txs, {1: 10000}).single;
-      expect(r.periodDifference, 1000);
+      expect(r.periodDifference, isNull);
       expect(r.actualBalance, isNull);
       expect(r.openingDifference, isNull);
       await ReconciliationEngine(
@@ -129,6 +135,9 @@ void main() {
         type: 'credit_card',
         currency: 'CNY',
         balanceAt: end,
+        initialBalanceAt: start,
+        coverageStart: start,
+        coverageEnd: end,
       );
       final rows = await StatementRecognizer(
         vision: (_, prompt) async {
@@ -219,6 +228,9 @@ void main() {
         currency: 'CNY',
         cardLast4: '9053',
         balanceAt: end,
+        initialBalanceAt: start,
+        coverageStart: start,
+        coverageEnd: end,
       );
       final credit = ReconciliationAccount(
         id: 2,
@@ -227,6 +239,9 @@ void main() {
         currency: 'CNY',
         cardLast4: '0803',
         balanceAt: end,
+        initialBalanceAt: start,
+        coverageStart: start,
+        coverageEnd: end,
       );
       final a = <String, dynamic>{'id': 'debit'};
       final b = <String, dynamic>{'id': 'credit'};
@@ -256,6 +271,9 @@ void main() {
         currency: 'CNY',
         cardLast4: '9053',
         balanceAt: end,
+        initialBalanceAt: start,
+        coverageStart: start,
+        coverageEnd: end,
       );
       final rows = await StatementRecognizer(
         vision: (_, __) async => jsonEncode({
@@ -377,6 +395,9 @@ void main() {
         name: '银行卡',
         currency: 'CNY',
         balanceAt: end,
+        initialBalanceAt: start,
+        coverageStart: start,
+        coverageEnd: end,
       ),
     );
     final txs = <Json>[
@@ -411,6 +432,9 @@ void main() {
           name: '银行卡',
           currency: 'CNY',
           balanceAt: end,
+          initialBalanceAt: start,
+          coverageStart: start,
+          coverageEnd: end,
         ),
       );
       s.rows = List.generate(

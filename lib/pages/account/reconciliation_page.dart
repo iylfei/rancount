@@ -13,6 +13,8 @@ import '../../services/billing/post_processor.dart';
 import '../../services/reconciliation/reconciliation_models.dart';
 import '../../services/reconciliation/reconciliation_service.dart';
 import '../../services/reconciliation/reconciliation_store.dart';
+import '../../services/reconciliation/reconciliation_engine.dart';
+import '../../services/reconciliation/reconciliation_evidence.dart';
 import '../../styles/tokens.dart';
 import '../../utils/account_type_utils.dart';
 import '../../widgets/ai/ai_privacy_consent_dialog.dart';
@@ -24,6 +26,7 @@ import 'reconciliation_result_view.dart';
 import 'reconciliation_setup_sheet.dart';
 import 'reconciliation_statement_sheet.dart';
 import 'reconciliation_ui.dart';
+import 'reconciliation_evidence_sheet.dart';
 
 class ReconciliationPage extends ConsumerStatefulWidget {
   const ReconciliationPage({super.key});
@@ -266,6 +269,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     s.end = range.end;
     final cleared = <String>[];
     for (final a in s.accounts) {
+      a.clearCoverage();
       if (a.balanceAt.isBefore(s.start) || a.balanceAt.isAfter(s.end)) {
         if (a.actualBalance != null) cleared.add(a.name);
         a.actualBalance = null;
@@ -321,6 +325,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
     if (value == null || !mounted) return;
     s.invalidate();
     account.balanceAt = value;
+    account.clearCoverage();
     await _save();
   });
 
@@ -343,10 +348,26 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
           account,
           _session!.end,
           existing,
+          accounts: _session!.accounts,
         );
         if (row == null || !mounted) return;
         final s = _session!;
+        final remainingQuestions = existing == null
+            ? <Json>[]
+            : s.questions
+                  .where(
+                    (q) => !List<String>.from(
+                      q['evidenceIds'] ?? [],
+                    ).contains(row.id),
+                  )
+                  .toList();
         s.invalidate();
+        s.questions = remainingQuestions;
+        for (final a in s.accounts.where(
+          (a) => a.id == account.id || a.id == row.accountId,
+        )) {
+          a.clearCoverage();
+        }
         final i = s.rows.indexWhere((r) => r.id == row.id);
         if (i < 0) {
           s.rows.add(row);
@@ -359,6 +380,9 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
   Future<void> _removeRow(StatementRow row) => _run(() async {
     if (!await _confirm('移除对账流水', '这条流水将从对账资料中移除，账本记录不受影响。', '移除')) return;
     _session!.invalidate();
+    _session!.accounts
+        .singleWhere((a) => a.id == row.accountId)
+        .clearCoverage();
     _session!.rows.remove(row);
     await _save();
   });
@@ -369,8 +393,71 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
           return;
         }
         await _store.removeImage(_session!, source['id']);
+        _snapshot = await _store.snapshot();
+      });
+
+  Future<void> _evidence(ReconciliationAccount account) => _run(() async {
+    final s = _session!;
+    final details = await editReconciliationEvidence(context, s, account);
+    if (details == null || !mounted) return;
+    final remainingQuestions = s.questions
+        .where(
+          (q) =>
+              !(q['accountId'] == account.id &&
+                  ['coverage', 'baseline'].contains(q['kind'])),
+        )
+        .toList();
+    s.invalidate();
+    s.questions = remainingQuestions;
+    account.initialBalanceAt = evidenceTime(details['initialBalanceAt']);
+    account.coverageStart = evidenceTime(details['coverageStart']);
+    account.coverageEnd = evidenceTime(details['coverageEnd']);
+    _info = '核对信息已保存，请重新分析。';
+    await _save();
+  });
+
+  Future<void> _question(Json question) async {
+    final s = _session!;
+    final account = s.accounts.singleWhere(
+      (a) => a.id == question['accountId'],
+    );
+    if (question['kind'] == 'funding') {
+      final row = s.rows.singleWhere(
+        (r) => List<String>.from(question['evidenceIds']).contains(r.id),
+      );
+      await _row(account, row);
+    } else if (question['kind'] == 'coverage' ||
+        question['kind'] == 'baseline') {
+      await _evidence(account);
+    } else {
+      await _run(() async {
+        final previous = s.answers
+            .where((a) => a['id'] == question['id'])
+            .firstOrNull;
+        final answer = await answerReconciliationQuestion(
+          context,
+          question,
+          previous?['answer'] ?? '',
+        );
+        if (answer == null || !mounted) return;
+        final ids = List<String>.from(question['evidenceIds']);
+        final saved = {
+          ...question,
+          'answer': answer,
+          'evidenceKey': answerEvidenceKey(s, ids),
+        };
+        final remainingQuestions = s.questions
+            .where((q) => q['id'] != question['id'])
+            .toList();
+        s.invalidate();
+        s.questions = remainingQuestions;
+        s.answers.removeWhere((a) => a['id'] == question['id']);
+        s.answers.add(saved);
+        _info = '补充信息已保存，请重新分析。';
         await _save();
       });
+    }
+  }
 
   String? get _notReady {
     final s = _session!;
@@ -426,9 +513,20 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
         .toList();
     final added = mutations.where((m) => m['transactionId'] == null).length;
     final deleted = mutations.where((m) => m['after'] == null).length;
+    final reports = reconciliationReports(
+      s,
+      _snapshot!.transactions,
+      _snapshot!.initialBalances,
+    );
+    final unresolved = reports
+        .where((r) => r.status != '已对齐')
+        .map((r) => '${r.account.name}：${r.status}')
+        .join('\n');
     if (!await _confirm(
       '确认应用修改',
-      '已选择 ${proposals.length} 组建议，共 ${mutations.length} 笔记录：\n新增 $added 笔，修改 ${mutations.length - added - deleted} 笔，删除 $deleted 笔。\n\n应用后会同步涉及的账本，可在本页撤销本次修改。',
+      '已选择 ${proposals.length} 组建议，共 ${mutations.length} 笔记录：\n新增 $added 笔，修改 ${mutations.length - added - deleted} 笔，删除 $deleted 笔。'
+          '${unresolved.isEmpty ? '' : '\n\n以下账户仍未完成全部核对，本次只应用已确认的修改：\n$unresolved'}'
+          '\n\n应用后会同步涉及的账本，可在本页撤销本次修改。',
       '确认应用',
     )) {
       return;
@@ -697,6 +795,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
           onEdit: _edit,
           onStatements: () => _go(1),
           onReanalyze: _review,
+          onQuestion: _question,
         ),
       ];
     }
@@ -716,6 +815,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
           onImages: () => _images(a),
           onTime: () => _balanceTime(a),
           onManual: () => _row(a),
+          onEvidence: () => _evidence(a),
           onBalance: (v) => _balance(a, v),
           onRemoveImage: (src) => _removeImage(a, src),
           onEditRow: (r) => _row(a, r),

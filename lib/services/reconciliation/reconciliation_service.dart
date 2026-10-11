@@ -38,7 +38,15 @@ class ReconciliationService {
           (source['cardRecognitionVersion'] ==
                   StatementRecognizer.cardRecognitionVersion &&
               source['accountCardLast4'] != account.cardLast4);
-      if (source['recognized'] == true && !needsCardCheck) continue;
+      final needsFundingCheck =
+          ['alipay', 'wechat'].contains(account.type) &&
+          source['fundingRecognitionVersion'] !=
+              StatementRecognizer.fundingRecognitionVersion;
+      if (source['recognized'] == true &&
+          !needsCardCheck &&
+          !needsFundingCheck) {
+        continue;
+      }
       onProgress?.call('识别截图 ${i + 1} / ${s.sources.length}');
       final rows = await recognizer.recognize(
         File(source['path']),

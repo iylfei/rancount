@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:beecount/data/db.dart';
 import 'package:beecount/data/repositories/local/local_repository.dart';
@@ -40,6 +41,9 @@ void main() {
           name: '钱包',
           currency: 'CNY',
           balanceAt: time,
+          initialBalanceAt: DateTime.utc(2026, 10, 1),
+          coverageStart: DateTime.utc(2026, 10, 1),
+          coverageEnd: time,
         ),
       ],
       sources: [
@@ -67,6 +71,112 @@ void main() {
   StatementRecognizer cachedRecognizer() => StatementRecognizer(
     vision: (_, __) async =>
         throw StateError('Cached screenshot must not be recognized again'),
+  );
+
+  test(
+    'removing a source preserves manual evidence and invalidates coverage for reassigned rows',
+    () async {
+      final bank = await store.repository.createAccount(
+        ledgerId: session.defaultLedgerId,
+        name: '付款卡',
+        type: 'bank_card',
+        initialBalance: 50,
+      );
+      session.accounts.add(
+        ReconciliationAccount(
+          id: bank,
+          name: '付款卡',
+          type: 'bank_card',
+          currency: 'CNY',
+          balanceAt: time,
+          coverageStart: session.start,
+          coverageEnd: time,
+        ),
+      );
+      session.rows.single.accountId = bank;
+      session.rows.add(
+        StatementRow(
+          id: 'manual:keep',
+          accountId: session.accounts.first.id,
+          sourceIds: [],
+          time: time,
+          delta: -200,
+        ),
+      );
+      session.sources.single['path'] = 'unused-source-removal-continue.png';
+      expect(await File(session.sources.single['path']).exists(), isFalse);
+      await store.removeImage(session, 'image');
+      expect(session.rows.single.id, 'manual:keep');
+      expect(session.sources, isEmpty);
+      expect(
+        session.accounts.every(
+          (a) => a.coverageStart == null && a.coverageEnd == null,
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'legacy wallet OCR is refreshed once for funding and unknown rows are held for review',
+    () async {
+      final oldAccount = session.accounts.single;
+      session.accounts = [
+        ReconciliationAccount(
+          id: oldAccount.id,
+          name: oldAccount.name,
+          type: 'alipay',
+          currency: oldAccount.currency,
+          balanceAt: time,
+          initialBalanceAt: session.start,
+        ),
+      ];
+      session.rows.add(
+        StatementRow(
+          id: 'manual:keep',
+          accountId: oldAccount.id,
+          sourceIds: [],
+          time: time,
+          delta: -200,
+        ),
+      );
+      var calls = 0;
+      final recognizer = StatementRecognizer(
+        vision: (_, __) async {
+          calls++;
+          return jsonEncode({
+            'statementScope': 'all_bills',
+            'rows': [
+              {
+                'time': time.toIso8601String(),
+                'delta': '-10.00',
+                'fundingType': 'unknown',
+              },
+            ],
+          });
+        },
+      );
+      final service = ReconciliationService(
+        store,
+        recognizer: recognizer,
+        engine: ReconciliationEngine(chat: (_) async => '{"proposals":[]}'),
+      );
+      await service.analyze(session);
+      expect(calls, 1);
+      expect(
+        session.rows.singleWhere((r) => r.id == 'manual:keep').accountConfirmed,
+        isTrue,
+      );
+      expect(
+        session.rows.singleWhere((r) => r.id == 'image:0').accountConfirmed,
+        isFalse,
+      );
+      expect(session.questions.any((q) => q['kind'] == 'funding'), isTrue);
+      final saved = (await store.load(session.id))!;
+      await service.analyze(saved);
+      expect(calls, 1);
+      expect(saved.rows, hasLength(2));
+    },
   );
 
   test(

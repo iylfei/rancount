@@ -5,7 +5,7 @@ import '../../utils/account_type_utils.dart';
 
 typedef Json = Map<String, dynamic>;
 
-const reconciliationAnalysisVersion = 4;
+const reconciliationAnalysisVersion = 5;
 
 /// Reconciliation uses integer minor units; SQLite doubles are converted only
 /// at the accounting boundary. Unknown screenshot values remain unknown.
@@ -75,6 +75,9 @@ class ReconciliationAccount {
   DateTime balanceAt;
   bool complete;
   String? cardLast4;
+  DateTime? coverageStart;
+  DateTime? coverageEnd;
+  DateTime? initialBalanceAt;
 
   ReconciliationAccount({
     required this.id,
@@ -86,9 +89,24 @@ class ReconciliationAccount {
     this.actualBalance,
     this.complete = false,
     this.cardLast4,
+    this.coverageStart,
+    this.coverageEnd,
+    this.initialBalanceAt,
   });
 
   bool get isLiability => isLiabilityType(type);
+
+  bool covers(DateTime start, DateTime end) =>
+      !start.isAfter(end) &&
+      coverageStart != null &&
+      coverageEnd != null &&
+      !coverageStart!.isAfter(start) &&
+      !coverageEnd!.isBefore(end);
+
+  void clearCoverage() {
+    coverageStart = null;
+    coverageEnd = null;
+  }
 
   int displayBalance(int netBalance) => isLiability ? -netBalance : netBalance;
 
@@ -118,6 +136,9 @@ class ReconciliationAccount {
     'balanceAt': balanceAt.toIso8601String(),
     'complete': complete,
     'cardLast4': cardLast4,
+    'coverageStart': coverageStart?.toIso8601String(),
+    'coverageEnd': coverageEnd?.toIso8601String(),
+    'initialBalanceAt': initialBalanceAt?.toIso8601String(),
   };
 
   factory ReconciliationAccount.fromJson(Json j) => ReconciliationAccount(
@@ -130,12 +151,15 @@ class ReconciliationAccount {
     balanceAt: DateTime.parse(j['balanceAt']),
     complete: j['complete'] == true,
     cardLast4: j['cardLast4'],
+    coverageStart: evidenceTime(j['coverageStart']),
+    coverageEnd: evidenceTime(j['coverageEnd']),
+    initialBalanceAt: evidenceTime(j['initialBalanceAt']),
   );
 }
 
 class StatementRow {
   final String id;
-  final int accountId;
+  int accountId;
   final List<String> sourceIds;
   DateTime? time;
   int? delta;
@@ -144,6 +168,9 @@ class StatementRow {
   final String? orderId;
   final List<String> warnings;
   String timePrecision;
+  bool accountConfirmed;
+  String fundingDescription;
+  String userExplanation;
 
   StatementRow({
     required this.id,
@@ -156,6 +183,9 @@ class StatementRow {
     this.orderId,
     List<String>? warnings,
     this.timePrecision = 'second',
+    this.accountConfirmed = true,
+    this.fundingDescription = '',
+    this.userExplanation = '',
   }) : warnings = warnings ?? [];
 
   Json toJson() => {
@@ -169,6 +199,9 @@ class StatementRow {
     'orderId': orderId,
     'warnings': warnings,
     'timePrecision': timePrecision,
+    'accountConfirmed': accountConfirmed,
+    'fundingDescription': fundingDescription,
+    'userExplanation': userExplanation,
   };
 
   factory StatementRow.fromJson(Json j) => StatementRow(
@@ -182,6 +215,9 @@ class StatementRow {
     orderId: j['orderId'],
     warnings: List<String>.from(j['warnings'] ?? []),
     timePrecision: j['timePrecision'] ?? legacyTimePrecision(j),
+    accountConfirmed: j['accountConfirmed'] != false,
+    fundingDescription: j['fundingDescription'] ?? '',
+    userExplanation: j['userExplanation'] ?? '',
   );
 
   bool sameKnownTime(DateTime value) {
@@ -238,6 +274,8 @@ class ReconciliationSession {
   String? fingerprint;
   int analysisVersion;
   List<Json> matches;
+  List<Json> questions;
+  List<Json> answers;
   Json? audit;
 
   ReconciliationSession({
@@ -256,6 +294,8 @@ class ReconciliationSession {
     this.fingerprint,
     this.analysisVersion = 0,
     List<Json>? matches,
+    List<Json>? questions,
+    List<Json>? answers,
     this.audit,
   }) : createdAt = createdAt ?? DateTime.now().toUtc(),
        start =
@@ -266,6 +306,8 @@ class ReconciliationSession {
        rows = rows ?? [],
        proposals = proposals ?? [],
        matches = matches ?? [],
+       questions = questions ?? [],
+       answers = answers ?? [],
        issues = issues ?? [];
 
   bool get applied => audit != null && audit!['undone'] != true;
@@ -290,7 +332,11 @@ class ReconciliationSession {
           rows
               .where((r) => r.accountId == a.id)
               .every(
-                (r) => r.time != null && r.delta != null && r.warnings.isEmpty,
+                (r) =>
+                    r.accountConfirmed &&
+                    r.time != null &&
+                    r.delta != null &&
+                    r.warnings.isEmpty,
               );
     }
   }
@@ -303,6 +349,7 @@ class ReconciliationSession {
     fingerprint = null;
     analysisVersion = 0;
     matches = [];
+    questions = [];
   }
 
   Json toJson() => {
@@ -321,6 +368,8 @@ class ReconciliationSession {
     'fingerprint': fingerprint,
     'analysisVersion': analysisVersion,
     'matches': matches,
+    'questions': questions,
+    'answers': answers,
     'audit': audit,
   };
 
@@ -342,6 +391,8 @@ class ReconciliationSession {
     fingerprint: j['fingerprint'],
     analysisVersion: j['analysisVersion'] ?? 0,
     matches: jsonObjects(j['matches']),
+    questions: jsonObjects(j['questions']),
+    answers: jsonObjects(j['answers']),
     audit: j['audit'] == null ? null : jsonObject(j['audit']),
   );
 }

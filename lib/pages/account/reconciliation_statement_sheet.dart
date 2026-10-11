@@ -8,8 +8,9 @@ Future<StatementRow?> editReconciliationStatement(
   BuildContext context,
   ReconciliationAccount account,
   DateTime defaultTime,
-  StatementRow? existing,
-) async {
+  StatementRow? existing, {
+  List<ReconciliationAccount> accounts = const [],
+}) async {
   final amount = TextEditingController(
     text: existing?.delta == null ? '' : moneyText(existing!.delta!.abs()),
   );
@@ -19,6 +20,12 @@ Future<StatementRow?> editReconciliationStatement(
         : moneyText(account.displayBalance(existing!.balanceAfter!)),
   );
   final description = TextEditingController(text: existing?.description ?? '');
+  final explanation = TextEditingController(
+    text: existing?.userExplanation ?? '',
+  );
+  int? selectedAccount = existing?.accountConfirmed == false
+      ? null
+      : account.id;
   var incoming = (existing?.delta ?? -1) > 0;
   DateTime? time = existing == null ? defaultTime : existing.time;
   var timeError = false;
@@ -40,6 +47,37 @@ Future<StatementRow?> editReconciliationStatement(
                   '填写账户实际发生的交易。这里保存的是对账资料，审核建议后才会修改记账记录。',
                 ),
                 const SizedBox(height: 8),
+                if (accounts.isNotEmpty) ...[
+                  if (existing?.fundingDescription.isNotEmpty == true)
+                    ReconciliationNotice(
+                      '截图付款信息：${existing!.fundingDescription}',
+                    ),
+                  DropdownButtonFormField<int>(
+                    value: selectedAccount,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: '实际资金账户',
+                      helperText: '查看付款详情确认；平台名称不等于余额或零钱',
+                    ),
+                    items: accounts
+                        .where((a) => a.currency == account.currency)
+                        .map(
+                          (a) => DropdownMenuItem(
+                            value: a.id,
+                            child: Text(a.name),
+                          ),
+                        )
+                        .toList(),
+                    validator: (value) => value == null ? '请选择实际收付款账户' : null,
+                    onChanged: (value) => change(() {
+                      if (value == null) return;
+                      if (value != selectedAccount) balance.clear();
+                      selectedAccount = value;
+                      account = accounts.singleWhere((a) => a.id == value);
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 SegmentedButton<bool>(
                   segments: [
                     ButtonSegment(
@@ -130,6 +168,15 @@ Future<StatementRow?> editReconciliationStatement(
                     hintText: '例如：超市购物、从银行卡充值到支付宝',
                   ),
                 ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: explanation,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: '来源与用途说明（选填）',
+                    hintText: '补充报销来源、转交对象或实际付款方式',
+                  ),
+                ),
               ],
             ),
           ),
@@ -144,13 +191,19 @@ Future<StatementRow?> editReconciliationStatement(
                 context,
                 StatementRow(
                   id: existing?.id ?? 'manual:${const Uuid().v4()}',
-                  accountId: account.id,
+                  accountId: selectedAccount ?? account.id,
                   sourceIds: existing?.sourceIds ?? [],
                   time: time,
                   delta: moneyCents(amount.text)! * (incoming ? 1 : -1),
                   balanceAfter: account.balanceFromInput(balance.text),
                   description: description.text.trim(),
                   orderId: existing?.orderId,
+                  timePrecision: existing != null && time == existing.time
+                      ? existing.timePrecision
+                      : 'minute',
+                  accountConfirmed: true,
+                  fundingDescription: existing?.fundingDescription ?? '',
+                  userExplanation: explanation.text.trim(),
                 ),
               );
             },
@@ -160,7 +213,7 @@ Future<StatementRow?> editReconciliationStatement(
       ),
     ),
   );
-  for (final controller in [amount, balance, description]) {
+  for (final controller in [amount, balance, description, explanation]) {
     controller.dispose();
   }
   return result;

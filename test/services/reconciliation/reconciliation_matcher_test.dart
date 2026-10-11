@@ -59,6 +59,9 @@ void main() {
             name: '钱包',
             currency: 'CNY',
             balanceAt: at.add(const Duration(days: 1)),
+            initialBalanceAt: at.subtract(const Duration(days: 1)),
+            coverageStart: at.subtract(const Duration(days: 1)),
+            coverageEnd: at.add(const Duration(days: 1)),
             complete: true,
           ),
           ReconciliationAccount(
@@ -66,6 +69,9 @@ void main() {
             name: '银行卡',
             currency: 'CNY',
             balanceAt: at.add(const Duration(days: 1)),
+            initialBalanceAt: at.subtract(const Duration(days: 1)),
+            coverageStart: at.subtract(const Duration(days: 1)),
+            coverageEnd: at.add(const Duration(days: 1)),
             complete: true,
           ),
         ],
@@ -93,7 +99,15 @@ void main() {
       ).analyze(s, records, {}, [], [], []);
       expect(s.matches, hasLength(4));
       expect(s.proposals, isEmpty);
-      expect(s.issues, isEmpty);
+      expect(
+        s.issues.any(
+          (i) =>
+              i.startsWith('本地记录') ||
+              i.startsWith('AI 待确认') ||
+              i.startsWith('建议未纳入'),
+        ),
+        isFalse,
+      );
       expect(s.summary, contains('4 条已与账本记录匹配'));
     },
   );
@@ -204,7 +218,7 @@ void main() {
         },
       ).analyze(s, [tx(1, amount: 440)], {}, [], [], []);
       expect(s.proposals, isEmpty);
-      expect(s.issues.single, contains('#1'));
+      expect(s.issues.any((i) => i.contains('#1')), isTrue);
       expect(s.summary, isNot(contains('本地缺少')));
     },
   );
@@ -349,7 +363,7 @@ void main() {
         s.proposals.single['mutations'].single['after']['amountCents'],
         2200,
       );
-      expect(s.issues.single, contains('#1'));
+      expect(s.issues.any((i) => i.contains('#1')), isTrue);
     },
   );
   test(
