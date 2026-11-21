@@ -108,8 +108,6 @@ ThemeData buildAppTheme({
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.disabled)
               ? surface.withValues(alpha: .42)
-              : filled
-              ? primary
               : Colors.transparent,
         ),
         foregroundColor: WidgetStateProperty.resolveWith(
@@ -326,9 +324,9 @@ ThemeData buildAppTheme({
 class _LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
   const _LiquidPageTransitionsBuilder();
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 300);
+  Duration get transitionDuration => const Duration(milliseconds: 240);
   @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 240);
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 210);
   @override
   Widget buildTransitions<T>(
     PageRoute<T> route,
@@ -337,25 +335,27 @@ class _LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    // Every route paints its own backdrop before any glass samples it. An
-    // opacity layer around transparent pages both darkens the filter input and
-    // exposes the previous page's text during navigation.
-    final page = LiquidBackdrop(force: true, child: child);
+    // Pause live geometry-tracking shader passes while sliding to maintain
+    // high frame rates, then seamlessly restore full refraction once settled.
+    final page = RepaintBoundary(
+      child: GlassTransitionBarrier(
+        animation: animation,
+        secondaryAnimation: secondaryAnimation,
+        child: LiquidBackdrop(force: true, child: child),
+      ),
+    );
     if (!LiquidTheme.motionOf(context)) return page;
     final curved = CurvedAnimation(
       parent: animation,
-      curve: Curves.easeOutQuart,
+      curve: Curves.easeOutCubic,
       reverseCurve: Curves.easeInCubic,
     );
     return SlideTransition(
       position: Tween(
-        begin: const Offset(.08, 0),
+        begin: const Offset(.14, 0),
         end: Offset.zero,
       ).animate(curved),
-      child: ScaleTransition(
-        scale: Tween(begin: .985, end: 1.0).animate(curved),
-        child: page,
-      ),
+      child: page,
     );
   }
 }

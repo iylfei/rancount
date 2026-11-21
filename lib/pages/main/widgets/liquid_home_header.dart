@@ -275,7 +275,7 @@ class _HeaderAction extends StatelessWidget {
           height: 42,
           child: GlassSurface(
             borderRadius: 999,
-            prominent: true,
+            prominent: false,
             child: GlassPressable(
               borderRadius: 999,
               onTap: onTap,

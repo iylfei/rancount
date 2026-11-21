@@ -8,6 +8,7 @@ import '../../data/db.dart' as db;
 import '../../l10n/app_localizations.dart';
 import '../../services/billing/post_processor.dart';
 import '../../utils/currencies.dart';
+import '../../styles/liquid_theme.dart';
 import '../../styles/tokens.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../../utils/account_type_utils.dart';
@@ -263,8 +264,9 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
                 padding: EdgeInsets.only(
                   left: 12.0.scaled(context, ref),
                   right: 12.0.scaled(context, ref),
-                  top: 8.0.scaled(context, ref),
-                  bottom: 8.0.scaled(context, ref) +
+                  top: (LiquidTheme.isActive(context) ? 14.0 : 8.0)
+                      .scaled(context, ref),
+                  bottom: 16.0.scaled(context, ref) +
                       MediaQuery.of(context).padding.bottom,
                 ),
                 children: [
@@ -657,16 +659,19 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
                     height: 48.0.scaled(context, ref),
                     child: ElevatedButton(
                       onPressed: (_saving || _isNameDuplicate) ? null : _save,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: Colors.grey[400],
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(8.0.scaled(context, ref)),
-                        ),
-                      ),
+                      style: LiquidTheme.isActive(context)
+                          ? null
+                          : ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: Colors.grey[400],
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  8.0.scaled(context, ref),
+                                ),
+                              ),
+                            ),
                       child: _saving
                           ? const SizedBox(
                               width: 20,

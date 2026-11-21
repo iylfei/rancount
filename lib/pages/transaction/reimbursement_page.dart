@@ -14,6 +14,7 @@ import '../../widgets/biz/amount_text.dart';
 import '../../widgets/biz/transaction_glass.dart';
 import '../../widgets/category_icon.dart';
 import '../../widgets/ui/bee_sheet.dart';
+import '../../widgets/ui/capsule_switcher.dart';
 import '../../widgets/ui/liquid_glass.dart';
 import '../../widgets/ui/toast.dart';
 
@@ -100,25 +101,25 @@ class _ReimbursementPageState extends ConsumerState<ReimbursementPage> {
                 hideAmounts: hideAmounts,
               ),
               const SizedBox(height: 16),
-              SegmentedButton<_ReimbursementFilter>(
-                segments: [
-                  ButtonSegment(
+              CapsuleSwitcher<_ReimbursementFilter>(
+                selectedValue: _filter,
+                options: [
+                  CapsuleOption(
                     value: _ReimbursementFilter.pending,
-                    label: Text('待报销 (${summary.pendingCount})'),
+                    label: '待报销 (${summary.pendingCount})',
                   ),
-                  ButtonSegment(
+                  CapsuleOption(
                     value: _ReimbursementFilter.settled,
-                    label: Text('已报销 (${summary.settledCount})'),
+                    label: '已报销 (${summary.settledCount})',
                   ),
-                  ButtonSegment(
+                  CapsuleOption(
                     value: _ReimbursementFilter.all,
-                    label: Text('全部 (${summary.items.length})'),
+                    label: '全部 (${summary.items.length})',
                   ),
                 ],
-                selected: {_filter},
-                onSelectionChanged: (v) {
+                onChanged: (v) {
                   if (liquid) GlassFeedback.selection(context);
-                  setState(() => _filter = v.first);
+                  setState(() => _filter = v);
                 },
               ),
               const SizedBox(height: 16),

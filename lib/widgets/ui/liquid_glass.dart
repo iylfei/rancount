@@ -37,6 +37,7 @@ class GlassSurface extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final nested =
         context.dependOnInheritedWidgetOfExactType<_GlassScope>() != null;
+    final transitioning = _GlassTransitionScope.isAnimating(context);
     final padded = Padding(padding: padding, child: child);
     final content = prominent && !nested ? _GlassScope(child: padded) : padded;
     if (!appearance.enabled) return Padding(padding: margin, child: content);
@@ -70,7 +71,14 @@ class GlassSurface extends StatelessWidget {
     );
 
     Widget material;
-    if (nested && prominent && !highContrast) {
+    if (highContrast) {
+      material = DecoratedBox(
+        decoration: BoxDecoration(
+          color: tint,
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+      );
+    } else if (nested || !prominent || transitioning) {
       material = DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(borderRadius),
@@ -79,28 +87,12 @@ class GlassSurface extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: isTinted
                 ? [
-                    tint.withValues(alpha: dark ? .78 : .86),
-                    tint.withValues(alpha: dark ? .62 : .72),
+                    tint.withValues(alpha: dark ? .76 : .82),
+                    tint.withValues(alpha: dark ? .62 : .70),
                   ]
                 : [
-                    Colors.white.withValues(alpha: dark ? .16 : .52),
-                    Colors.white.withValues(alpha: dark ? .06 : .24),
-                  ],
-          ),
-        ),
-      );
-    } else if (highContrast || !prominent) {
-      material = DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(borderRadius),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: highContrast
-                ? [tint, tint]
-                : [
-                    tint.withValues(alpha: dark ? .82 : .88),
-                    tint.withValues(alpha: dark ? .72 : .78),
+                    tint.withValues(alpha: dark ? .38 : .64),
+                    tint.withValues(alpha: dark ? .22 : .42),
                   ],
           ),
         ),
@@ -269,6 +261,88 @@ class _GlassScope extends InheritedWidget {
   const _GlassScope({required super.child});
   @override
   bool updateShouldNotify(_GlassScope oldWidget) => false;
+}
+
+class _GlassTransitionScope extends InheritedWidget {
+  final bool animating;
+  const _GlassTransitionScope({required this.animating, required super.child});
+
+  static bool isAnimating(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<_GlassTransitionScope>()
+          ?.animating ??
+      false;
+
+  @override
+  bool updateShouldNotify(_GlassTransitionScope oldWidget) =>
+      oldWidget.animating != animating;
+}
+
+/// Temporarily switches heavy multi-pass shader layers to fast frosted glass
+/// while a route is actively sliding in/out, keeping transitions silky smooth.
+class GlassTransitionBarrier extends StatefulWidget {
+  final Animation<double> animation;
+  final Animation<double> secondaryAnimation;
+  final Widget child;
+
+  const GlassTransitionBarrier({
+    super.key,
+    required this.animation,
+    required this.secondaryAnimation,
+    required this.child,
+  });
+
+  @override
+  State<GlassTransitionBarrier> createState() => _GlassTransitionBarrierState();
+}
+
+class _GlassTransitionBarrierState extends State<GlassTransitionBarrier> {
+  late bool _animating = _isActive;
+
+  bool get _isActive =>
+      widget.animation.status == AnimationStatus.forward ||
+      widget.animation.status == AnimationStatus.reverse ||
+      widget.secondaryAnimation.status == AnimationStatus.forward ||
+      widget.secondaryAnimation.status == AnimationStatus.reverse;
+
+  void _onStatus(AnimationStatus _) {
+    final next = _isActive;
+    if (next != _animating && mounted) {
+      setState(() => _animating = next);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.animation.addStatusListener(_onStatus);
+    widget.secondaryAnimation.addStatusListener(_onStatus);
+  }
+
+  @override
+  void didUpdateWidget(GlassTransitionBarrier oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.animation != widget.animation) {
+      oldWidget.animation.removeStatusListener(_onStatus);
+      widget.animation.addStatusListener(_onStatus);
+    }
+    if (oldWidget.secondaryAnimation != widget.secondaryAnimation) {
+      oldWidget.secondaryAnimation.removeStatusListener(_onStatus);
+      widget.secondaryAnimation.addStatusListener(_onStatus);
+    }
+    _animating = _isActive;
+  }
+
+  @override
+  void dispose() {
+    widget.animation.removeStatusListener(_onStatus);
+    widget.secondaryAnimation.removeStatusListener(_onStatus);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      _GlassTransitionScope(animating: _animating, child: widget.child);
 }
 
 class _BackdropScope extends InheritedWidget {
