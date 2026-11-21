@@ -41,6 +41,7 @@ void main() {
       happenedAt: happenedAt,
       excludeFromStats: false,
       excludeFromBudget: false,
+      isReimbursable: false,
       currencyCode: currencyCode,
     );
   }

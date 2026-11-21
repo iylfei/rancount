@@ -430,6 +430,8 @@ class ReconciliationStore {
           lastEditedByUserId: before?.lastEditedByUserId,
           excludeFromStats: before?.excludeFromStats ?? false,
           excludeFromBudget: before?.excludeFromBudget ?? false,
+          isReimbursable: before?.isReimbursable ?? false,
+          reimburseOfSyncId: before?.reimburseOfSyncId,
           currencyCode: currency,
           nativeAmount: native,
         );

@@ -673,6 +673,7 @@ Transaction _sampleTransaction({
     happenedAt: happenedAt,
     excludeFromStats: false,
     excludeFromBudget: false,
+    isReimbursable: false,
   );
 }
 

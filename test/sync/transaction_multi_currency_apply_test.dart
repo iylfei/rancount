@@ -65,6 +65,7 @@ void main() {
       happenedAt: DateTime.utc(2026, 7, 12),
       excludeFromStats: false,
       excludeFromBudget: false,
+      isReimbursable: false,
       currencyCode: 'USD',
       nativeAmount: 86.4,
     );
@@ -80,6 +81,7 @@ void main() {
       happenedAt: DateTime.utc(2026, 7, 12),
       excludeFromStats: false,
       excludeFromBudget: false,
+      isReimbursable: false,
     );
     final legacyPayload = EntitySerializer.serializeTransaction(legacy);
     expect(legacyPayload.containsKey('currencyCode'), isFalse);
