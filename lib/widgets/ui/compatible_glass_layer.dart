@@ -5,8 +5,10 @@
 // This pinned adapter intentionally shares the renderer's private geometry API.
 // ignore_for_file: avoid_setters_without_getters, implementation_imports, invalid_use_of_internal_member
 
+import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_shaders/flutter_shaders.dart';
@@ -78,6 +80,8 @@ class CompatibleGlassLayer extends StatefulWidget {
     this.settings = const LiquidGlassSettings(),
     this.fake = false,
     this.useBackdropGroup = false,
+    this.pauseListenable,
+    this.fallbackRadius = 24,
     super.key,
   });
 
@@ -106,6 +110,13 @@ class CompatibleGlassLayer extends StatefulWidget {
   ///
   /// Defaults to false.
   final bool useBackdropGroup;
+
+  /// Optional signal that pauses heavy multi-pass geometry/shader rendering
+  /// while a route is actively sliding, without unmounting the shader layer.
+  final ValueListenable<bool>? pauseListenable;
+
+  /// Corner radius used for the fast frosted fill while [pauseListenable] is true.
+  final double fallbackRadius;
 
   @override
   State<CompatibleGlassLayer> createState() => _CompatibleGlassLayerState();
@@ -160,6 +171,8 @@ class _CompatibleGlassLayerState extends State<CompatibleGlassLayer>
                   : null,
               settings: widget.settings,
               link: _link,
+              pauseListenable: widget.pauseListenable,
+              fallbackRadius: widget.fallbackRadius,
               child: child!,
             ),
             child: widget.child,
@@ -177,12 +190,16 @@ class _RawShapes extends SingleChildRenderObjectWidget {
     required this.settings,
     required Widget super.child,
     required this.link,
+    this.pauseListenable,
+    this.fallbackRadius = 24,
   });
 
   final FragmentShader renderShader;
   final BackdropKey? backdropKey;
   final LiquidGlassSettings settings;
   final GeometryRenderLink link;
+  final ValueListenable<bool>? pauseListenable;
+  final double fallbackRadius;
 
   @override
   RenderObject createRenderObject(BuildContext context) {
@@ -192,6 +209,8 @@ class _RawShapes extends SingleChildRenderObjectWidget {
       backdropKey: backdropKey,
       settings: settings,
       link: link,
+      pauseListenable: pauseListenable,
+      fallbackRadius: fallbackRadius,
     );
   }
 
@@ -204,7 +223,9 @@ class _RawShapes extends SingleChildRenderObjectWidget {
       ..link = link
       ..devicePixelRatio = MediaQuery.devicePixelRatioOf(context)
       ..settings = settings
-      ..backdropKey = backdropKey;
+      ..backdropKey = backdropKey
+      ..pauseListenable = pauseListenable
+      ..fallbackRadius = fallbackRadius;
   }
 }
 
@@ -216,12 +237,46 @@ class RenderCompatibleGlassLayer extends LiquidGlassRenderObject
     required super.devicePixelRatio,
     required super.settings,
     required super.link,
-  });
+    ValueListenable<bool>? pauseListenable,
+    double fallbackRadius = 24,
+  }) : _fallbackRadius = fallbackRadius {
+    this.pauseListenable = pauseListenable;
+  }
 
   final _shaderHandle = LayerHandle<BackdropFilterLayer>();
   final _blurLayerHandle = LayerHandle<BackdropFilterLayer>();
   final _clipPathLayerHandle = LayerHandle<ClipPathLayer>();
   final _shaderClipLayerHandle = LayerHandle<ClipPathLayer>();
+
+  ValueListenable<bool>? _pauseListenable;
+  bool _paused = false;
+  bool _transformDirtyWhilePaused = false;
+  double _fallbackRadius;
+
+  set fallbackRadius(double value) {
+    if (_fallbackRadius == value) return;
+    _fallbackRadius = value;
+    if (_paused) markNeedsPaint();
+  }
+
+  set pauseListenable(ValueListenable<bool>? value) {
+    if (_pauseListenable == value) return;
+    _pauseListenable?.removeListener(_handlePauseChanged);
+    _pauseListenable = value;
+    _pauseListenable?.addListener(_handlePauseChanged);
+    _handlePauseChanged();
+  }
+
+  void _handlePauseChanged() {
+    final next = _pauseListenable?.value ?? false;
+    if (next == _paused) return;
+    _paused = next;
+    if (!_paused && _transformDirtyWhilePaused) {
+      _transformDirtyWhilePaused = false;
+      needsGeometryUpdate = true;
+    }
+    markNeedsPaint();
+  }
 
   @override
   Size get desiredMatteSize => switch (owner?.rootNode) {
@@ -235,8 +290,41 @@ class RenderCompatibleGlassLayer extends LiquidGlassRenderObject
 
   @override
   void onTransformChanged() {
+    if (_paused) {
+      _transformDirtyWhilePaused = true;
+      return;
+    }
     needsGeometryUpdate = true;
     markNeedsPaint();
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (_paused) {
+      final rect = offset & size;
+      if (!rect.isEmpty) {
+        final maxR = math.min(size.width, size.height) / 2;
+        final r = _fallbackRadius.clamp(0.0, maxR);
+        final base = settings.glassColor;
+        final topAlpha = (base.a + 0.14).clamp(0.0, 0.92);
+        final bottomAlpha = base.a.clamp(0.0, 0.85);
+        final paint = Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              base.withValues(alpha: topAlpha),
+              base.withValues(alpha: bottomAlpha),
+            ],
+          ).createShader(rect);
+        context.canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, Radius.circular(r)),
+          paint,
+        );
+      }
+      return;
+    }
+    super.paint(context, offset);
   }
 
   @override
@@ -305,6 +393,8 @@ class RenderCompatibleGlassLayer extends LiquidGlassRenderObject
 
   @override
   void dispose() {
+    _pauseListenable?.removeListener(_handlePauseChanged);
+    _pauseListenable = null;
     _blurLayerHandle.layer = null;
     _shaderHandle.layer = null;
     _clipPathLayerHandle.layer = null;

@@ -324,9 +324,9 @@ ThemeData buildAppTheme({
 class _LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
   const _LiquidPageTransitionsBuilder();
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 240);
+  Duration get transitionDuration => const Duration(milliseconds: 320);
   @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 210);
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 280);
   @override
   Widget buildTransitions<T>(
     PageRoute<T> route,
@@ -335,8 +335,6 @@ class _LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    // Pause live geometry-tracking shader passes while sliding to maintain
-    // high frame rates, then seamlessly restore full refraction once settled.
     final page = RepaintBoundary(
       child: GlassTransitionBarrier(
         animation: animation,
@@ -345,17 +343,47 @@ class _LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
       ),
     );
     if (!LiquidTheme.motionOf(context)) return page;
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeInCubic,
+
+    // Authentic iOS full-width push/pop slide (1.0 <-> 0.0) with subtle
+    // underlying parallax (-24%) and soft left-edge drop shadow.
+    final primarySlide = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: animation,
+        curve: Curves.linearToEaseOut,
+        reverseCurve: Curves.easeInToLinear,
+      ),
     );
+    final secondarySlide = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-0.24, 0.0),
+    ).animate(
+      CurvedAnimation(
+        parent: secondaryAnimation,
+        curve: Curves.linearToEaseOut,
+        reverseCurve: Curves.easeInToLinear,
+      ),
+    );
+
     return SlideTransition(
-      position: Tween(
-        begin: const Offset(.14, 0),
-        end: Offset.zero,
-      ).animate(curved),
-      child: page,
+      position: secondarySlide,
+      child: SlideTransition(
+        position: primarySlide,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.14),
+                blurRadius: 24,
+                offset: const Offset(-6, 0),
+              ),
+            ],
+          ),
+          child: page,
+        ),
+      ),
     );
   }
 }

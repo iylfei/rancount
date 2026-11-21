@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart' as renderer;
@@ -37,7 +38,7 @@ class GlassSurface extends StatelessWidget {
     final dark = Theme.of(context).brightness == Brightness.dark;
     final nested =
         context.dependOnInheritedWidgetOfExactType<_GlassScope>() != null;
-    final transitioning = _GlassTransitionScope.isAnimating(context);
+    final pauseListenable = _GlassTransitionScope.listenableOf(context);
     final padded = Padding(padding: padding, child: child);
     final content = prominent && !nested ? _GlassScope(child: padded) : padded;
     if (!appearance.enabled) return Padding(padding: margin, child: content);
@@ -78,7 +79,7 @@ class GlassSurface extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
         ),
       );
-    } else if (nested || !prominent || transitioning) {
+    } else if (nested || !prominent) {
       material = DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(borderRadius),
@@ -107,6 +108,8 @@ class GlassSurface extends StatelessWidget {
     } else {
       material = CompatibleGlassLayer(
         settings: settings,
+        pauseListenable: pauseListenable,
+        fallbackRadius: borderRadius,
         child: renderer.LiquidGlass(
           shape: shape,
           child: const SizedBox.expand(),
@@ -264,22 +267,24 @@ class _GlassScope extends InheritedWidget {
 }
 
 class _GlassTransitionScope extends InheritedWidget {
-  final bool animating;
-  const _GlassTransitionScope({required this.animating, required super.child});
+  final ValueListenable<bool> listenable;
+  const _GlassTransitionScope({
+    required this.listenable,
+    required super.child,
+  });
 
-  static bool isAnimating(BuildContext context) =>
+  static ValueListenable<bool>? listenableOf(BuildContext context) =>
       context
-          .dependOnInheritedWidgetOfExactType<_GlassTransitionScope>()
-          ?.animating ??
-      false;
+          .getInheritedWidgetOfExactType<_GlassTransitionScope>()
+          ?.listenable;
 
   @override
   bool updateShouldNotify(_GlassTransitionScope oldWidget) =>
-      oldWidget.animating != animating;
+      oldWidget.listenable != listenable;
 }
 
-/// Temporarily switches heavy multi-pass shader layers to fast frosted glass
-/// while a route is actively sliding in/out, keeping transitions silky smooth.
+/// Signals [RenderCompatibleGlassLayer] directly via [ValueNotifier] to pause
+/// heavy geometry/shader work while a route slides, with zero widget rebuilds.
 class GlassTransitionBarrier extends StatefulWidget {
   final Animation<double> animation;
   final Animation<double> secondaryAnimation;
@@ -297,7 +302,7 @@ class GlassTransitionBarrier extends StatefulWidget {
 }
 
 class _GlassTransitionBarrierState extends State<GlassTransitionBarrier> {
-  late bool _animating = _isActive;
+  late final ValueNotifier<bool> _animating = ValueNotifier<bool>(_isActive);
 
   bool get _isActive =>
       widget.animation.status == AnimationStatus.forward ||
@@ -307,8 +312,8 @@ class _GlassTransitionBarrierState extends State<GlassTransitionBarrier> {
 
   void _onStatus(AnimationStatus _) {
     final next = _isActive;
-    if (next != _animating && mounted) {
-      setState(() => _animating = next);
+    if (_animating.value != next) {
+      _animating.value = next;
     }
   }
 
@@ -330,19 +335,20 @@ class _GlassTransitionBarrierState extends State<GlassTransitionBarrier> {
       oldWidget.secondaryAnimation.removeStatusListener(_onStatus);
       widget.secondaryAnimation.addStatusListener(_onStatus);
     }
-    _animating = _isActive;
+    _animating.value = _isActive;
   }
 
   @override
   void dispose() {
     widget.animation.removeStatusListener(_onStatus);
     widget.secondaryAnimation.removeStatusListener(_onStatus);
+    _animating.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) =>
-      _GlassTransitionScope(animating: _animating, child: widget.child);
+      _GlassTransitionScope(listenable: _animating, child: widget.child);
 }
 
 class _BackdropScope extends InheritedWidget {
