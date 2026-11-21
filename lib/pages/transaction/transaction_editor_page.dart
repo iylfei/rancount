@@ -37,6 +37,7 @@ class TransactionEditorPage extends ConsumerStatefulWidget {
   final List<int>? initialTagIds; // 初始标签ID列表
   final bool initialExcludeFromStats; // 不计入收支，编辑模式回显
   final bool initialExcludeFromBudget; // 不计入预算，编辑模式回显
+  final bool initialIsReimbursable; // 待报销款，编辑模式回显
   // v30 多币种编辑回显(推隐含汇率用)
   final String? initialCurrencyCode;
   final double? initialNativeAmount;
@@ -56,6 +57,7 @@ class TransactionEditorPage extends ConsumerStatefulWidget {
     this.initialTagIds,
     this.initialExcludeFromStats = false,
     this.initialExcludeFromBudget = false,
+    this.initialIsReimbursable = false,
     this.initialCurrencyCode,
     this.initialNativeAmount,
     this.showImageBillingAction = true,
@@ -344,6 +346,7 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
         transactionKind: kind,
         initialExcludeFromStats: widget.initialExcludeFromStats,
         initialExcludeFromBudget: widget.initialExcludeFromBudget,
+        initialIsReimbursable: widget.initialIsReimbursable,
         initialCurrencyCode: widget.initialCurrencyCode,
         initialNativeAmount: widget.initialNativeAmount,
         onSubmit: (res) async {
@@ -382,6 +385,7 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
               accountSyncIdOverride: accountOverride,
               excludeFromStats: res.excludeFromStats,
               excludeFromBudget: res.excludeFromBudget,
+              isReimbursable: res.isReimbursable,
               currencyCode: res.currencyCode,
               nativeAmount: res.nativeAmount,
             );
@@ -402,6 +406,7 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
               accountSyncIdOverride: accountOverride,
               excludeFromStats: res.excludeFromStats,
               excludeFromBudget: res.excludeFromBudget,
+              isReimbursable: res.isReimbursable,
               currencyCode: res.currencyCode,
               nativeAmount: res.nativeAmount,
             );

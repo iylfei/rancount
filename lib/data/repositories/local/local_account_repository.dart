@@ -689,6 +689,8 @@ class LocalAccountRepository implements AccountRepository {
         syncId: row.data['sync_id'] as String?,
         excludeFromStats: (row.data['exclude_from_stats'] as int? ?? 0) != 0,
         excludeFromBudget: (row.data['exclude_from_budget'] as int? ?? 0) != 0,
+        isReimbursable: (row.data['is_reimbursable'] as int? ?? 0) != 0,
+        reimburseOfSyncId: row.data['reimburse_of_sync_id'] as String?,
       );
     }).toList();
   }

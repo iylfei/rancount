@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../data/db.dart';
 import '../../l10n/app_localizations.dart';
+import '../../pages/transaction/reimbursement_page.dart';
 import '../../styles/tokens.dart';
 import '../../styles/liquid_theme.dart';
 import 'amount_text.dart';
@@ -80,6 +81,8 @@ class TransactionDetailSheet extends StatelessWidget {
         ? (account == null ? toAccount : '$account → $toAccount')
         : account;
     final flags = [
+      if (transaction.isReimbursable) '待报销款',
+      if (transaction.reimburseOfSyncId != null) '报销到账',
       if (transaction.excludeFromStats) l10n.txFlagExcludedTag,
       if (transaction.excludeFromBudget) l10n.txFlagBudgetExcludedTag,
     ];
@@ -216,6 +219,25 @@ class TransactionDetailSheet extends StatelessWidget {
                       l10n.transactionDetailFlags,
                       flags.join(' · '),
                     ),
+                  if (transaction.isReimbursable &&
+                      transaction.type == 'expense') ...[
+                    const SizedBox(height: 12),
+                    FilledButton.tonalIcon(
+                      onPressed: () {
+                        final nav = Navigator.of(context);
+                        nav.pop();
+                        nav.push(
+                          MaterialPageRoute(
+                            builder: (_) => ReimbursementPage(
+                              highlightTransactionId: transaction.id,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.receipt_long_outlined),
+                      label: const Text('去登记报销 / 查看进度'),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../data/repositories/local/local_repository.dart';
+import '../services/billing/reimbursement_service.dart';
 import 'database_providers.dart';
+import 'sync_providers.dart';
 import 'ui_state_providers.dart';
 import 'currency_providers.dart';
 import '../services/system/logger_service.dart';
@@ -80,6 +83,24 @@ final monthlyTotalsProvider = FutureProvider.family
   // 写入最近一次成功值，供 UI 在刷新期间显示旧值
   ref.read(lastMonthlyTotalsProvider(params).notifier).state = res;
   return res;
+});
+
+// 独立统计：待报销款汇总（与真实收支隔离）
+final reimbursementSummaryProvider = FutureProvider.family
+    .autoDispose<ReimbursementSummary, int>((ref, ledgerId) async {
+  final repo = ref.watch(repositoryProvider);
+  ref.watch(statsRefreshProvider);
+  ref.watch(syncGenerationProvider);
+  if (repo is! LocalRepository) {
+    return const ReimbursementSummary(
+      items: [],
+      totalPendingNative: 0,
+      totalReimbursedNative: 0,
+      pendingCount: 0,
+      settledCount: 0,
+    );
+  }
+  return ReimbursementService(repo).loadSummary(ledgerId);
 });
 
 // 统计：单个账户统计（余额、消费、收入）

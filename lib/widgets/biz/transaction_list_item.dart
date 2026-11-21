@@ -54,6 +54,8 @@ class TransactionListItem extends ConsumerWidget {
 
   final bool excludeFromStats; // 不计入收支:第二行显示「不计收支」标签
   final bool excludeFromBudget; // 不计入预算:第二行显示「不计预算」标签
+  final bool isReimbursable; // 待报销款支出
+  final bool isReimbursementPayout; // 报销到账记录
 
   const TransactionListItem({
     super.key,
@@ -87,6 +89,8 @@ class TransactionListItem extends ConsumerWidget {
     this.onAttachmentTap,
     this.excludeFromStats = false,
     this.excludeFromBudget = false,
+    this.isReimbursable = false,
+    this.isReimbursementPayout = false,
   });
 
   /// 检查是否有次要信息需要显示（时间、账户或附件）
@@ -110,25 +114,30 @@ class TransactionListItem extends ConsumerWidget {
         accountName != null ||
         attachmentCount > 0 ||
         excludeFromStats ||
-        excludeFromBudget;
+        excludeFromBudget ||
+        isReimbursable ||
+        isReimbursementPayout;
   }
 
   /// 「不计收支 / 不计预算」标记的小 pill（中性灰底，de-emphasis）
   /// 视觉对齐 TagChip(small)：pill 圆角 + 低透明度填充 + fontSize 11
-  Widget _flagChip(BuildContext context, String label) {
+  Widget _flagChip(BuildContext context, String label, {Color? accent}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: BeeTokens.isDark(context)
-            ? Colors.white.withValues(alpha: 0.1)
-            : Colors.black.withValues(alpha: 0.06),
+        color: accent != null
+            ? accent.withValues(alpha: 0.14)
+            : BeeTokens.isDark(context)
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         label,
         style: TextStyle(
           fontSize: 11,
-          color: BeeTokens.textTertiary(context),
+          fontWeight: accent != null ? FontWeight.w600 : FontWeight.normal,
+          color: accent ?? BeeTokens.textTertiary(context),
         ),
       ),
     );
@@ -216,12 +225,15 @@ class TransactionListItem extends ConsumerWidget {
       return widget;
     }
 
-    // 「不计收支 / 不计预算」标签:第二行末尾的次要标签，改为与标签 chip 一致的
-    // 中性 pill 样式（de-emphasis，沿用 TagChip 的中性灰底 + pill 圆角）
+    // 「待报销 / 报销到账 / 不计收支 / 不计预算」标签
     final flagTags = <Widget>[
-      if (excludeFromStats)
+      if (isReimbursable)
+        _flagChip(context, '待报销', accent: Colors.orange.shade700),
+      if (isReimbursementPayout)
+        _flagChip(context, '报销到账', accent: Colors.green.shade600),
+      if (!isReimbursable && !isReimbursementPayout && excludeFromStats)
         _flagChip(context, AppLocalizations.of(context).txFlagExcludedTag),
-      if (excludeFromBudget)
+      if (!isReimbursable && !isReimbursementPayout && excludeFromBudget)
         _flagChip(
             context, AppLocalizations.of(context).txFlagBudgetExcludedTag),
     ];

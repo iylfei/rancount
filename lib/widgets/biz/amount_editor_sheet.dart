@@ -207,6 +207,7 @@ typedef AmountEditorResult = ({
   List<File> pendingAttachments,
   bool excludeFromStats,
   bool excludeFromBudget,
+  bool isReimbursable,
   // v30 交易级多币种:交易币种(有账户=账户币种;无账户=手选,默认本位币)
   // 与折本位币快照(同币种 == amount;外币 = amount × 汇率,缺汇率已在提交前阻断)。
   String? currencyCode,
@@ -229,6 +230,7 @@ class AmountEditorSheet extends ConsumerStatefulWidget {
   final String transactionKind; // 'expense' / 'income' / 'transfer'，决定标记开关可见性
   final bool initialExcludeFromStats; // 不计入收支，编辑模式回显
   final bool initialExcludeFromBudget; // 不计入预算，编辑模式回显
+  final bool initialIsReimbursable; // 待报销款，编辑模式回显
   // v30 编辑模式回显:该笔的原币种与折算快照(用于推隐含汇率,只改备注时
   // 折算基准不漂移,.docs/multi-currency-ledger 01 §4.2)。
   final String? initialCurrencyCode;
@@ -251,6 +253,7 @@ class AmountEditorSheet extends ConsumerStatefulWidget {
     this.transactionKind = 'expense',
     this.initialExcludeFromStats = false,
     this.initialExcludeFromBudget = false,
+    this.initialIsReimbursable = false,
     this.initialCurrencyCode,
     this.initialNativeAmount,
   });
@@ -293,6 +296,7 @@ class _AmountEditorSheetState extends ConsumerState<AmountEditorSheet> {
   // 交易标记（旗标弹窗）
   bool _excludeFromStats = false;
   bool _excludeFromBudget = false;
+  bool _isReimbursable = false;
 
   // v30 交易级多币种(L7 自动探测 + L12 无账户手选)
   String? _pickedCurrency; // 无账户时手选的币种;null = 本位币
@@ -308,6 +312,7 @@ class _AmountEditorSheetState extends ConsumerState<AmountEditorSheet> {
     _date = widget.initialDate;
     _excludeFromStats = widget.initialExcludeFromStats;
     _excludeFromBudget = widget.initialExcludeFromBudget;
+    _isReimbursable = widget.initialIsReimbursable;
     _selectedAccountId = widget.initialAccountId;
     _selectedTagIds = List.from(widget.initialTagIds ?? []);
     _pickedCurrency = widget.initialCurrencyCode?.toUpperCase();
@@ -1309,6 +1314,7 @@ class _AmountEditorSheetState extends ConsumerState<AmountEditorSheet> {
                                       pendingAttachments: _pendingAttachments,
                                       excludeFromStats: _excludeFromStats,
                                       excludeFromBudget: _excludeFromBudget,
+                                      isReimbursable: _isReimbursable,
                                       currencyCode: txCurrency,
                                       nativeAmount: nativeAmount,
                                     ));
@@ -1501,6 +1507,7 @@ class _AmountEditorSheetState extends ConsumerState<AmountEditorSheet> {
     // 弹窗内用临时变量 + StatefulBuilder 实现实时切换,关闭时写回 sheet 状态。
     bool stats = _excludeFromStats;
     bool budget = _excludeFromBudget;
+    bool reimbursable = _isReimbursable;
 
     await showDialog<void>(
       context: context,
@@ -1550,6 +1557,24 @@ class _AmountEditorSheetState extends ConsumerState<AmountEditorSheet> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (showBudget)
+                    switchTile(
+                      title: '待报销款',
+                      hint: '不计入真实支出与预算，在「待报销款」独立跟踪',
+                      value: reimbursable,
+                      onChanged: (v) {
+                        setDialogState(() {
+                          reimbursable = v;
+                          stats = v;
+                          budget = v;
+                        });
+                        setState(() {
+                          _isReimbursable = v;
+                          _excludeFromStats = v;
+                          _excludeFromBudget = v;
+                        });
+                      },
+                    ),
                   if (showStats)
                     switchTile(
                       title: l10n.txFlagExcludeFromStats,
@@ -1675,9 +1700,64 @@ class _AmountEditorSheetState extends ConsumerState<AmountEditorSheet> {
               ],
             ),
           ),
+          // 支出时直接提供一键「待报销」切换胶囊，避免误计入真实支出
+          if (widget.transactionKind == 'expense') ...[
+            const SizedBox(width: 10),
+            _buildReimbursableChip(),
+          ],
           // 旗标图标:紧跟附件图标。转账(两个标记都不适用)→ 不渲染。
           ..._buildFlagIcon(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildReimbursableChip() {
+    final active = _isReimbursable;
+    final accent = Colors.orange.shade700;
+    return GestureDetector(
+      onTap: () {
+        final next = !_isReimbursable;
+        setState(() {
+          _isReimbursable = next;
+          _excludeFromStats = next;
+          _excludeFromBudget = next;
+        });
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: active
+              ? accent.withValues(alpha: .16)
+              : BeeTokens.surface(context).withValues(alpha: .7),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: active
+                ? accent.withValues(alpha: .65)
+                : BeeTokens.border(context),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              active ? Icons.receipt_long : Icons.receipt_long_outlined,
+              size: 14,
+              color: active ? accent : BeeTokens.textSecondary(context),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '待报销',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                color: active ? accent : BeeTokens.textSecondary(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1692,7 +1772,7 @@ class _AmountEditorSheetState extends ConsumerState<AmountEditorSheet> {
     // 两个开关都不适用(转账)→ 不显示旗标触发器
     if (!showStats && !showBudget) return const [];
 
-    final active = _excludeFromStats || _excludeFromBudget;
+    final active = _excludeFromStats || _excludeFromBudget || _isReimbursable;
     return [
       const SizedBox(width: 16),
       GestureDetector(

@@ -26,6 +26,7 @@ import '../report/annual_report_page.dart';
 import '../calendar/calendar_page.dart';
 import '../../widgets/biz/ledger_picker_sheet.dart';
 import '../../widgets/biz/home_budget_summary.dart';
+import '../../widgets/biz/reimbursement_banner.dart';
 import '../../widgets/ai/agent_entry_card.dart';
 import 'ledgers_page_new.dart';
 import '../../providers/shared_ledger_providers.dart';
@@ -1047,6 +1048,8 @@ class _HomePageState extends ConsumerState<HomePage> {
             },
           ),
           const SizedBox(height: 0),
+          // 待报销款独立摘要（有待报销笔数时展示）
+          const ReimbursementBanner(),
           // 月初提醒卡片
           if (_showLastMonthReminder) _buildLastMonthReminderCard(context),
           // 年度账单提醒卡片（12月15日 - 次年1月31日）

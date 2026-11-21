@@ -359,6 +359,8 @@ class LocalRepository extends BaseRepository {
     String? toAccountSyncIdOverride,
     bool excludeFromStats = false,
     bool excludeFromBudget = false,
+    bool isReimbursable = false,
+    String? reimburseOfSyncId,
     String? currencyCode,
     double? nativeAmount,
   }) => db.transaction(() async {
@@ -390,6 +392,8 @@ class LocalRepository extends BaseRepository {
       toAccountSyncIdOverride: toAccountSyncIdOverride,
       excludeFromStats: excludeFromStats,
       excludeFromBudget: excludeFromBudget,
+      isReimbursable: isReimbursable,
+      reimburseOfSyncId: reimburseOfSyncId,
       currencyCode: cc,
       nativeAmount: na,
     );
@@ -467,6 +471,7 @@ class LocalRepository extends BaseRepository {
     String? toAccountSyncIdOverride,
     bool? excludeFromStats,
     bool? excludeFromBudget,
+    bool? isReimbursable,
     String? currencyCode,
     double? nativeAmount,
   }) => db.transaction(() async {
@@ -519,6 +524,7 @@ class LocalRepository extends BaseRepository {
           toAccountSyncIdOverride: toAccountSyncIdOverride,
           excludeFromStats: excludeFromStats,
           excludeFromBudget: excludeFromBudget,
+          isReimbursable: isReimbursable,
           currencyCode: effCurrency,
           nativeAmount: effNative,
         );
@@ -548,6 +554,7 @@ class LocalRepository extends BaseRepository {
       toAccountSyncIdOverride: toAccountSyncIdOverride,
       excludeFromStats: excludeFromStats,
       excludeFromBudget: excludeFromBudget,
+      isReimbursable: isReimbursable,
       currencyCode: effCurrency,
       nativeAmount: effNative,
     );

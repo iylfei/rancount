@@ -628,6 +628,8 @@ class TransactionListState extends ConsumerState<TransactionList> {
                         attachmentCount: attachmentCount,
                         excludeFromStats: it.t.excludeFromStats,
                         excludeFromBudget: it.t.excludeFromBudget,
+                        isReimbursable: it.t.isReimbursable,
+                        isReimbursementPayout: it.t.reimburseOfSyncId != null,
                         onAttachmentTap: attachmentCount > 0
                             ? () async {
                                 switchToStreamMode(); // 用户交互，切换到 Stream 模式

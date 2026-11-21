@@ -28,6 +28,8 @@ import 'account_edit_page.dart';
 import 'account_detail_page.dart';
 import 'net_worth_trend_page.dart';
 import 'reconciliation_page.dart';
+import '../transaction/reimbursement_page.dart';
+import '../../widgets/biz/reimbursement_banner.dart';
 
 class AccountsPage extends ConsumerStatefulWidget {
   final bool asTab;
@@ -131,6 +133,14 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
               IconButton(
                 onPressed: () => Navigator.push(
                   context,
+                  MaterialPageRoute(builder: (_) => const ReimbursementPage()),
+                ),
+                icon: const Icon(Icons.receipt_long_outlined),
+                tooltip: '待报销款',
+              ),
+              IconButton(
+                onPressed: () => Navigator.push(
+                  context,
                   MaterialPageRoute(builder: (_) => const ReconciliationPage()),
                 ),
                 icon: const Icon(Icons.fact_check_outlined),
@@ -175,6 +185,10 @@ class _AccountsPageState extends ConsumerState<AccountsPage> {
                         : 8.0.scaled(context, ref),
                   ),
                   children: [
+                    const ReimbursementBanner(
+                      showWhenEmpty: true,
+                      margin: EdgeInsets.only(bottom: 12),
+                    ),
                     if (accounts.isEmpty)
                       SizedBox(
                         height: MediaQuery.of(context).size.height * 0.4,

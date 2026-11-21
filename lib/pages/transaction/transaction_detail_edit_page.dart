@@ -57,6 +57,7 @@ class _TransactionDetailEditPageState
   bool _toAccountChanged = false;
   late bool _excludeFromStats;
   late bool _excludeFromBudget;
+  late bool _isReimbursable;
   List<int> _tagIds = [];
   List<String> _tagNames = [];
   bool _saving = false;
@@ -80,6 +81,7 @@ class _TransactionDetailEditPageState
     _toAccount = widget.toAccount;
     _excludeFromStats = _tx.excludeFromStats;
     _excludeFromBudget = _tx.excludeFromBudget;
+    _isReimbursable = _tx.isReimbursable;
     _loadTags();
   }
 
@@ -358,6 +360,7 @@ class _TransactionDetailEditPageState
             _isTransfer ? toOverride : _tx.toAccountSyncIdOverride,
         excludeFromStats: _excludeFromStats,
         excludeFromBudget: _excludeFromBudget,
+        isReimbursable: _isReimbursable,
       );
       if (_isTransfer && _toAccountChanged) {
         await repo.updateTransactionFields(
@@ -605,6 +608,18 @@ class _TransactionDetailEditPageState
                 ref.read(attachmentListRefreshProvider.notifier).state++;
               },
             ),
+            if (_tx.type == 'expense' && !_isRefund)
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('待报销款'),
+                subtitle: const Text('不计入真实支出与预算，在「待报销款」独立跟踪'),
+                value: _isReimbursable,
+                onChanged: (value) => setState(() {
+                  _isReimbursable = value;
+                  _excludeFromStats = value;
+                  _excludeFromBudget = value;
+                }),
+              ),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               title: Text(l10n.txFlagExcludeFromStats),

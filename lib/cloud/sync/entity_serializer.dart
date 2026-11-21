@@ -43,6 +43,8 @@ class EntitySerializer {
       'itemDescription': tx.itemDescription ?? '',
       'paymentChannel': tx.paymentChannel ?? '',
       'refundOfSyncId': tx.refundOfSyncId ?? '',
+      'isReimbursable': tx.isReimbursable,
+      'reimburseOfSyncId': tx.reimburseOfSyncId ?? '',
       // 账单标记(D2 两个独立 bool)。camelCase 键与 server 端
       // _LEDGER_MERGE_SPECS / projection upsert 对齐 —— 改键名会让标记跨设备静默丢失。
       'excludeFromStats': tx.excludeFromStats,

@@ -160,6 +160,14 @@ class Transactions extends Table {
   TextColumn get itemDescription => text().nullable()();
   TextColumn get paymentChannel => text().nullable()();
   TextColumn get refundOfSyncId => text().nullable()();
+
+  /// v38: 待报销款标记与报销到账关联。
+  /// - isReimbursable=true 的支出默认配合 excludeFromStats/Budget=true，
+  ///   独立进入「待报销款」追踪，避免垫付与到账同步抬高真实收支。
+  /// - reimburseOfSyncId 指向原待报销支出的 syncId，记录报销到账入账明细。
+  BoolColumn get isReimbursable =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get reimburseOfSyncId => text().nullable()();
 }
 
 class RecurringTransactions extends Table {
@@ -518,7 +526,7 @@ class BeeDatabase extends _$BeeDatabase {
   BeeDatabase.forTesting(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 37; // v37: 本机对账草稿与修改审计
+  int get schemaVersion => 38; // v38: 待报销款标记与报销到账关联
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1292,6 +1300,19 @@ class BeeDatabase extends _$BeeDatabase {
                 'ALTER TABLE accounts ADD COLUMN repayment_schedule TEXT;');
           }
           if (from < 37) await _createReconciliationTables();
+          if (from < 38) {
+            await _addColumnIfMissing(
+                'transactions',
+                'is_reimbursable',
+                'ALTER TABLE transactions ADD COLUMN is_reimbursable INTEGER NOT NULL DEFAULT 0;');
+            await _addColumnIfMissing(
+                'transactions',
+                'reimburse_of_sync_id',
+                'ALTER TABLE transactions ADD COLUMN reimburse_of_sync_id TEXT;');
+            await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_transactions_reimburse_of '
+                'ON transactions (reimburse_of_sync_id);');
+          }
         },
         onCreate: (m) async {
           await m.createAll();
@@ -1303,6 +1324,9 @@ class BeeDatabase extends _$BeeDatabase {
           await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_transactions_refund_of '
               'ON transactions (refund_of_sync_id);');
+          await customStatement(
+              'CREATE INDEX IF NOT EXISTS idx_transactions_reimburse_of '
+              'ON transactions (reimburse_of_sync_id);');
           await customStatement(
               'CREATE TABLE IF NOT EXISTS recent_transaction_records ('
               'transaction_id INTEGER PRIMARY KEY, recorded_at INTEGER NOT NULL);');

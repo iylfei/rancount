@@ -203,6 +203,9 @@ extension SyncEngineApplyExt on SyncEngine {
     final excludeBudget = payload.containsKey('excludeFromBudget')
         ? (payload['excludeFromBudget'] as bool? ?? false)
         : null;
+    final isReimbursable = payload.containsKey('isReimbursable')
+        ? (payload['isReimbursable'] as bool? ?? false)
+        : null;
     String? textField(String key) {
       final value = payload[key] as String?;
       return value == null || value.isEmpty ? null : value;
@@ -256,6 +259,12 @@ extension SyncEngineApplyExt on SyncEngine {
         refundOfSyncId: payload.containsKey('refundOfSyncId')
             ? d.Value(textField('refundOfSyncId'))
             : const d.Value.absent(),
+        isReimbursable: isReimbursable == null
+            ? const d.Value.absent()
+            : d.Value(isReimbursable),
+        reimburseOfSyncId: payload.containsKey('reimburseOfSyncId')
+            ? d.Value(textField('reimburseOfSyncId'))
+            : const d.Value.absent(),
         categoryId: d.Value(categoryId),
         accountId: d.Value(accountId),
         toAccountId: d.Value(toAccountId),
@@ -294,6 +303,8 @@ extension SyncEngineApplyExt on SyncEngine {
               itemDescription: d.Value(textField('itemDescription')),
               paymentChannel: d.Value(textField('paymentChannel')),
               refundOfSyncId: d.Value(textField('refundOfSyncId')),
+              isReimbursable: d.Value(isReimbursable ?? false),
+              reimburseOfSyncId: d.Value(textField('reimburseOfSyncId')),
               categoryId: d.Value(categoryId),
               accountId: d.Value(accountId),
               toAccountId: d.Value(toAccountId),

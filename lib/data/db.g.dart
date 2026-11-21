@@ -2619,6 +2619,33 @@ class $TransactionsTable extends Transactions
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isReimbursableMeta = const VerificationMeta(
+    'isReimbursable',
+  );
+  @override
+  late final GeneratedColumn<bool> isReimbursable = GeneratedColumn<bool>(
+    'is_reimbursable',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_reimbursable" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _reimburseOfSyncIdMeta = const VerificationMeta(
+    'reimburseOfSyncId',
+  );
+  @override
+  late final GeneratedColumn<String> reimburseOfSyncId =
+      GeneratedColumn<String>(
+        'reimburse_of_sync_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2646,6 +2673,8 @@ class $TransactionsTable extends Transactions
     itemDescription,
     paymentChannel,
     refundOfSyncId,
+    isReimbursable,
+    reimburseOfSyncId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2857,6 +2886,24 @@ class $TransactionsTable extends Transactions
         ),
       );
     }
+    if (data.containsKey('is_reimbursable')) {
+      context.handle(
+        _isReimbursableMeta,
+        isReimbursable.isAcceptableOrUnknown(
+          data['is_reimbursable']!,
+          _isReimbursableMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reimburse_of_sync_id')) {
+      context.handle(
+        _reimburseOfSyncIdMeta,
+        reimburseOfSyncId.isAcceptableOrUnknown(
+          data['reimburse_of_sync_id']!,
+          _reimburseOfSyncIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2973,6 +3020,15 @@ class $TransactionsTable extends Transactions
         DriftSqlType.string,
         data['${effectivePrefix}refund_of_sync_id'],
       ),
+      isReimbursable:
+          attachedDatabase.typeMapping.read(
+            DriftSqlType.bool,
+            data['${effectivePrefix}is_reimbursable'],
+          )!,
+      reimburseOfSyncId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reimburse_of_sync_id'],
+      ),
     );
   }
 
@@ -3023,6 +3079,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final String? itemDescription;
   final String? paymentChannel;
   final String? refundOfSyncId;
+
+  /// v38: 待报销款标记与报销到账关联。
+  /// - isReimbursable=true 的支出默认配合 excludeFromStats/Budget=true，
+  ///   独立进入「待报销款」追踪，避免垫付与到账同步抬高真实收支。
+  /// - reimburseOfSyncId 指向原待报销支出的 syncId，记录报销到账入账明细。
+  final bool isReimbursable;
+  final String? reimburseOfSyncId;
   const Transaction({
     required this.id,
     required this.ledgerId,
@@ -3049,6 +3112,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     this.itemDescription,
     this.paymentChannel,
     this.refundOfSyncId,
+    required this.isReimbursable,
+    this.reimburseOfSyncId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3117,6 +3182,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     }
     if (!nullToAbsent || refundOfSyncId != null) {
       map['refund_of_sync_id'] = Variable<String>(refundOfSyncId);
+    }
+    map['is_reimbursable'] = Variable<bool>(isReimbursable);
+    if (!nullToAbsent || reimburseOfSyncId != null) {
+      map['reimburse_of_sync_id'] = Variable<String>(reimburseOfSyncId);
     }
     return map;
   }
@@ -3197,6 +3266,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           refundOfSyncId == null && nullToAbsent
               ? const Value.absent()
               : Value(refundOfSyncId),
+      isReimbursable: Value(isReimbursable),
+      reimburseOfSyncId:
+          reimburseOfSyncId == null && nullToAbsent
+              ? const Value.absent()
+              : Value(reimburseOfSyncId),
     );
   }
 
@@ -3241,6 +3315,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       itemDescription: serializer.fromJson<String?>(json['itemDescription']),
       paymentChannel: serializer.fromJson<String?>(json['paymentChannel']),
       refundOfSyncId: serializer.fromJson<String?>(json['refundOfSyncId']),
+      isReimbursable: serializer.fromJson<bool>(json['isReimbursable']),
+      reimburseOfSyncId: serializer.fromJson<String?>(
+        json['reimburseOfSyncId'],
+      ),
     );
   }
   @override
@@ -3278,6 +3356,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'itemDescription': serializer.toJson<String?>(itemDescription),
       'paymentChannel': serializer.toJson<String?>(paymentChannel),
       'refundOfSyncId': serializer.toJson<String?>(refundOfSyncId),
+      'isReimbursable': serializer.toJson<bool>(isReimbursable),
+      'reimburseOfSyncId': serializer.toJson<String?>(reimburseOfSyncId),
     };
   }
 
@@ -3307,6 +3387,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     Value<String?> itemDescription = const Value.absent(),
     Value<String?> paymentChannel = const Value.absent(),
     Value<String?> refundOfSyncId = const Value.absent(),
+    bool? isReimbursable,
+    Value<String?> reimburseOfSyncId = const Value.absent(),
   }) => Transaction(
     id: id ?? this.id,
     ledgerId: ledgerId ?? this.ledgerId,
@@ -3352,6 +3434,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
         paymentChannel.present ? paymentChannel.value : this.paymentChannel,
     refundOfSyncId:
         refundOfSyncId.present ? refundOfSyncId.value : this.refundOfSyncId,
+    isReimbursable: isReimbursable ?? this.isReimbursable,
+    reimburseOfSyncId:
+        reimburseOfSyncId.present
+            ? reimburseOfSyncId.value
+            : this.reimburseOfSyncId,
   );
   Transaction copyWithCompanion(TransactionsCompanion data) {
     return Transaction(
@@ -3423,6 +3510,14 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           data.refundOfSyncId.present
               ? data.refundOfSyncId.value
               : this.refundOfSyncId,
+      isReimbursable:
+          data.isReimbursable.present
+              ? data.isReimbursable.value
+              : this.isReimbursable,
+      reimburseOfSyncId:
+          data.reimburseOfSyncId.present
+              ? data.reimburseOfSyncId.value
+              : this.reimburseOfSyncId,
     );
   }
 
@@ -3453,7 +3548,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('merchant: $merchant, ')
           ..write('itemDescription: $itemDescription, ')
           ..write('paymentChannel: $paymentChannel, ')
-          ..write('refundOfSyncId: $refundOfSyncId')
+          ..write('refundOfSyncId: $refundOfSyncId, ')
+          ..write('isReimbursable: $isReimbursable, ')
+          ..write('reimburseOfSyncId: $reimburseOfSyncId')
           ..write(')'))
         .toString();
   }
@@ -3485,6 +3582,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     itemDescription,
     paymentChannel,
     refundOfSyncId,
+    isReimbursable,
+    reimburseOfSyncId,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -3514,7 +3613,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.merchant == this.merchant &&
           other.itemDescription == this.itemDescription &&
           other.paymentChannel == this.paymentChannel &&
-          other.refundOfSyncId == this.refundOfSyncId);
+          other.refundOfSyncId == this.refundOfSyncId &&
+          other.isReimbursable == this.isReimbursable &&
+          other.reimburseOfSyncId == this.reimburseOfSyncId);
 }
 
 class TransactionsCompanion extends UpdateCompanion<Transaction> {
@@ -3543,6 +3644,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<String?> itemDescription;
   final Value<String?> paymentChannel;
   final Value<String?> refundOfSyncId;
+  final Value<bool> isReimbursable;
+  final Value<String?> reimburseOfSyncId;
   const TransactionsCompanion({
     this.id = const Value.absent(),
     this.ledgerId = const Value.absent(),
@@ -3569,6 +3672,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.itemDescription = const Value.absent(),
     this.paymentChannel = const Value.absent(),
     this.refundOfSyncId = const Value.absent(),
+    this.isReimbursable = const Value.absent(),
+    this.reimburseOfSyncId = const Value.absent(),
   });
   TransactionsCompanion.insert({
     this.id = const Value.absent(),
@@ -3596,6 +3701,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.itemDescription = const Value.absent(),
     this.paymentChannel = const Value.absent(),
     this.refundOfSyncId = const Value.absent(),
+    this.isReimbursable = const Value.absent(),
+    this.reimburseOfSyncId = const Value.absent(),
   }) : ledgerId = Value(ledgerId),
        type = Value(type),
        amount = Value(amount);
@@ -3625,6 +3732,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<String>? itemDescription,
     Expression<String>? paymentChannel,
     Expression<String>? refundOfSyncId,
+    Expression<bool>? isReimbursable,
+    Expression<String>? reimburseOfSyncId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3657,6 +3766,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (itemDescription != null) 'item_description': itemDescription,
       if (paymentChannel != null) 'payment_channel': paymentChannel,
       if (refundOfSyncId != null) 'refund_of_sync_id': refundOfSyncId,
+      if (isReimbursable != null) 'is_reimbursable': isReimbursable,
+      if (reimburseOfSyncId != null) 'reimburse_of_sync_id': reimburseOfSyncId,
     });
   }
 
@@ -3686,6 +3797,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Value<String?>? itemDescription,
     Value<String?>? paymentChannel,
     Value<String?>? refundOfSyncId,
+    Value<bool>? isReimbursable,
+    Value<String?>? reimburseOfSyncId,
   }) {
     return TransactionsCompanion(
       id: id ?? this.id,
@@ -3716,6 +3829,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       itemDescription: itemDescription ?? this.itemDescription,
       paymentChannel: paymentChannel ?? this.paymentChannel,
       refundOfSyncId: refundOfSyncId ?? this.refundOfSyncId,
+      isReimbursable: isReimbursable ?? this.isReimbursable,
+      reimburseOfSyncId: reimburseOfSyncId ?? this.reimburseOfSyncId,
     );
   }
 
@@ -3805,6 +3920,12 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (refundOfSyncId.present) {
       map['refund_of_sync_id'] = Variable<String>(refundOfSyncId.value);
     }
+    if (isReimbursable.present) {
+      map['is_reimbursable'] = Variable<bool>(isReimbursable.value);
+    }
+    if (reimburseOfSyncId.present) {
+      map['reimburse_of_sync_id'] = Variable<String>(reimburseOfSyncId.value);
+    }
     return map;
   }
 
@@ -3835,7 +3956,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('merchant: $merchant, ')
           ..write('itemDescription: $itemDescription, ')
           ..write('paymentChannel: $paymentChannel, ')
-          ..write('refundOfSyncId: $refundOfSyncId')
+          ..write('refundOfSyncId: $refundOfSyncId, ')
+          ..write('isReimbursable: $isReimbursable, ')
+          ..write('reimburseOfSyncId: $reimburseOfSyncId')
           ..write(')'))
         .toString();
   }
@@ -16548,6 +16671,8 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       Value<String?> itemDescription,
       Value<String?> paymentChannel,
       Value<String?> refundOfSyncId,
+      Value<bool> isReimbursable,
+      Value<String?> reimburseOfSyncId,
     });
 typedef $$TransactionsTableUpdateCompanionBuilder =
     TransactionsCompanion Function({
@@ -16576,6 +16701,8 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<String?> itemDescription,
       Value<String?> paymentChannel,
       Value<String?> refundOfSyncId,
+      Value<bool> isReimbursable,
+      Value<String?> reimburseOfSyncId,
     });
 
 class $$TransactionsTableFilterComposer
@@ -16709,6 +16836,16 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<String> get refundOfSyncId => $composableBuilder(
     column: $table.refundOfSyncId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isReimbursable => $composableBuilder(
+    column: $table.isReimbursable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reimburseOfSyncId => $composableBuilder(
+    column: $table.reimburseOfSyncId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -16846,6 +16983,16 @@ class $$TransactionsTableOrderingComposer
     column: $table.refundOfSyncId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isReimbursable => $composableBuilder(
+    column: $table.isReimbursable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reimburseOfSyncId => $composableBuilder(
+    column: $table.reimburseOfSyncId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TransactionsTableAnnotationComposer
@@ -16965,6 +17112,16 @@ class $$TransactionsTableAnnotationComposer
     column: $table.refundOfSyncId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get isReimbursable => $composableBuilder(
+    column: $table.isReimbursable,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reimburseOfSyncId => $composableBuilder(
+    column: $table.reimburseOfSyncId,
+    builder: (column) => column,
+  );
 }
 
 class $$TransactionsTableTableManager
@@ -17024,6 +17181,8 @@ class $$TransactionsTableTableManager
                 Value<String?> itemDescription = const Value.absent(),
                 Value<String?> paymentChannel = const Value.absent(),
                 Value<String?> refundOfSyncId = const Value.absent(),
+                Value<bool> isReimbursable = const Value.absent(),
+                Value<String?> reimburseOfSyncId = const Value.absent(),
               }) => TransactionsCompanion(
                 id: id,
                 ledgerId: ledgerId,
@@ -17050,6 +17209,8 @@ class $$TransactionsTableTableManager
                 itemDescription: itemDescription,
                 paymentChannel: paymentChannel,
                 refundOfSyncId: refundOfSyncId,
+                isReimbursable: isReimbursable,
+                reimburseOfSyncId: reimburseOfSyncId,
               ),
           createCompanionCallback:
               ({
@@ -17078,6 +17239,8 @@ class $$TransactionsTableTableManager
                 Value<String?> itemDescription = const Value.absent(),
                 Value<String?> paymentChannel = const Value.absent(),
                 Value<String?> refundOfSyncId = const Value.absent(),
+                Value<bool> isReimbursable = const Value.absent(),
+                Value<String?> reimburseOfSyncId = const Value.absent(),
               }) => TransactionsCompanion.insert(
                 id: id,
                 ledgerId: ledgerId,
@@ -17104,6 +17267,8 @@ class $$TransactionsTableTableManager
                 itemDescription: itemDescription,
                 paymentChannel: paymentChannel,
                 refundOfSyncId: refundOfSyncId,
+                isReimbursable: isReimbursable,
+                reimburseOfSyncId: reimburseOfSyncId,
               ),
           withReferenceMapper:
               (p0) =>
