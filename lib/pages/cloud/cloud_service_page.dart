@@ -14,6 +14,7 @@ import '../../services/system/logger_service.dart';
 import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/section_card.dart';
 import '../../styles/tokens.dart';
+import '../../styles/liquid_theme.dart';
 import '../../l10n/app_localizations.dart';
 
 // GitHub配置教程链接
@@ -182,6 +183,8 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
                         key: ValueKey('other-sync-${active.type.name}'),
                         initiallyExpanded: usesOtherService,
                         maintainState: true,
+                        shape: const Border(),
+                        collapsedShape: const Border(),
                         leading: const Icon(Icons.more_horiz),
                         title: Text(
                           AppLocalizations.of(context).cloudOtherMethods,
@@ -637,18 +640,23 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
     VoidCallback? onConfigure,
     VoidCallback? onShowGuide,
   }) {
+    final isLiquid = LiquidTheme.isActive(context);
+    final cardRadius = isLiquid ? 24.0 : 12.0;
+
     return Opacity(
       opacity: isDisabled ? 0.5 : 1.0,
-      child: Container(
-        decoration: BoxDecoration(
-          border: isSelected ? Border.all(color: BeeTokens.success(context), width: 2) : null,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: SectionCard(
-          margin: EdgeInsets.zero,
+      child: SectionCard(
+        margin: EdgeInsets.zero,
+        padding: EdgeInsets.zero,
+        borderColor: isSelected
+            ? BeeTokens.success(context).withValues(alpha: isLiquid ? 0.72 : 1.0)
+            : null,
+        borderWidth: isLiquid ? 1.5 : 2.0,
+        child: Material(
+          type: MaterialType.transparency,
           child: InkWell(
             onTap: isDisabled ? null : onTap,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(cardRadius),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -661,7 +669,7 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
                         height: 48,
                         decoration: BoxDecoration(
                           color: iconColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(isLiquid ? 14 : 12),
                         ),
                         child: Icon(icon, color: iconColor, size: 24),
                       ),
@@ -769,19 +777,23 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
 
   Widget _buildICloudCard(BuildContext context, CloudServiceConfig active, {bool isDisabled = false}) {
     final isSelected = active.type == CloudBackendType.icloud;
+    final isLiquid = LiquidTheme.isActive(context);
+    final cardRadius = isLiquid ? 24.0 : 12.0;
 
     return Opacity(
       opacity: isDisabled ? 0.5 : 1.0,
-      child: Container(
-        decoration: BoxDecoration(
-          border: isSelected ? Border.all(color: BeeTokens.success(context), width: 2) : null,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: SectionCard(
-          margin: EdgeInsets.zero,
+      child: SectionCard(
+        margin: EdgeInsets.zero,
+        padding: EdgeInsets.zero,
+        borderColor: isSelected
+            ? BeeTokens.success(context).withValues(alpha: isLiquid ? 0.72 : 1.0)
+            : null,
+        borderWidth: isLiquid ? 1.5 : 2.0,
+        child: Material(
+          type: MaterialType.transparency,
           child: InkWell(
             onTap: isDisabled ? null : () => _switchService(CloudBackendType.icloud),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(cardRadius),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -794,7 +806,7 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
                         height: 48,
                         decoration: BoxDecoration(
                           color: BeeTokens.brandIcloud.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(isLiquid ? 14 : 12),
                         ),
                         child: Icon(Icons.cloud, color: BeeTokens.brandIcloud, size: 24),
                       ),
