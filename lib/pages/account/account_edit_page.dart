@@ -209,17 +209,36 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
       required bool selected,
       required Color primaryColor,
       required VoidCallback onTap}) {
+    final liquid = LiquidTheme.isActive(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
           padding: EdgeInsets.symmetric(vertical: 8.0.scaled(context, ref)),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? BeeTokens.surfaceElevated(context) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: selected
+                ? (liquid
+                    ? (dark
+                        ? Colors.white.withValues(alpha: .18)
+                        : Colors.white.withValues(alpha: .92))
+                    : BeeTokens.surfaceElevated(context))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(liquid ? 999 : 8),
+            boxShadow: selected && liquid
+                ? [
+                    BoxShadow(
+                      color: (dark ? Colors.black : primaryColor)
+                          .withValues(alpha: dark ? .20 : .10),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(
             label,
@@ -273,94 +292,99 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
                   // ===== 账户类型（资产/负债 Tab + 缩小网格）=====
                   SectionCard(
                     margin: EdgeInsets.zero,
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0.scaled(context, ref)),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: BeeTokens.surfaceInput(context),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                _segTab(context,
-                                    label: l10n.accountGroupTradable,
-                                    selected: _typeTab == 0,
-                                    primaryColor: primaryColor,
-                                    onTap: () => setState(() => _typeTab = 0)),
-                                _segTab(context,
-                                    label: l10n.accountTabValuation,
-                                    selected: _typeTab == 1,
-                                    primaryColor: primaryColor,
-                                    onTap: () => setState(() => _typeTab = 1)),
-                              ],
+                    padding: EdgeInsets.all(14.0.scaled(context, ref)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: LiquidTheme.isActive(context)
+                                ? (Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.white.withValues(alpha: .08)
+                                    : Colors.black.withValues(alpha: .05))
+                                : BeeTokens.surfaceInput(context),
+                            borderRadius: BorderRadius.circular(
+                              LiquidTheme.isActive(context) ? 999 : 10,
                             ),
                           ),
-                          SizedBox(height: 16.0.scaled(context, ref)),
-                          GridView.count(
-                            crossAxisCount: 4,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            mainAxisSpacing: 10.0.scaled(context, ref),
-                            crossAxisSpacing: 10.0.scaled(context, ref),
-                            childAspectRatio: 1.0,
-                            children: typesForTab.map((type) {
-                              final isSelected = _selectedType == type;
-                              // 编辑模式禁止跨“可交易 / 估值”大类切换（语义不同）
-                              final disabled = isEditing &&
-                                  isValuationOnlyType(type) !=
-                                      isValuationOnlyType(widget.account!.type);
-                              return _AccountTypeCard(
-                                type: type,
-                                label: getAccountTypeLabel(context, type),
-                                isSelected: isSelected,
-                                primaryColor: primaryColor,
-                                disabled: disabled,
-                                onTap: disabled ? () {} : () => _selectType(type),
-                              );
-                            }).toList(),
+                          child: Row(
+                            children: [
+                              _segTab(context,
+                                  label: l10n.accountGroupTradable,
+                                  selected: _typeTab == 0,
+                                  primaryColor: primaryColor,
+                                  onTap: () => setState(() => _typeTab = 0)),
+                              _segTab(context,
+                                  label: l10n.accountTabValuation,
+                                  selected: _typeTab == 1,
+                                  primaryColor: primaryColor,
+                                  onTap: () => setState(() => _typeTab = 1)),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        SizedBox(height: 12.0.scaled(context, ref)),
+                        GridView.count(
+                          padding: EdgeInsets.zero,
+                          crossAxisCount: 4,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: 10.0.scaled(context, ref),
+                          crossAxisSpacing: 10.0.scaled(context, ref),
+                          childAspectRatio: 1.05,
+                          children: typesForTab.map((type) {
+                            final isSelected = _selectedType == type;
+                            // 编辑模式禁止跨“可交易 / 估值”大类切换（语义不同）
+                            final disabled = isEditing &&
+                                isValuationOnlyType(type) !=
+                                    isValuationOnlyType(widget.account!.type);
+                            return _AccountTypeCard(
+                              type: type,
+                              label: getAccountTypeLabel(context, type),
+                              isSelected: isSelected,
+                              primaryColor: primaryColor,
+                              disabled: disabled,
+                              onTap: disabled ? () {} : () => _selectType(type),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
                   ),
 
-                  SizedBox(height: 8.0.scaled(context, ref)),
+                  SizedBox(height: 10.0.scaled(context, ref)),
 
                   // ===== 基本（名称 + 币种/余额）=====
                   SectionCard(
                     margin: EdgeInsets.zero,
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0.scaled(context, ref)),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextFormField(
-                            controller: _nameController,
-                            decoration: filledDec(
-                              label: l10n.accountNameLabel,
-                              hint: l10n.accountNameHint,
-                              errorText: _nameErrorText,
-                            ),
-                            style: const TextStyle(fontSize: 16),
-                            onChanged: (value) => _checkNameDuplicate(value),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return l10n.accountNameRequired;
-                              }
-                              return null;
-                            },
+                    padding: EdgeInsets.all(14.0.scaled(context, ref)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: filledDec(
+                            label: l10n.accountNameLabel,
+                            hint: l10n.accountNameHint,
+                            errorText: _nameErrorText,
                           ),
-                          SizedBox(height: 12.0.scaled(context, ref)),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 120.0.scaled(context, ref),
-                                child: InkWell(
+                          style: const TextStyle(fontSize: 16),
+                          onChanged: (value) => _checkNameDuplicate(value),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return l10n.accountNameRequired;
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 12.0.scaled(context, ref)),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 148.0.scaled(context, ref),
+                              child: InkWell(
                                   borderRadius: BorderRadius.circular(12),
                                   onTap: () async {
                                     // 同账单日：开选择器前先收键盘
@@ -439,16 +463,14 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
                         ],
                       ),
                     ),
-                  ),
 
                   // ===== 信用卡信息（仅 credit_card）=====
                   if (isCreditCard) ...[
-                    SizedBox(height: 8.0.scaled(context, ref)),
+                    SizedBox(height: 10.0.scaled(context, ref)),
                     SectionCard(
                       margin: EdgeInsets.zero,
-                      child: Padding(
-                        padding: EdgeInsets.all(16.0.scaled(context, ref)),
-                        child: Column(
+                      padding: EdgeInsets.all(14.0.scaled(context, ref)),
+                      child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(l10n.creditCardSettings, style: _sectionTitle(context)),
@@ -583,75 +605,70 @@ class _AccountEditPageState extends ConsumerState<AccountEditPage> {
                           ],
                         ),
                       ),
-                    ),
                   ],
 
                   // ===== 卡信息（仅 bank_card）=====
                   if (isBankCard) ...[
-                    SizedBox(height: 8.0.scaled(context, ref)),
+                    SizedBox(height: 10.0.scaled(context, ref)),
                     SectionCard(
                       margin: EdgeInsets.zero,
-                      child: Padding(
-                        padding: EdgeInsets.all(16.0.scaled(context, ref)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.accountMetaInfo, style: _sectionTitle(context)),
-                            SizedBox(height: 12.0.scaled(context, ref)),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _bankNameController,
-                                    decoration: filledDec(
-                                      label: l10n.accountBankName,
-                                      hint: l10n.accountBankNameHint,
-                                    ),
-                                    style: const TextStyle(fontSize: 16),
+                      padding: EdgeInsets.all(14.0.scaled(context, ref)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(l10n.accountMetaInfo, style: _sectionTitle(context)),
+                          SizedBox(height: 12.0.scaled(context, ref)),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _bankNameController,
+                                  decoration: filledDec(
+                                    label: l10n.accountBankName,
+                                    hint: l10n.accountBankNameHint,
                                   ),
+                                  style: const TextStyle(fontSize: 16),
                                 ),
-                                SizedBox(width: 12.0.scaled(context, ref)),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: _cardLastFourController,
-                                    decoration: filledDec(
-                                      label: l10n.accountCardLastFour,
-                                      hint: l10n.accountCardLastFourHint,
-                                    ).copyWith(counterText: ''),
-                                    style: const TextStyle(fontSize: 16),
-                                    maxLength: 4,
-                                    keyboardType: TextInputType.number,
-                                  ),
+                              ),
+                              SizedBox(width: 12.0.scaled(context, ref)),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _cardLastFourController,
+                                  decoration: filledDec(
+                                    label: l10n.accountCardLastFour,
+                                    hint: l10n.accountCardLastFourHint,
+                                  ).copyWith(counterText: ''),
+                                  style: const TextStyle(fontSize: 16),
+                                  maxLength: 4,
+                                  keyboardType: TextInputType.number,
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
 
                   // ===== 备注（所有类型）=====
-                  SizedBox(height: 8.0.scaled(context, ref)),
+                  SizedBox(height: 10.0.scaled(context, ref)),
                   SectionCard(
                     margin: EdgeInsets.zero,
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0.scaled(context, ref)),
-                      child: TextFormField(
-                        controller: _noteController,
-                        decoration: filledDec(
-                          label: l10n.accountNote,
-                          hint: l10n.accountNoteHint,
-                        ),
-                        style: const TextStyle(fontSize: 16),
-                        maxLines: 3,
-                        minLines: 1,
+                    padding: EdgeInsets.all(14.0.scaled(context, ref)),
+                    child: TextFormField(
+                      controller: _noteController,
+                      decoration: filledDec(
+                        label: l10n.accountNote,
+                        hint: l10n.accountNoteHint,
                       ),
+                      style: const TextStyle(fontSize: 16),
+                      maxLines: 3,
+                      minLines: 1,
                     ),
                   ),
 
-                  SizedBox(height: 24.0.scaled(context, ref)),
+                  SizedBox(height: 16.0.scaled(context, ref)),
 
                   // 保存按钮
                   SizedBox(
