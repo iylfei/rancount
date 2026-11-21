@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +6,11 @@ import 'package:liquid_glass_renderer/liquid_glass_renderer.dart' as renderer;
 import '../../styles/liquid_theme.dart';
 import 'compatible_glass_layer.dart';
 
-/// A bounded material: only prominent controls sample the live backdrop.
+/// Authentic iOS-style Liquid Glass surface:
+/// - Semi-transparent optical body with live backdrop blur & vibrancy saturation lift
+/// - Subtle perimeter refraction & chromatic dispersion via [CompatibleGlassLayer]
+/// - Directional specular highlight rim + inner top caustic sheen
+/// - Dual-layer soft floating elevation shadow
 class GlassSurface extends StatelessWidget {
   final Widget child;
   final double borderRadius;
@@ -35,41 +40,69 @@ class GlassSurface extends StatelessWidget {
     final padded = Padding(padding: padding, child: child);
     final content = prominent && !nested ? _GlassScope(child: padded) : padded;
     if (!appearance.enabled) return Padding(padding: margin, child: content);
+
     final highContrast = MediaQuery.highContrastOf(context);
-    // Use one contour for the shader, clipping and Flutter's antialiased rim.
-    final shape = renderer.LiquidRoundedRectangle(borderRadius: borderRadius);
+    final isCapsule = borderRadius >= 100;
+    final shape = isCapsule
+        ? const renderer.LiquidRoundedRectangle(borderRadius: 999)
+        : renderer.LiquidRoundedSuperellipse(borderRadius: borderRadius);
+
+    final isTinted = tintColor != null;
     final tint =
-        tintColor ?? (dark ? const Color(0xFF202C3E) : const Color(0xFFF8FBFF));
+        tintColor ?? (dark ? const Color(0xFF1C293D) : const Color(0xFFFFFFFF));
+    // Keep tinted glass genuinely translucent so backdrop blur & edge refraction remain visible.
+    final resolvedAlpha =
+        tintOpacity ??
+        (isTinted
+            ? (dark ? .68 : .74)
+            : (dark ? .30 : .32));
+
     final settings = renderer.LiquidGlassSettings(
-      thickness: 18,
-      blur: 8,
-      refractiveIndex: 1.18,
-      lightIntensity: .18,
-      ambientStrength: .04,
-      saturation: 1.12,
-      glassColor: tint.withValues(
-        alpha:
-            tintOpacity ??
-            (tintColor != null
-                ? .96
-                : dark
-                ? .60
-                : .48),
-      ),
+      thickness: prominent ? 22 : 12,
+      blur: prominent ? 15 : 9,
+      refractiveIndex: prominent ? 1.42 : 1.18,
+      chromaticAberration: prominent ? .08 : .02,
+      lightAngle: 0.78,
+      lightIntensity: dark ? .52 : .66,
+      ambientStrength: dark ? .12 : .16,
+      saturation: prominent ? 1.52 : 1.25,
+      glassColor: tint.withValues(alpha: resolvedAlpha),
     );
+
     Widget material;
     if (nested && prominent && !highContrast) {
       material = DecoratedBox(
         decoration: BoxDecoration(
-          color: tint.withValues(alpha: tintColor != null ? .96 : .08),
           borderRadius: BorderRadius.circular(borderRadius),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isTinted
+                ? [
+                    tint.withValues(alpha: dark ? .78 : .86),
+                    tint.withValues(alpha: dark ? .62 : .72),
+                  ]
+                : [
+                    Colors.white.withValues(alpha: dark ? .16 : .52),
+                    Colors.white.withValues(alpha: dark ? .06 : .24),
+                  ],
+          ),
         ),
       );
     } else if (highContrast || !prominent) {
       material = DecoratedBox(
         decoration: BoxDecoration(
-          color: tint.withValues(alpha: highContrast ? 1 : .92),
           borderRadius: BorderRadius.circular(borderRadius),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: highContrast
+                ? [tint, tint]
+                : [
+                    tint.withValues(alpha: dark ? .82 : .88),
+                    tint.withValues(alpha: dark ? .72 : .78),
+                  ],
+          ),
         ),
       );
     } else if (appearance.simplified ||
@@ -88,21 +121,41 @@ class GlassSurface extends StatelessWidget {
         ),
       );
     }
-    // Keep controls in the normal Flutter paint tree. The renderer owns only
-    // the backdrop, so shader loading or a failed geometry pass cannot hide
-    // navigation, dialog contents or their accessible labels.
+
+    // Keep interactive controls in the normal Flutter paint tree so shader/geometry
+    // never hides content or semantics.
     final surface = Stack(
       fit: StackFit.passthrough,
       children: [
         Positioned.fill(
           child: ExcludeSemantics(child: IgnorePointer(child: material)),
         ),
+        if (!highContrast)
+          Positioned.fill(
+            child: ExcludeSemantics(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _SpecularGlassRimPainter(
+                    borderRadius: borderRadius,
+                    dark: dark,
+                    tinted: isTinted,
+                    prominent: prominent,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ClipRRect(
           borderRadius: BorderRadius.circular(borderRadius),
           child: content,
         ),
       ],
     );
+
+    final shadowBase = isTinted
+        ? tint
+        : (dark ? const Color(0xFF040A14) : const Color(0xFF14315A));
+
     return Padding(
       padding: margin,
       child: DecoratedBox(
@@ -110,28 +163,106 @@ class GlassSurface extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: [
             BoxShadow(
-              color: const Color(
-                0xFF183458,
-              ).withValues(alpha: dark ? .16 : .07),
-              blurRadius: 22,
-              offset: const Offset(0, 7),
+              color: shadowBase.withValues(
+                alpha: isTinted
+                    ? (dark ? .34 : .26)
+                    : (dark ? .28 : .10),
+              ),
+              blurRadius: prominent ? 26 : 18,
+              spreadRadius: -3,
+              offset: Offset(0, prominent ? 10 : 6),
+            ),
+            BoxShadow(
+              color: shadowBase.withValues(
+                alpha: isTinted
+                    ? (dark ? .18 : .14)
+                    : (dark ? .18 : .05),
+              ),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: dark ? .22 : .62),
-              width: 1,
-            ),
-          ),
-          child: surface,
-        ),
+        child: surface,
       ),
     );
   }
+}
+
+/// Paints an iOS-style directional specular rim and subtle inner caustic sheen.
+class _SpecularGlassRimPainter extends CustomPainter {
+  final double borderRadius;
+  final bool dark;
+  final bool tinted;
+  final bool prominent;
+
+  const _SpecularGlassRimPainter({
+    required this.borderRadius,
+    required this.dark,
+    required this.tinted,
+    required this.prominent,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final rect = Offset.zero & size;
+    final maxR = math.min(size.width, size.height) / 2;
+    final r = borderRadius.clamp(0.0, maxR);
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(r));
+
+    // 1. Subtle top-edge inner glass reflection sheen
+    final sheenPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.white.withValues(
+            alpha: tinted ? (dark ? .22 : .30) : (dark ? .14 : .36),
+          ),
+          Colors.white.withValues(alpha: .0),
+        ],
+        stops: const [0.0, 0.36],
+      ).createShader(rect);
+    canvas.drawRRect(rrect, sheenPaint);
+
+    // 2. Directional mirror-like rim highlight (strong top-left + subtle bottom-right bounce)
+    final strokeWidth = prominent ? 1.15 : 0.9;
+    final rimRect = rect.deflate(strokeWidth / 2);
+    final rimRRect = RRect.fromRectAndRadius(
+      rimRect,
+      Radius.circular(math.max(0.0, r - strokeWidth / 2)),
+    );
+    final rimPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: dark
+            ? [
+                Colors.white.withValues(alpha: tinted ? .52 : .44),
+                Colors.white.withValues(alpha: .10),
+                Colors.white.withValues(alpha: .06),
+                Colors.white.withValues(alpha: tinted ? .30 : .24),
+              ]
+            : [
+                Colors.white.withValues(alpha: tinted ? .74 : .92),
+                Colors.white.withValues(alpha: tinted ? .24 : .36),
+                Colors.white.withValues(alpha: tinted ? .14 : .22),
+                Colors.white.withValues(alpha: tinted ? .46 : .68),
+              ],
+        stops: const [0.0, 0.34, 0.68, 1.0],
+      ).createShader(rect);
+    canvas.drawRRect(rimRRect, rimPaint);
+  }
+
+  @override
+  bool shouldRepaint(_SpecularGlassRimPainter old) =>
+      old.borderRadius != borderRadius ||
+      old.dark != dark ||
+      old.tinted != tinted ||
+      old.prominent != prominent;
 }
 
 class _GlassScope extends InheritedWidget {
@@ -160,29 +291,68 @@ class LiquidBackdrop extends StatelessWidget {
     }
     final dark = Theme.of(context).brightness == Brightness.dark;
     return _BackdropScope(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: dark
-                ? const [
-                    Color(0xFF101722),
-                    Color(0xFF17253A),
-                    Color(0xFF0C111C),
-                  ]
-                : const [
-                    Color(0xFFF1F6FC),
-                    Color(0xFFE2EDFC),
-                    Color(0xFFF7F9FD),
-                  ],
-            stops: const [0, .52, 1],
-          ),
-        ),
+      child: CustomPaint(
+        painter: _AtmosphericBackdropPainter(dark: dark),
         child: child,
       ),
     );
   }
+}
+
+/// Paints an airy iOS-inspired atmospheric canvas with soft luminance blooms
+/// so translucent Liquid Glass capsules visibly blur, saturate and refract light.
+class _AtmosphericBackdropPainter extends CustomPainter {
+  final bool dark;
+  const _AtmosphericBackdropPainter({required this.dark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final basePaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: dark
+            ? const [
+                Color(0xFF0B1320),
+                Color(0xFF132238),
+                Color(0xFF0A101B),
+              ]
+            : const [
+                Color(0xFFEEF4FC),
+                Color(0xFFE3EEFD),
+                Color(0xFFF4F7FD),
+              ],
+        stops: const [0.0, 0.48, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, basePaint);
+
+    void drawBloom(Offset centerFactor, double radiusFactor, Color color) {
+      final center = Offset(
+        size.width * centerFactor.dx,
+        size.height * centerFactor.dy,
+      );
+      final radius = math.max(size.width, size.height) * radiusFactor;
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [color, color.withValues(alpha: 0)],
+        ).createShader(Rect.fromCircle(center: center, radius: radius));
+      canvas.drawCircle(center, radius, paint);
+    }
+
+    if (dark) {
+      drawBloom(const Offset(0.15, 0.12), 0.52, const Color(0x382A6DF4));
+      drawBloom(const Offset(0.88, 0.28), 0.48, const Color(0x2E5E5CE6));
+      drawBloom(const Offset(0.50, 0.90), 0.50, const Color(0x241B87A8));
+    } else {
+      drawBloom(const Offset(0.12, 0.08), 0.56, const Color(0x6692C5FF));
+      drawBloom(const Offset(0.90, 0.24), 0.50, const Color(0x52B9C4FF));
+      drawBloom(const Offset(0.45, 0.92), 0.52, const Color(0x4D9CE5FF));
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AtmosphericBackdropPainter old) => old.dark != dark;
 }
 
 /// Shared feedback prevents a nested control and its parent vibrating twice.
@@ -210,16 +380,19 @@ class GlassFeedback {
 }
 
 /// Pointer observation only: scrolling, nested taps and long presses keep their
-/// existing gesture recognizers. It never dispatches a business action.
+/// existing gesture recognizers. Adds springy iOS squash-and-bounce + live
+/// finger-tracking specular glow.
 class GlassPressEffect extends StatefulWidget {
   final Widget child;
   final bool enabled;
   final double scale;
+  final double borderRadius;
   const GlassPressEffect({
     super.key,
     required this.child,
     this.enabled = true,
-    this.scale = .96,
+    this.scale = .95,
+    this.borderRadius = 28,
   });
   @override
   State<GlassPressEffect> createState() => _GlassPressEffectState();
@@ -230,10 +403,25 @@ class _GlassPressEffectState extends State<GlassPressEffect> {
   Offset? _origin;
   bool _pressed = false;
   Alignment _light = Alignment.center;
+
   void _reset() {
     _pointer = null;
     _origin = null;
     _pressed = false;
+  }
+
+  void _updateLight(Offset globalPos) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null &&
+        box.hasSize &&
+        box.size.width > 0 &&
+        box.size.height > 0) {
+      final local = box.globalToLocal(globalPos);
+      _light = Alignment(
+        (local.dx / box.size.width * 2 - 1).clamp(-1, 1),
+        (local.dy / box.size.height * 2 - 1).clamp(-1, 1),
+      );
+    }
   }
 
   @override
@@ -263,24 +451,16 @@ class _GlassPressEffectState extends State<GlassPressEffect> {
         if (_pointer != null) return;
         _pointer = event.pointer;
         _origin = event.position;
-        final box = context.findRenderObject() as RenderBox?;
-        if (box != null &&
-            box.hasSize &&
-            box.size.width > 0 &&
-            box.size.height > 0) {
-          final local = box.globalToLocal(event.position);
-          _light = Alignment(
-            (local.dx / box.size.width * 2 - 1).clamp(-1, 1),
-            (local.dy / box.size.height * 2 - 1).clamp(-1, 1),
-          );
-        }
+        _updateLight(event.position);
         setState(() => _pressed = true);
       },
       onPointerMove: (event) {
-        if (event.pointer == _pointer &&
-            _origin != null &&
-            (event.position - _origin!).distance > 12) {
+        if (event.pointer != _pointer || _origin == null) return;
+        if ((event.position - _origin!).distance > 16) {
           _release();
+        } else if (_pressed) {
+          _updateLight(event.position);
+          setState(() {});
         }
       },
       onPointerUp: (event) {
@@ -292,25 +472,39 @@ class _GlassPressEffectState extends State<GlassPressEffect> {
       child: AnimatedScale(
         scale: _pressed && motion ? widget.scale : 1,
         duration: motion
-            ? Duration(milliseconds: _pressed ? 100 : 280)
+            ? Duration(milliseconds: _pressed ? 95 : 340)
             : Duration.zero,
-        curve: _pressed ? Curves.easeOut : Curves.easeOutBack,
-        child: DecoratedBox(
-          position: DecorationPosition.foreground,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: _pressed
-                ? RadialGradient(
-                    center: _light,
-                    radius: 1,
-                    colors: [
-                      Colors.white.withValues(alpha: .24),
-                      Colors.white.withValues(alpha: .02),
-                    ],
-                  )
-                : null,
-          ),
-          child: widget.child,
+        curve: _pressed ? Curves.easeOutCubic : Curves.easeOutBack,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            widget.child,
+            Positioned.fill(
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: _pressed ? 1.0 : 0.0,
+                  duration: motion
+                      ? Duration(milliseconds: _pressed ? 80 : 220)
+                      : Duration.zero,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(widget.borderRadius),
+                      gradient: RadialGradient(
+                        center: _light,
+                        radius: 1.05,
+                        colors: [
+                          Colors.white.withValues(alpha: .32),
+                          Colors.white.withValues(alpha: .04),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.55, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -323,6 +517,7 @@ class GlassPressable extends StatelessWidget {
   final VoidCallback? onLongPress;
   final bool enabled;
   final bool selectionFeedback;
+  final double borderRadius;
   const GlassPressable({
     super.key,
     required this.child,
@@ -330,6 +525,7 @@ class GlassPressable extends StatelessWidget {
     this.onLongPress,
     this.enabled = true,
     this.selectionFeedback = false,
+    this.borderRadius = 28,
   });
   @override
   Widget build(BuildContext context) {
@@ -343,13 +539,14 @@ class GlassPressable extends StatelessWidget {
 
     return GlassPressEffect(
       enabled: active,
+      borderRadius: borderRadius,
       child: Semantics(
         button: true,
         enabled: active,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(borderRadius),
             enableFeedback: !LiquidTheme.isActive(context),
             splashFactory: LiquidTheme.isActive(context)
                 ? NoSplash.splashFactory
@@ -379,17 +576,20 @@ class GlassPressable extends StatelessWidget {
   }
 }
 
-/// Theme-level adapter for Material buttons, including disabled and keyboard
-/// activation states, without replacing their focus or gesture handling.
+/// Theme-level adapter for Material buttons: renders authentic iOS capsule
+/// Liquid Glass pills with live specular sheen, backdrop refraction, and
+/// springy press physics while preserving Material semantics & focus.
 class LiquidButtonLayer extends StatefulWidget {
   final Set<WidgetState> states;
   final Widget child;
   final bool prominent;
+  final bool outlined;
   const LiquidButtonLayer({
     super.key,
     required this.states,
     required this.child,
     this.prominent = false,
+    this.outlined = false,
   });
   @override
   State<LiquidButtonLayer> createState() => _LiquidButtonLayerState();
@@ -399,6 +599,21 @@ class _LiquidButtonLayerState extends State<LiquidButtonLayer> {
   Offset? _origin;
   bool _cancelled = false;
   int _feedbackAtPress = -100;
+  Alignment _light = Alignment.center;
+
+  void _updateLight(Offset globalPos) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null &&
+        box.hasSize &&
+        box.size.width > 0 &&
+        box.size.height > 0) {
+      final local = box.globalToLocal(globalPos);
+      _light = Alignment(
+        (local.dx / box.size.width * 2 - 1).clamp(-1, 1),
+        (local.dy / box.size.height * 2 - 1).clamp(-1, 1),
+      );
+    }
+  }
 
   @override
   void didUpdateWidget(LiquidButtonLayer oldWidget) {
@@ -424,19 +639,54 @@ class _LiquidButtonLayerState extends State<LiquidButtonLayer> {
   @override
   Widget build(BuildContext context) {
     final pressed = widget.states.contains(WidgetState.pressed);
+    final disabled = widget.states.contains(WidgetState.disabled);
     final motion = LiquidTheme.motionOf(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     // Material has already resolved the button's per-instance style. Preserve
     // semantic overrides such as destructive red and their foreground colors.
     final buttonMaterial = context.findAncestorWidgetOfExactType<Material>();
-    final tint = buttonMaterial?.color ?? Theme.of(context).colorScheme.primary;
+    final resolvedBg = buttonMaterial?.color;
+    final hasCustomTint =
+        resolvedBg != null && resolvedBg.a > 0.01 && resolvedBg != Colors.transparent;
+    final tint = hasCustomTint
+        ? resolvedBg
+        : Theme.of(context).colorScheme.primary;
+
+    Widget content = widget.child;
+    if (!disabled && (widget.prominent || widget.outlined)) {
+      content = GlassSurface(
+        borderRadius: 999,
+        prominent: true,
+        tintColor: widget.prominent ? tint : null,
+        tintOpacity: widget.prominent
+            ? (dark ? .68 : .76)
+            : (dark ? .26 : .34),
+        child: content,
+      );
+    } else {
+      content = DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: pressed
+              ? Colors.white.withValues(alpha: dark ? .14 : .32)
+              : Colors.transparent,
+        ),
+        child: content,
+      );
+    }
+
     return Listener(
       onPointerDown: (event) {
         _origin = event.position;
         _cancelled = false;
+        _updateLight(event.position);
       },
       onPointerMove: (event) {
-        if (_origin != null && (event.position - _origin!).distance > 12) {
+        if (_origin != null && (event.position - _origin!).distance > 16) {
           _cancelled = true;
+        } else if (pressed) {
+          _updateLight(event.position);
+          if (mounted) setState(() {});
         }
       },
       onPointerCancel: (_) {
@@ -445,26 +695,43 @@ class _LiquidButtonLayerState extends State<LiquidButtonLayer> {
       },
       onPointerUp: (_) => _origin = null,
       child: AnimatedScale(
-        scale: pressed && motion ? .96 : 1,
+        scale: pressed && motion ? .945 : 1,
         duration: motion
-            ? Duration(milliseconds: pressed ? 100 : 280)
+            ? Duration(milliseconds: pressed ? 95 : 340)
             : Duration.zero,
-        curve: pressed ? Curves.easeOut : Curves.easeOutBack,
-        child: widget.prominent && !widget.states.contains(WidgetState.disabled)
-            ? GlassSurface(
-                borderRadius: 18,
-                tintColor: tint,
-                child: widget.child,
-              )
-            : DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: pressed
-                      ? Colors.white.withValues(alpha: .14)
-                      : Colors.transparent,
+        curve: pressed ? Curves.easeOutCubic : Curves.easeOutBack,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            content,
+            if (!disabled)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: pressed ? 1.0 : 0.0,
+                    duration: motion
+                        ? Duration(milliseconds: pressed ? 75 : 200)
+                        : Duration.zero,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        gradient: RadialGradient(
+                          center: _light,
+                          radius: 1.05,
+                          colors: [
+                            Colors.white.withValues(alpha: .34),
+                            Colors.white.withValues(alpha: .04),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.55, 1.0],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                child: widget.child,
               ),
+          ],
+        ),
       ),
     );
   }

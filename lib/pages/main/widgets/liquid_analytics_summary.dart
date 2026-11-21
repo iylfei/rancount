@@ -83,6 +83,7 @@ class LiquidAnalyticsSummary extends ConsumerWidget {
                 fontSize: 36,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -1.2,
+                fontFeatures: const [FontFeature.tabularFigures()],
                 color: BeeTokens.textPrimary(context),
               ),
             ),

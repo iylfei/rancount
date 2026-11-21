@@ -184,31 +184,54 @@ class TransactionKeySurface extends StatelessWidget {
       return Material(color: color, borderRadius: borderRadius, child: child);
     }
     final primary = Theme.of(context).colorScheme.primary;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final accented = color == primary;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: accented
-                ? [primary.withValues(alpha: .88), primary]
-                : [
-                    Theme.of(
-                      context,
-                    ).colorScheme.surface.withValues(alpha: .76),
-                    Theme.of(context).colorScheme.surface.withValues(alpha: .4),
-                  ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: (accented
+                    ? primary
+                    : (dark ? Colors.black : const Color(0xFF14315A)))
+                .withValues(alpha: accented ? .24 : (dark ? .20 : .07)),
+            blurRadius: accented ? 14 : 10,
+            offset: const Offset(0, 4),
           ),
-          border: Border.all(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: .07),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: accented
+                  ? [
+                      primary.withValues(alpha: .78),
+                      primary.withValues(alpha: .94),
+                    ]
+                  : dark
+                      ? [
+                          Colors.white.withValues(alpha: .16),
+                          Colors.white.withValues(alpha: .07),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: .88),
+                          Colors.white.withValues(alpha: .54),
+                        ],
+            ),
+            border: Border.all(
+              color: Colors.white.withValues(
+                alpha: accented ? .55 : (dark ? .22 : .85),
+              ),
+              width: 1,
+            ),
           ),
+          child: Material(color: Colors.transparent, child: child),
         ),
-        child: Material(color: Colors.transparent, child: child),
       ),
     );
   }

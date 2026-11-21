@@ -94,22 +94,22 @@ ThemeData buildAppTheme({
         outline: outline,
         outlineVariant: outline.withValues(alpha: .6),
       );
-  final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(18));
+  const shape = StadiumBorder();
   ButtonStyle button({bool filled = false, bool outlined = false}) =>
       ButtonStyle(
         minimumSize: const WidgetStatePropertyAll(Size(48, 48)),
         padding: const WidgetStatePropertyAll(
-          EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         ),
-        shape: WidgetStatePropertyAll(shape),
+        shape: const WidgetStatePropertyAll(shape),
         elevation: const WidgetStatePropertyAll(0),
         enableFeedback: false,
         splashFactory: NoSplash.splashFactory,
         backgroundColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.disabled)
-              ? surface.withValues(alpha: .5)
+              ? surface.withValues(alpha: .42)
               : filled
-              ? primary.withValues(alpha: .14)
+              ? primary
               : Colors.transparent,
         ),
         foregroundColor: WidgetStateProperty.resolveWith(
@@ -117,14 +117,13 @@ ThemeData buildAppTheme({
               ? secondaryText.withValues(alpha: .5)
               : filled
               ? scheme.onPrimary
-              : primary,
+              : text,
         ),
-        side: outlined
-            ? WidgetStatePropertyAll(BorderSide(color: outline))
-            : null,
+        side: const WidgetStatePropertyAll(BorderSide.none),
         backgroundBuilder: (context, states, child) => LiquidButtonLayer(
           states: Set.of(states),
           prominent: filled,
+          outlined: outlined,
           child: child ?? const SizedBox.shrink(),
         ),
       );
@@ -243,13 +242,45 @@ ThemeData buildAppTheme({
       ),
       hintStyle: TextStyle(color: secondaryText),
     ),
-    textButtonTheme: TextButtonThemeData(style: button()),
+    textButtonTheme: TextButtonThemeData(
+      style: button().copyWith(
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.disabled)
+              ? secondaryText.withValues(alpha: .5)
+              : primary,
+        ),
+      ),
+    ),
     filledButtonTheme: FilledButtonThemeData(style: button(filled: true)),
     elevatedButtonTheme: ElevatedButtonThemeData(style: button(filled: true)),
     outlinedButtonTheme: OutlinedButtonThemeData(style: button(outlined: true)),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        shape: const WidgetStatePropertyAll(StadiumBorder()),
+        side: WidgetStatePropertyAll(
+          BorderSide(
+            color: Colors.white.withValues(alpha: dark ? .18 : .72),
+            width: 1,
+          ),
+        ),
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return primary.withValues(alpha: dark ? .76 : .84);
+          }
+          return surface.withValues(alpha: dark ? .42 : .55);
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return scheme.onPrimary;
+          return text;
+        }),
+        enableFeedback: false,
+        splashFactory: NoSplash.splashFactory,
+      ),
+    ),
     iconButtonTheme: IconButtonThemeData(
       style: button().copyWith(
-        padding: const WidgetStatePropertyAll(EdgeInsets.all(12)),
+        padding: const WidgetStatePropertyAll(EdgeInsets.all(10)),
+        minimumSize: const WidgetStatePropertyAll(Size(42, 42)),
       ),
     ),
     floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -295,9 +326,9 @@ ThemeData buildAppTheme({
 class _LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
   const _LiquidPageTransitionsBuilder();
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 260);
+  Duration get transitionDuration => const Duration(milliseconds: 300);
   @override
-  Duration get reverseTransitionDuration => const Duration(milliseconds: 220);
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 240);
   @override
   Widget buildTransitions<T>(
     PageRoute<T> route,
@@ -311,12 +342,20 @@ class _LiquidPageTransitionsBuilder extends PageTransitionsBuilder {
     // exposes the previous page's text during navigation.
     final page = LiquidBackdrop(force: true, child: child);
     if (!LiquidTheme.motionOf(context)) return page;
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutQuart,
+      reverseCurve: Curves.easeInCubic,
+    );
     return SlideTransition(
       position: Tween(
-        begin: const Offset(.06, 0),
+        begin: const Offset(.08, 0),
         end: Offset.zero,
-      ).chain(CurveTween(curve: Curves.easeOutCubic)).animate(animation),
-      child: page,
+      ).animate(curved),
+      child: ScaleTransition(
+        scale: Tween(begin: .985, end: 1.0).animate(curved),
+        child: page,
+      ),
     );
   }
 }

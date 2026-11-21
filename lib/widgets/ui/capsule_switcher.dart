@@ -115,12 +115,14 @@ class CapsuleSwitcher<T> extends StatelessWidget {
   Widget _buildLiquid(BuildContext context) {
     if (options.isEmpty) return const SizedBox.shrink();
     final primary = Theme.of(context).colorScheme.primary;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final current = options.indexWhere(
       (option) => option.value == selectedValue,
     );
     final selectedIndex = current < 0 ? 0 : current;
     return GlassSurface(
-      borderRadius: 24,
+      borderRadius: 999,
+      prominent: true,
       padding: const EdgeInsets.all(4),
       child: SizedBox(
         height: height < 48 ? 48 : height,
@@ -135,17 +137,39 @@ class CapsuleSwitcher<T> extends StatelessWidget {
                   bottom: 0,
                   width: width,
                   duration: LiquidTheme.motionOf(context)
-                      ? const Duration(milliseconds: 280)
+                      ? const Duration(milliseconds: 360)
                       : Duration.zero,
-                  curve: Curves.easeOutCubic,
+                  curve: Curves.easeOutBack,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      color: primary.withValues(alpha: .13),
-                      border: Border.all(
-                        color: primary.withValues(alpha: .15),
-                        width: .7,
+                      borderRadius: BorderRadius.circular(999),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: dark
+                            ? [
+                                Colors.white.withValues(alpha: .22),
+                                primary.withValues(alpha: .18),
+                              ]
+                            : [
+                                Colors.white.withValues(alpha: .92),
+                                Colors.white.withValues(alpha: .54),
+                              ],
                       ),
+                      border: Border.all(
+                        color: Colors.white.withValues(
+                          alpha: dark ? .32 : .94,
+                        ),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (dark ? Colors.black : primary)
+                              .withValues(alpha: dark ? .24 : .12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -156,8 +180,9 @@ class CapsuleSwitcher<T> extends StatelessWidget {
                         child: GlassPressable(
                           selectionFeedback: true,
                           onTap: () {
-                            if (selectedValue != option.value)
+                            if (selectedValue != option.value) {
                               onChanged(option.value);
+                            }
                           },
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,

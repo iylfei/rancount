@@ -36,6 +36,7 @@ class LiquidBottomBar extends StatelessWidget {
     final animate =
         LiquidTheme.of(context).animationsEnabled &&
         !MediaQuery.disableAnimationsOf(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -44,9 +45,10 @@ class LiquidBottomBar extends StatelessWidget {
         MediaQuery.viewPaddingOf(context).bottom + 12,
       ),
       child: GlassSurface(
-        borderRadius: 32,
+        borderRadius: 34,
+        prominent: true,
         child: SizedBox(
-          height: 64,
+          height: 66,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final cellWidth = constraints.maxWidth / 5;
@@ -54,21 +56,44 @@ class LiquidBottomBar extends StatelessWidget {
                 children: [
                   AnimatedPositioned(
                     duration: animate
-                        ? const Duration(milliseconds: 320)
+                        ? const Duration(milliseconds: 380)
                         : Duration.zero,
-                    curve: Curves.easeOutCubic,
+                    curve: Curves.easeOutBack,
                     left: activeSlot * cellWidth + 5,
                     top: 6,
                     width: cellWidth - 10,
-                    height: 52,
+                    height: 54,
                     child: IgnorePointer(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: primary.withValues(alpha: .12),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: primary.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(999),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: dark
+                                ? [
+                                    Colors.white.withValues(alpha: .20),
+                                    primary.withValues(alpha: .16),
+                                  ]
+                                : [
+                                    Colors.white.withValues(alpha: .88),
+                                    Colors.white.withValues(alpha: .46),
+                                  ],
                           ),
+                          border: Border.all(
+                            color: Colors.white.withValues(
+                              alpha: dark ? .30 : .92,
+                            ),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (dark ? Colors.black : primary)
+                                  .withValues(alpha: dark ? .24 : .12),
+                              blurRadius: 12,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -110,31 +135,23 @@ class LiquidBottomBar extends StatelessWidget {
                                   onCenterLongPressMoveUpdate,
                               onLongPressEnd: onCenterLongPressEnd,
                               child: Center(
-                                child: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: primary,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white.withValues(
-                                        alpha: .55,
+                                child: SizedBox(
+                                  width: 50,
+                                  height: 50,
+                                  child: GlassSurface(
+                                    borderRadius: 999,
+                                    prominent: true,
+                                    tintColor: primary,
+                                    tintOpacity: dark ? .76 : .82,
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.add_rounded,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onPrimary,
+                                        size: 29,
                                       ),
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: primary.withValues(alpha: .24),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Icon(
-                                    Icons.add_rounded,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimary,
-                                    size: 29,
                                   ),
                                 ),
                               ),
@@ -205,6 +222,7 @@ class LiquidBottomBar extends StatelessWidget {
         child: glyph,
       );
     }
+    final animate = LiquidTheme.motionOf(context);
     return Expanded(
       child: Semantics(
         selected: selected,
@@ -212,11 +230,19 @@ class LiquidBottomBar extends StatelessWidget {
         label: label,
         child: GlassPressable(
           selectionFeedback: true,
+          borderRadius: 999,
           onTap: () => onTabTap(index),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              glyph,
+              AnimatedScale(
+                scale: selected ? 1.08 : 1.0,
+                duration: animate
+                    ? const Duration(milliseconds: 280)
+                    : Duration.zero,
+                curve: Curves.easeOutBack,
+                child: glyph,
+              ),
               const SizedBox(height: 3),
               Text(
                 label,

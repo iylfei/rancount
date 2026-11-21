@@ -138,17 +138,20 @@ class LiquidHomeHeader extends ConsumerWidget {
                     ),
                   ),
                 ),
-                if (onAssistantTap != null)
+                if (onAssistantTap != null) ...[
                   _HeaderAction(
                     icon: Icons.auto_awesome_outlined,
                     tooltip: l10n.aiChatTitle,
                     onTap: onAssistantTap!,
                   ),
+                  const SizedBox(width: 8),
+                ],
                 _HeaderAction(
                   icon: Icons.calendar_month_outlined,
                   tooltip: l10n.calendarTitle,
                   onTap: onCalendarTap,
                 ),
+                const SizedBox(width: 8),
                 _HeaderAction(
                   icon: Icons.search_rounded,
                   tooltip: l10n.homeSearch,
@@ -156,10 +159,11 @@ class LiquidHomeHeader extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             GlassSurface(
-              prominent: false,
-              padding: const EdgeInsets.fromLTRB(18, 4, 18, 17),
+              borderRadius: 28,
+              prominent: true,
+              padding: const EdgeInsets.fromLTRB(18, 10, 14, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -168,19 +172,43 @@ class LiquidHomeHeader extends ConsumerWidget {
                       GlassPressable(
                         enabled: !isJumping,
                         selectionFeedback: true,
+                        borderRadius: 999,
                         onTap: onDateTap,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 48),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 13,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            color: Colors.white.withValues(
+                              alpha: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? .12
+                                  : .56,
+                            ),
+                            border: Border.all(
+                              color: Colors.white.withValues(
+                                alpha: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? .20
+                                    : .82,
+                              ),
+                              width: 0.9,
+                            ),
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
                                 '${l10n.homeYear(month.year)} · ${l10n.homeMonth(month.month.toString().padLeft(2, '0'))}',
                                 style: const TextStyle(
+                                  fontSize: 13.5,
                                   fontWeight: FontWeight.w600,
+                                  letterSpacing: -.1,
                                 ),
                               ),
-                              const SizedBox(width: 5),
+                              const SizedBox(width: 4),
                               if (isJumping)
                                 const SizedBox(
                                   width: 14,
@@ -190,7 +218,7 @@ class LiquidHomeHeader extends ConsumerWidget {
                                   ),
                                 )
                               else
-                                const Icon(Icons.expand_more_rounded, size: 18),
+                                const Icon(Icons.expand_more_rounded, size: 17),
                             ],
                           ),
                         ),
@@ -198,12 +226,16 @@ class LiquidHomeHeader extends ConsumerWidget {
                       const Spacer(),
                       IconButton(
                         tooltip: l10n.homeBalance,
-                        icon: Icon(
-                          ref.watch(hideAmountsProvider)
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          size: 19,
-                          color: BeeTokens.textSecondary(context),
+                        icon: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          child: Icon(
+                            ref.watch(hideAmountsProvider)
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            key: ValueKey(ref.watch(hideAmountsProvider)),
+                            size: 19,
+                            color: BeeTokens.textSecondary(context),
+                          ),
                         ),
                         onPressed: () {
                           ref.read(hideAmountsProvider.notifier).state =
@@ -212,6 +244,7 @@ class LiquidHomeHeader extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
                   const _LiquidMonthlySummary(),
                   const _LiquidBudgetSummary(),
                 ],
@@ -237,15 +270,22 @@ class _HeaderAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Tooltip(
         message: tooltip,
-        child: GlassPressable(
-          onTap: onTap,
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: Icon(
-              icon,
-              size: 21,
-              color: Theme.of(context).colorScheme.primary,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: GlassSurface(
+            borderRadius: 999,
+            prominent: true,
+            child: GlassPressable(
+              borderRadius: 999,
+              onTap: onTap,
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ),
           ),
         ),
@@ -299,6 +339,7 @@ class _LiquidMonthlySummary extends ConsumerWidget {
                     fontSize: 23,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -.8,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                     color: BeeTokens.textPrimary(context),
                   ),
                 ),
