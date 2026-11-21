@@ -9,20 +9,20 @@ import android.media.projection.MediaProjectionManager
 import android.media.projection.MediaProjectionConfig
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 
 /** Transparent permission host so the target screen is visible when capture starts. */
 class ScreenshotCaptureActivity : Activity() {
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val path = intent?.getStringExtra(ScreenshotCaptureService.EXTRA_PATH)
-            if (path != null) {
-                startActivity(Intent(this@ScreenshotCaptureActivity, ScreenshotDraftActivity::class.java).apply {
+            val draftIntent = Intent(this@ScreenshotCaptureActivity, ScreenshotDraftActivity::class.java).apply {
+                if (path != null) {
                     putExtra(MainActivity.EXTRA_CAPTURE_PATH, path)
-                })
-            } else {
-                Toast.makeText(this@ScreenshotCaptureActivity, "截图失败，请重试或选图", Toast.LENGTH_SHORT).show()
+                } else {
+                    putExtra(ScreenshotDraftActivity.EXTRA_CAPTURE_FAILED, true)
+                }
             }
+            startActivity(draftIntent)
             finish()
         }
     }

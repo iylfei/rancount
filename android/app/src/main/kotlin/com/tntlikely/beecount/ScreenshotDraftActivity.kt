@@ -46,6 +46,7 @@ class ScreenshotDraftActivity : FlutterFragmentActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "imagePath" -> result.success(intent.getStringExtra(MainActivity.EXTRA_CAPTURE_PATH))
+                    "captureFailed" -> result.success(intent.getBooleanExtra(EXTRA_CAPTURE_FAILED, false))
                     "saved" -> {
                         saved = true
                         revision++
@@ -77,6 +78,7 @@ class ScreenshotDraftActivity : FlutterFragmentActivity() {
     }
 
     companion object {
+        const val EXTRA_CAPTURE_FAILED = "rancount_capture_failed"
         var activeCapturePath: String? = null
             private set
         var isOpen = false

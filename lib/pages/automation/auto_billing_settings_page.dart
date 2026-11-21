@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../services/billing/image_draft_service.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/image_billing_helper.dart';
 import '../ai/ai_settings_page.dart';
 import 'image_draft_page.dart';
 import 'ios_auto_billing_page.dart';
@@ -18,14 +20,15 @@ class AutoBillingSettingsPage extends StatelessWidget {
       : const AndroidAutoBillingPage();
 }
 
-class AndroidAutoBillingPage extends StatefulWidget {
+class AndroidAutoBillingPage extends ConsumerStatefulWidget {
   const AndroidAutoBillingPage({super.key});
 
   @override
-  State<AndroidAutoBillingPage> createState() => _AndroidAutoBillingPageState();
+  ConsumerState<AndroidAutoBillingPage> createState() =>
+      _AndroidAutoBillingPageState();
 }
 
-class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage>
+class _AndroidAutoBillingPageState extends ConsumerState<AndroidAutoBillingPage>
     with WidgetsBindingObserver {
   static const _channel = MethodChannel('com.tntlikely.beecount/capture');
   final _store = ImageDraftStore();
@@ -88,6 +91,11 @@ class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage>
     if (mounted) setState(() => _sessions = _store.load());
   }
 
+  Future<void> _uploadScreenshot() async {
+    await ImageBillingHelper.pickImageForBilling(context, ref);
+    if (mounted) setState(() => _sessions = _store.load());
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text(_label('截图记账', 'Screenshot billing'))),
@@ -129,6 +137,34 @@ class _AndroidAutoBillingPageState extends State<AndroidAutoBillingPage>
                 FilledButton(
                   onPressed: _addTile,
                   child: Text(_label('添加快捷设置按钮', 'Add Quick Settings tile')),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _label('上传截图识别记账', 'Upload screenshot to bill'),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _label(
+                    '部分银行等应用开启防截屏保护，快捷设置直接采集可能出现黑屏。可先用系统手动截屏，再从相册选择截图识别记账。',
+                    'Some banking apps block direct screen capture with a black screen. Take a system screenshot first, then pick it from your gallery here.',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _uploadScreenshot,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  label: Text(_label('选择截图识别', 'Choose screenshot')),
                 ),
               ],
             ),

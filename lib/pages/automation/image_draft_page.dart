@@ -31,6 +31,7 @@ class ImageDraftPage extends ConsumerStatefulWidget {
   final File? image;
   final bool ownsImage;
   final ImageDraftSession? existing;
+  final String? initialError;
   final Future<void> Function()? onClose;
   final Future<void> Function(int ledgerId)? onSaved;
 
@@ -39,6 +40,7 @@ class ImageDraftPage extends ConsumerStatefulWidget {
     this.image,
     this.ownsImage = false,
     this.existing,
+    this.initialError,
     this.onClose,
     this.onSaved,
   });
@@ -55,6 +57,7 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
   bool _recognizing = false;
   bool _saving = false;
   bool _confirmPending = false;
+  bool _savedAny = false;
   String? _error;
   Future<void> _writes = Future.value();
   bool _writeFailed = false;
@@ -68,7 +71,7 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
       if (!mounted || _saving || _confirmPending) return;
       await widget.onClose!();
     } else {
-      Navigator.pop(context);
+      Navigator.pop(context, _savedAny);
     }
   }
 
@@ -81,6 +84,7 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
     _session = widget.existing;
     _image = widget.image;
     _ownsCurrentImage = widget.ownsImage;
+    _error = widget.initialError;
     if (_session == null && _image != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _recognize());
     }
@@ -122,8 +126,8 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
       if (result.entries.isEmpty) {
         setState(
           () => _error = _label(
-            '模型返回了空账单列表。请先查看本次截图：如果画面正确，可重试识别或检查视觉模型；如果截到了授权框或空白画面，请关闭后重新截图。',
-            'The model returned no bills. Check the captured image first. Retry recognition for a correct image, or capture again if it shows the permission dialog or a blank screen.',
+            '未识别到账单信息。部分银行等应用防截屏会导致直接采集黑屏，可先查看本次截图，或手动截屏后点击下方「上传截图识别记账」，也可以直接手动记账。',
+            'No bills were recognized. Some banking apps block direct screen capture with a black screen. Check the captured image, upload a manual screenshot from your gallery, or enter manually.',
           ),
         );
       } else {
@@ -370,6 +374,7 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
           await _store.remove(session.id);
         }
         if (savedCount > 0) {
+          _savedAny = true;
           if (widget.onSaved != null) {
             await widget.onSaved!(session.ledgerId);
           } else {
@@ -436,15 +441,29 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
     }
   }
 
-  void _manual() {
-    Navigator.of(context).push(
+  Future<void> _manual() async {
+    if (_saving || _confirmPending || _recognizing) return;
+    final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => const TransactionEditorPage(initialKind: 'expense'),
+        builder: (_) => const TransactionEditorPage(
+          initialKind: 'expense',
+          quickAdd: true,
+          showImageBillingAction: false,
+        ),
       ),
     );
+    if (saved != true || !mounted) return;
+    _savedAny = true;
+    if (widget.onSaved != null) {
+      final ledgerId = ref.read(currentLedgerIdProvider);
+      await widget.onSaved!(ledgerId);
+    }
+    if (!mounted) return;
+    await _close();
   }
 
   Future<void> _pickNewImage() async {
+    if (_saving || _confirmPending || _recognizing) return;
     File? selected;
     try {
       selected = await ImageBillingCache.pick(ImageSource.gallery);
@@ -463,6 +482,7 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
       return;
     }
     setState(() {
+      _session = null;
       _image = selected;
       _ownsCurrentImage = true;
       _error = null;
@@ -849,35 +869,54 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(_error ?? _label('暂无草稿', 'No drafts yet')),
-                              const SizedBox(height: 16),
-                              if (_image != null)
-                                OutlinedButton.icon(
-                                  onPressed: _previewImage,
-                                  icon: const Icon(Icons.image_outlined),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 320),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  _error ?? _label('暂无草稿', 'No drafts yet'),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 20),
+                                FilledButton.icon(
+                                  onPressed: _pickNewImage,
+                                  icon: const Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                  ),
                                   label: Text(
-                                    _label('查看本次截图', 'View captured image'),
+                                    _label('上传截图识别记账', 'Upload screenshot to bill'),
                                   ),
                                 ),
-                              if (_image != null)
-                                FilledButton(
-                                  onPressed: _recognize,
-                                  child:
-                                      Text(_label('重试识别', 'Retry recognition')),
+                                if (_image != null) ...[
+                                  const SizedBox(height: 10),
+                                  FilledButton.tonalIcon(
+                                    onPressed: _recognize,
+                                    icon: const Icon(Icons.refresh),
+                                    label: Text(
+                                      _label('重试识别', 'Retry recognition'),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  OutlinedButton.icon(
+                                    onPressed: _previewImage,
+                                    icon: const Icon(Icons.image_outlined),
+                                    label: Text(
+                                      _label('查看本次截图', 'View captured image'),
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 10),
+                                OutlinedButton.icon(
+                                  onPressed: _manual,
+                                  icon: const Icon(Icons.edit_outlined),
+                                  label: Text(
+                                    _label('手动记账', 'Manual entry'),
+                                  ),
                                 ),
-                              TextButton(
-                                onPressed: _pickNewImage,
-                                child: Text(
-                                    _label('换张图片', 'Choose another image')),
-                              ),
-                              TextButton(
-                                onPressed: _manual,
-                                child: Text(_label('手动填写', 'Enter manually')),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),

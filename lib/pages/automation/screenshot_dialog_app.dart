@@ -37,9 +37,20 @@ Future<void> runScreenshotDialog() async {
   );
 }
 
-final _dialogInitProvider = FutureProvider<File>((ref) async {
+class _DialogInitData {
+  final File? image;
+  final bool captureFailed;
+  const _DialogInitData({this.image, this.captureFailed = false});
+}
+
+final _dialogInitProvider = FutureProvider<_DialogInitData>((ref) async {
   final path = await _dialogChannel.invokeMethod<String>('imagePath');
-  if (path == null || !await File(path).exists()) {
+  final captureFailed =
+      await _dialogChannel.invokeMethod<bool>('captureFailed') ?? false;
+  File? image;
+  if (path != null && await File(path).exists()) {
+    image = File(path);
+  } else if (!captureFailed) {
     throw StateError('截图已失效，请关闭后重新截图');
   }
   final prefs = await SharedPreferences.getInstance();
@@ -57,7 +68,7 @@ final _dialogInitProvider = FutureProvider<File>((ref) async {
   if (await ref.read(currentLedgerProvider.future) == null) {
     throw StateError('请先在 rancount 中完成账本设置');
   }
-  return File(path);
+  return _DialogInitData(image: image, captureFailed: captureFailed);
 });
 
 class _ScreenshotDialogApp extends ConsumerStatefulWidget {
@@ -147,14 +158,17 @@ class _ScreenshotDialogAppState extends ConsumerState<_ScreenshotDialogApp>
               ? error.message.toString()
               : '初始化失败，请关闭后重试',
         ),
-        data: (image) {
+        data: (initData) {
           if (!locked) _unlockedOnce = true;
           return Stack(
             children: [
               if (_unlockedOnce)
                 ImageDraftPage(
-                  image: image,
-                  ownsImage: true,
+                  image: initData.image,
+                  ownsImage: initData.image != null,
+                  initialError: initData.captureFailed
+                      ? '截屏采集失败。部分银行等应用会阻止直接截屏，可先手动截屏后再点下方「上传截图识别记账」，或直接手动记账。'
+                      : null,
                   onClose: () => _dialogChannel.invokeMethod<void>('close'),
                   // The temporary engine is destroyed on close. Queue durable
                   // WorkManager retries instead of starting a disposable sync job.

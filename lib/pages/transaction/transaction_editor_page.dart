@@ -19,6 +19,7 @@ import '../../styles/tokens.dart';
 import '../../services/billing/post_processor.dart';
 import '../../services/attachment_service.dart';
 import '../../services/data/tx_author_service.dart';
+import '../../utils/image_billing_helper.dart';
 
 /// 交易编辑器页面
 /// 支持创建/编辑收入、支出和转账记录
@@ -39,6 +40,7 @@ class TransactionEditorPage extends ConsumerStatefulWidget {
   // v30 多币种编辑回显(推隐含汇率用)
   final String? initialCurrencyCode;
   final double? initialNativeAmount;
+  final bool showImageBillingAction;
 
   const TransactionEditorPage({
     super.key,
@@ -56,6 +58,7 @@ class TransactionEditorPage extends ConsumerStatefulWidget {
     this.initialExcludeFromBudget = false,
     this.initialCurrencyCode,
     this.initialNativeAmount,
+    this.showImageBillingAction = true,
   });
 
   @override
@@ -132,6 +135,21 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
                   height: 44,
                   child: Row(
                     children: [
+                      if (widget.quickAdd &&
+                          widget.editingTransactionId == null &&
+                          widget.showImageBillingAction)
+                        IconButton(
+                          tooltip:
+                              Localizations.localeOf(context).languageCode ==
+                                  'zh'
+                              ? '上传截图识别记账'
+                              : 'Upload screenshot to bill',
+                          icon: Icon(
+                            Icons.add_photo_alternate_outlined,
+                            color: BeeTokens.textPrimary(context),
+                          ),
+                          onPressed: _openImageBilling,
+                        ),
                       Expanded(
                         child: Center(
                           child: TransactionGlass(
@@ -223,8 +241,8 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
                 ),
                 TransferForm(
                   onTransferComplete: () {
-                    // 关闭交易编辑器
-                    Navigator.pop(context);
+                    // 关闭交易编辑器并通知调用方已保存
+                    Navigator.pop(context, true);
                   },
                   initialFromAccountId: widget.initialAccountId,
                   initialToAccountId: widget.initialToAccountId,
@@ -240,6 +258,13 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
         ],
       ),
     );
+  }
+
+  Future<void> _openImageBilling() async {
+    final saved = await ImageBillingHelper.pickImageForBilling(context, ref);
+    if (saved && mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   /// 获取默认账户ID（验证币种匹配）
@@ -473,7 +498,7 @@ class _TransactionEditorPageState extends ConsumerState<TransactionEditorPage>
           if (ctx.mounted && Navigator.of(ctx).canPop())
             Navigator.of(ctx).pop();
           if (context.mounted && Navigator.of(context).canPop())
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(true);
           // 反馈：轻微触感 + 系统点击音
           if (!LiquidTheme.isActive(context)) {
             HapticFeedback.lightImpact();

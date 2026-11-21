@@ -11,6 +11,7 @@ import '../ai/ai_settings_page.dart';
 import '../automation/auto_billing_settings_page.dart';
 import 'billing_guide_page.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/image_billing_helper.dart';
 
 /// 智能记账二级页面
 class SmartBillingPage extends ConsumerWidget {
@@ -153,6 +154,21 @@ class SmartBillingPage extends ConsumerWidget {
                             builder: (_) => const AutoBillingSettingsPage(),
                           ),
                         ),
+                      ),
+                      BeeTokens.cardDivider(context),
+                      AppListTile(
+                        leading: Icons.add_photo_alternate_outlined,
+                        title: Localizations.localeOf(context).languageCode ==
+                                'zh'
+                            ? '上传截图识别记账'
+                            : 'Upload screenshot to bill',
+                        subtitle:
+                            Localizations.localeOf(context).languageCode ==
+                                    'zh'
+                                ? '从相册选择截图识别账单（适用银行等防截屏应用）'
+                                : 'Pick a screenshot from gallery (works for banking apps)',
+                        onTap: () =>
+                            ImageBillingHelper.pickImageForBilling(context, ref),
                       ),
                       BeeTokens.cardDivider(context),
                       AppListTile(

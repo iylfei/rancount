@@ -18,8 +18,8 @@ import '../widgets/ui/ui.dart';
 
 /// 图片记账入口(相册/相机)。瘦身后:UI 流程 + 兜底,业务调 [AiBookkeeper]。
 class ImageBillingHelper {
-  /// 从相册选择图片并自动记账
-  static Future<void> pickImageForBilling(
+  /// 从相册选择图片并自动记账，返回是否成功入账
+  static Future<bool> pickImageForBilling(
     BuildContext context,
     WidgetRef ref,
   ) =>
@@ -27,8 +27,8 @@ class ImageBillingHelper {
           ? _pickDraft(context, ImageSource.gallery)
           : _processImageBilling(context, ref, ImageSource.gallery);
 
-  /// 打开相机拍照并自动记账
-  static Future<void> openCameraForBilling(
+  /// 打开相机拍照并自动记账，返回是否成功入账
+  static Future<bool> openCameraForBilling(
     BuildContext context,
     WidgetRef ref,
   ) =>
@@ -36,26 +36,30 @@ class ImageBillingHelper {
           ? _pickDraft(context, ImageSource.camera)
           : _processImageBilling(context, ref, ImageSource.camera);
 
-  static Future<void> _pickDraft(
+  static Future<bool> _pickDraft(
       BuildContext context, ImageSource source) async {
     File? picked;
     try {
       picked = await ImageBillingCache.pick(source);
     } catch (_) {
       if (context.mounted) showToast(context, '无法读取图片，请重新选择');
-      return;
+      return false;
     }
-    if (picked == null) return;
-    if (!context.mounted) { await picked.delete(); return; }
-    await Navigator.of(context).push(MaterialPageRoute(
+    if (picked == null) return false;
+    if (!context.mounted) {
+      await picked.delete();
+      return false;
+    }
+    final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(
       builder: (_) => ImageDraftPage(
         image: picked,
         ownsImage: true,
       ),
     ));
+    return saved == true;
   }
 
-  static Future<void> _processImageBilling(
+  static Future<bool> _processImageBilling(
     BuildContext context,
     WidgetRef ref,
     ImageSource source,
@@ -70,8 +74,8 @@ class ImageBillingHelper {
         maxHeight: 1920,
         imageQuality: 85,
       );
-      if (pickedFile == null) return;
-      if (!context.mounted) return;
+      if (pickedFile == null) return false;
+      if (!context.mounted) return false;
 
       // 2. 显示 loading
       showDialog(
@@ -99,19 +103,19 @@ class ImageBillingHelper {
       // 3. AI vision 兜底
       if (!await AIProviderManager.isCapabilityConfigured(
           AICapabilityType.vision)) {
-        if (!context.mounted) return;
+        if (!context.mounted) return false;
         Navigator.of(context).pop();
         showToast(context, l10n.aiNotConfiguredHint);
-        return;
+        return false;
       }
 
       // 4. 当前账本
       final currentLedger = await ref.read(currentLedgerProvider.future);
       if (currentLedger == null) {
-        if (!context.mounted) return;
+        if (!context.mounted) return false;
         Navigator.of(context).pop();
         showToast(context, l10n.aiOcrNoLedger);
-        return;
+        return false;
       }
 
       // 5. 委托 AiBookkeeper(自动查 categories/accounts + 多笔保存)
@@ -141,7 +145,7 @@ class ImageBillingHelper {
             : null,
       );
 
-      if (!context.mounted) return;
+      if (!context.mounted) return result.success;
       Navigator.of(context).pop();
 
       // 6. 提示用户
@@ -149,7 +153,7 @@ class ImageBillingHelper {
         // failedCount>0:提取到账单但入库失败(真·错误);否则=AI 判定不是账单/没提取到
         showToast(context,
             result.failedCount > 0 ? l10n.aiOcrCheckLog : l10n.aiOcrNoBill);
-        return;
+        return false;
       }
 
       await PostProcessor.run(
@@ -158,7 +162,7 @@ class ImageBillingHelper {
         tags: true,
         attachments: autoAddAttachment,
       );
-      if (!context.mounted) return;
+      if (!context.mounted) return true;
 
       final firstBill = result.firstBill!;
       final typeText = firstBill.type?.name == 'income'
@@ -175,10 +179,12 @@ class ImageBillingHelper {
             ? toastText
             : '$toastText\n${l10n.aiBillingRateMissingHint(result.unconvertedCurrencies.join('、'))}',
       );
+      return true;
     } catch (e) {
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       Navigator.of(context).popUntil((route) => route.isFirst);
       showToast(context, l10n.aiOcrFailed(e.toString()));
+      return false;
     }
   }
 }
