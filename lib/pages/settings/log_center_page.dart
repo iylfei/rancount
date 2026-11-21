@@ -10,6 +10,7 @@ import '../../widgets/biz/section_card.dart';
 import '../../styles/tokens.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../../l10n/app_localizations.dart';
+import 'display_diagnostics_page.dart';
 
 /// 日志中心页面
 class LogCenterPage extends ConsumerStatefulWidget {
@@ -88,6 +89,15 @@ class _LogCenterPageState extends ConsumerState<LogCenterPage> {
             subtitle: l10n.logCenterSubtitle,
             showBack: true,
             actions: [
+              IconButton(
+                icon: const Icon(Icons.display_settings_outlined),
+                tooltip: l10n.displayDiagnosticsTitle,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const DisplayDiagnosticsPage(),
+                  ),
+                ),
+              ),
               // 导出日志
               IconButton(
                 icon: const Icon(Icons.share_outlined),

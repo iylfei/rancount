@@ -6666,7 +6666,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudBeeCountCloudTitle.
   ///
   /// In en, this message translates to:
-  /// **'BeeCount Cloud'**
+  /// **'Self-hosted cloud'**
   String get cloudBeeCountCloudTitle;
 
   /// No description provided for @cloudBeeCountCloudSubtitle.
@@ -6678,7 +6678,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudConfigureBeeCountCloudTitle.
   ///
   /// In en, this message translates to:
-  /// **'Configure BeeCount Cloud'**
+  /// **'Configure self-hosted cloud'**
   String get cloudConfigureBeeCountCloudTitle;
 
   /// No description provided for @cloudBeeCountCloudUrlLabel.
@@ -8226,13 +8226,13 @@ abstract class AppLocalizations {
   /// No description provided for @aiSettingsTitle.
   ///
   /// In en, this message translates to:
-  /// **'AI Assistant'**
+  /// **'AI settings'**
   String get aiSettingsTitle;
 
   /// No description provided for @aiSettingsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Configure AI models and recognition strategy'**
+  /// **'Models for images, reconciliation, voice and the AI assistant'**
   String get aiSettingsSubtitle;
 
   /// No description provided for @aiEnableTitle.
@@ -8244,7 +8244,7 @@ abstract class AppLocalizations {
   /// No description provided for @aiEnableSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Use AI vision to recognize bill screenshots, extract amount, merchant, time, and support natural language conversation'**
+  /// **'Enable the AI assistant and voice billing'**
   String get aiEnableSubtitle;
 
   /// No description provided for @aiEnableToastOn.
@@ -15198,6 +15198,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Soft transparency with lighter rendering'**
   String get appearanceGlassSimplifiedDescription;
+
+  /// No description provided for @billingGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ways to record transactions'**
+  String get billingGuideTitle;
+
+  /// No description provided for @billingGuideSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Images, voice and shortcuts'**
+  String get billingGuideSubtitle;
+
+  /// No description provided for @billingGuideScreenshotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot billing'**
+  String get billingGuideScreenshotTitle;
+
+  /// No description provided for @billingGuideScreenshotSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot tile and drafts'**
+  String get billingGuideScreenshotSettings;
+
+  /// No description provided for @billingGuideScreenshotSettingsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick Settings tile and saved drafts'**
+  String get billingGuideScreenshotSettingsDesc;
+
+  /// No description provided for @billingGuideScreenshotAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your vision API URL, model and key under AI settings → Screenshot and reconciliation; these settings stay on this device. Add Screenshot billing to Quick Settings, use it on a payment screen and grant one-time capture access. Review each draft before saving.'**
+  String get billingGuideScreenshotAndroid;
+
+  /// No description provided for @billingGuideImagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery and camera'**
+  String get billingGuideImagesTitle;
+
+  /// No description provided for @billingGuideImagesAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press + on the home screen and choose Gallery or Camera. Images use the API under AI settings → Screenshot and reconciliation. Check the amount, account and time in each draft before saving. Resume unfinished drafts from screenshot billing.'**
+  String get billingGuideImagesAndroid;
+
+  /// No description provided for @billingGuideImagesIos.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure an image recognition model in AI settings. Long-press + on the home screen and choose Gallery or Camera. Recognition creates transactions automatically; review and edit them in transaction details. Auto-add Attachment controls whether the original image is kept.'**
+  String get billingGuideImagesIos;
+
+  /// No description provided for @billingGuideShareAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Share a bill image from your gallery or payment app to RanCount. Shared images use the API under AI settings → Screenshot and reconciliation and create drafts. Transactions are saved only after you review and confirm them.'**
+  String get billingGuideShareAndroid;
+
+  /// No description provided for @billingGuideVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable the AI assistant and configure speech and text models in AI settings. Long-press + on the home screen and choose voice billing. Recognition creates transactions automatically; review and edit them in transaction details. Adjust the recording trigger and pause duration in Smart Billing.'**
+  String get billingGuideVoice;
+
+  /// No description provided for @rancountHelpSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording, AI setup and self-hosted sync'**
+  String get rancountHelpSubtitle;
+
+  /// No description provided for @rancountSelfHostGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-hosting and configuration'**
+  String get rancountSelfHostGuide;
+
+  /// No description provided for @rancountSelfHostGuideDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'RanCount sync, vision API and device settings'**
+  String get rancountSelfHostGuideDesc;
+
+  /// No description provided for @aboutSourceCode.
+  ///
+  /// In en, this message translates to:
+  /// **'RanCount source code'**
+  String get aboutSourceCode;
+
+  /// No description provided for @aboutSourceChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Source change history'**
+  String get aboutSourceChanges;
+
+  /// No description provided for @aboutUpstreamTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upstream project: BeeCount'**
+  String get aboutUpstreamTitle;
+
+  /// No description provided for @aboutUpstreamAttribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Based on BeeCount 3.8.1 by sunxiao (TNT-Likely).\nCopyright © 2024–2026 sunxiao.'**
+  String get aboutUpstreamAttribution;
+
+  /// No description provided for @aboutProjectLicense.
+  ///
+  /// In en, this message translates to:
+  /// **'Project license'**
+  String get aboutProjectLicense;
+
+  /// No description provided for @aboutDependencyLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party licenses'**
+  String get aboutDependencyLicenses;
+
+  /// No description provided for @displayDiagnosticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Display diagnostics'**
+  String get displayDiagnosticsTitle;
+
+  /// No description provided for @settingsOpenLinkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the link. Check your browser settings and try again.'**
+  String get settingsOpenLinkFailed;
+
+  /// No description provided for @imageVisionSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot and reconciliation'**
+  String get imageVisionSettingsTitle;
+
+  /// No description provided for @imageVisionSettingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for screenshots, gallery, camera, shared images and AI reconciliation. Choose a model that supports images and text analysis.'**
+  String get imageVisionSettingsDescription;
+
+  /// No description provided for @imageVisionBaseUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI-compatible API base URL'**
+  String get imageVisionBaseUrl;
+
+  /// No description provided for @imageVisionKeepKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved; leave blank to keep the current key'**
+  String get imageVisionKeepKey;
+
+  /// No description provided for @imageVisionLocalPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'The URL, model and key stay on this device and are not synced with ledgers. Images and reconciliation data go directly to this endpoint.'**
+  String get imageVisionLocalPrivacy;
+
+  /// No description provided for @imageVisionConfigInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid HTTP(S) API URL, vision model and key'**
+  String get imageVisionConfigInvalid;
+
+  /// No description provided for @imageVisionConfigSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'API configuration saved on this device'**
+  String get imageVisionConfigSaved;
+
+  /// No description provided for @imageVisionConfigLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read this device’s configuration. Please retry.'**
+  String get imageVisionConfigLoadFailed;
+
+  /// No description provided for @imageVisionConfigSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure storage is unavailable. The configuration was not fully saved; please retry.'**
+  String get imageVisionConfigSaveFailed;
+
+  /// No description provided for @aiAssistantVoiceSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI assistant and voice'**
+  String get aiAssistantVoiceSettingsTitle;
+
+  /// No description provided for @cloudOtherMethods.
+  ///
+  /// In en, this message translates to:
+  /// **'More sync methods'**
+  String get cloudOtherMethods;
+
+  /// No description provided for @aiVoicePromptDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognition prompts for voice billing'**
+  String get aiVoicePromptDescription;
 }
 
 class _AppLocalizationsDelegate

@@ -821,7 +821,7 @@ class _ReconciliationPageState extends ConsumerState<ReconciliationPage> {
           onEditRow: (r) => _row(a, r),
           onRemoveRow: _removeRow,
         ),
-      const ReconciliationNotice('未添加截图或手动流水的账户按期间无变动核对。分析会使用截图记账中配置的 AI 服务。'),
+      const ReconciliationNotice('未添加截图或手动流水的账户按期间无变动核对。分析会使用 AI 设置中「截图与对账」的模型。'),
     ];
   }
 

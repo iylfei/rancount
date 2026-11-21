@@ -3538,13 +3538,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudCustomS3Subtitle => 'AWS S3 / Cloudflare R2 / MinIO';
 
   @override
-  String get cloudBeeCountCloudTitle => 'BeeCount Cloud';
+  String get cloudBeeCountCloudTitle => '自建云';
 
   @override
   String get cloudBeeCountCloudSubtitle => '自建云服务 · 增量同步 · 多设备协同';
 
   @override
-  String get cloudConfigureBeeCountCloudTitle => '配置 BeeCount Cloud';
+  String get cloudConfigureBeeCountCloudTitle => '配置自建云';
 
   @override
   String get cloudBeeCountCloudUrlLabel => '服务器地址';
@@ -4341,16 +4341,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get iosAutoManualConfigDesc => '若一键导入不可用，可按以下步骤手动创建快捷指令。';
 
   @override
-  String get aiSettingsTitle => 'AI小助手';
+  String get aiSettingsTitle => 'AI 设置';
 
   @override
-  String get aiSettingsSubtitle => '配置AI模型和识别策略';
+  String get aiSettingsSubtitle => '截图、对账、语音与 AI 助手的模型配置';
 
   @override
   String get aiEnableTitle => '启用AI小助手';
 
   @override
-  String get aiEnableSubtitle => '使用 AI 视觉识别账单截图,提取金额、商家、时间等信息,并支持自然语言对话';
+  String get aiEnableSubtitle => '启用 AI 助手和语音记账';
 
   @override
   String get aiEnableToastOn => 'AI小助手已启用';
@@ -8104,6 +8104,116 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get appearanceGlassSimplifiedDescription => '柔和透明效果，减少渲染开销';
+
+  @override
+  String get billingGuideTitle => '记账方式说明';
+
+  @override
+  String get billingGuideSubtitle => '图片、语音与快捷入口';
+
+  @override
+  String get billingGuideScreenshotTitle => '截图记账';
+
+  @override
+  String get billingGuideScreenshotSettings => '截图按钮与草稿';
+
+  @override
+  String get billingGuideScreenshotSettingsDesc => '快捷设置按钮与未完成草稿';
+
+  @override
+  String get billingGuideScreenshotAndroid =>
+      '先在「AI 设置 → 截图与对账」填写视觉接口地址、模型和密钥，配置仅保存在本机。将「截图记账」添加到系统快捷设置，在支付页面点击按钮并同意单次截屏授权。识别完成后逐笔核对草稿，再确认入账。';
+
+  @override
+  String get billingGuideImagesTitle => '相册与拍照';
+
+  @override
+  String get billingGuideImagesAndroid =>
+      '长按首页底部的 + 按钮，选择「相册」或「拍照」。图片使用「AI 设置 → 截图与对账」中配置的视觉接口识别，结果先保存为草稿；核对金额、账户和时间后再确认入账。未完成的草稿可从截图记账继续。';
+
+  @override
+  String get billingGuideImagesIos =>
+      '先在 AI 设置中配置图片识别模型。长按首页底部的 + 按钮，选择「相册」或「拍照」，识别完成后自动创建账目，可在明细中核对和修改。原图是否保留为附件由「自动添加附件」控制。';
+
+  @override
+  String get billingGuideShareAndroid =>
+      '在相册或支付应用中分享账单图片，选择 RanCount。分享图片使用「AI 设置 → 截图与对账」的视觉接口，先生成草稿，核对并确认后才保存为正式账目。';
+
+  @override
+  String get billingGuideVoice =>
+      '在 AI 设置中启用 AI 小助手，并配置语音识别和文本模型。长按首页底部的 + 按钮，选择语音记账。识别完成后自动创建账目，可在明细中核对和修改；录音触发方式和停顿时长可在智能记账中调整。';
+
+  @override
+  String get rancountHelpSubtitle => '记账方式、AI 配置与自建云';
+
+  @override
+  String get rancountSelfHostGuide => '自建云与配置说明';
+
+  @override
+  String get rancountSelfHostGuideDesc => 'RanCount 同步、视觉接口与设备配置';
+
+  @override
+  String get aboutSourceCode => 'RanCount 源代码';
+
+  @override
+  String get aboutSourceChanges => '代码变更记录';
+
+  @override
+  String get aboutUpstreamTitle => '上游项目 BeeCount';
+
+  @override
+  String get aboutUpstreamAttribution =>
+      '基于 BeeCount 3.8.1，原作者 sunxiao（TNT-Likely）。\n版权所有 © 2024–2026 sunxiao。';
+
+  @override
+  String get aboutProjectLicense => '项目许可';
+
+  @override
+  String get aboutDependencyLicenses => '第三方组件许可';
+
+  @override
+  String get displayDiagnosticsTitle => '显示诊断';
+
+  @override
+  String get settingsOpenLinkFailed => '无法打开链接，请检查浏览器设置后重试';
+
+  @override
+  String get imageVisionSettingsTitle => '截图与对账';
+
+  @override
+  String get imageVisionSettingsDescription =>
+      '用于截图、相册、拍照、分享图片识别，以及 AI 对账。模型需支持图片识别和文本分析。';
+
+  @override
+  String get imageVisionBaseUrl => 'OpenAI 兼容 API 基础地址';
+
+  @override
+  String get imageVisionKeepKey => '已保存，留空则保持原密钥';
+
+  @override
+  String get imageVisionLocalPrivacy =>
+      '地址、模型和密钥仅保存在本机，不随账本同步。图片及对账所需内容直接发送到所填接口。';
+
+  @override
+  String get imageVisionConfigInvalid => '请填写有效的 HTTP(S) API 地址、视觉模型和密钥';
+
+  @override
+  String get imageVisionConfigSaved => '接口配置已保存在本机';
+
+  @override
+  String get imageVisionConfigLoadFailed => '暂时无法读取本机配置，请重试';
+
+  @override
+  String get imageVisionConfigSaveFailed => '安全存储不可用，配置未完整保存，请重试';
+
+  @override
+  String get aiAssistantVoiceSettingsTitle => 'AI 助手与语音';
+
+  @override
+  String get cloudOtherMethods => '更多同步方式';
+
+  @override
+  String get aiVoicePromptDescription => '语音记账的识别提示词';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -11640,13 +11750,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudCustomS3Subtitle => 'AWS S3 / Cloudflare R2 / MinIO';
 
   @override
-  String get cloudBeeCountCloudTitle => 'BeeCount Cloud';
+  String get cloudBeeCountCloudTitle => '自建雲端';
 
   @override
   String get cloudBeeCountCloudSubtitle => '自建雲服務 · 增量同步 · 多裝置協同';
 
   @override
-  String get cloudConfigureBeeCountCloudTitle => '設定 BeeCount Cloud';
+  String get cloudConfigureBeeCountCloudTitle => '設定自建雲端';
 
   @override
   String get cloudBeeCountCloudUrlLabel => '伺服器地址';
@@ -12443,16 +12553,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get iosAutoManualConfigDesc => '若一鍵匯入無法使用，可依照以下步驟手動建立捷徑。';
 
   @override
-  String get aiSettingsTitle => 'AI 小助手';
+  String get aiSettingsTitle => 'AI 設定';
 
   @override
-  String get aiSettingsSubtitle => '設定 AI 模型和識別策略';
+  String get aiSettingsSubtitle => '截圖、對帳、語音與 AI 助手的模型設定';
 
   @override
   String get aiEnableTitle => '啟用 AI 小助手';
 
   @override
-  String get aiEnableSubtitle => '使用 AI 視覺識別帳單截圖,提取金額、商家、時間等資訊,並支援自然語言對話';
+  String get aiEnableSubtitle => '啟用 AI 助手和語音記帳';
 
   @override
   String get aiEnableToastOn => 'AI 小助手已啟用';
@@ -15830,4 +15940,114 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get appearanceGlassSimplifiedDescription => '柔和透明效果，減少繪製負擔';
+
+  @override
+  String get billingGuideTitle => '記帳方式說明';
+
+  @override
+  String get billingGuideSubtitle => '圖片、語音與快捷入口';
+
+  @override
+  String get billingGuideScreenshotTitle => '截圖記帳';
+
+  @override
+  String get billingGuideScreenshotSettings => '截圖按鈕與草稿';
+
+  @override
+  String get billingGuideScreenshotSettingsDesc => '快速設定按鈕與未完成草稿';
+
+  @override
+  String get billingGuideScreenshotAndroid =>
+      '先在「AI 設定 → 截圖與對帳」填寫視覺介面位址、模型和金鑰，設定僅儲存在本機。將「截圖記帳」加入系統快速設定，在付款頁面點選按鈕並同意單次截圖授權。辨識完成後逐筆核對草稿，再確認入帳。';
+
+  @override
+  String get billingGuideImagesTitle => '相簿與拍照';
+
+  @override
+  String get billingGuideImagesAndroid =>
+      '長按首頁底部的 + 按鈕，選擇「相簿」或「拍照」。圖片使用「AI 設定 → 截圖與對帳」中設定的視覺介面辨識，結果先儲存為草稿；核對金額、帳戶和時間後再確認入帳。未完成的草稿可從截圖記帳繼續。';
+
+  @override
+  String get billingGuideImagesIos =>
+      '先在 AI 設定中設定圖片辨識模型。長按首頁底部的 + 按鈕，選擇「相簿」或「拍照」，辨識完成後自動建立帳目，可在明細中核對和修改。原圖是否保留為附件由「自動新增附件」控制。';
+
+  @override
+  String get billingGuideShareAndroid =>
+      '在相簿或付款應用程式中分享帳單圖片，選擇 RanCount。分享圖片使用「AI 設定 → 截圖與對帳」的視覺介面，先產生草稿，核對並確認後才儲存為正式帳目。';
+
+  @override
+  String get billingGuideVoice =>
+      '在 AI 設定中啟用 AI 小助手，並設定語音辨識和文字模型。長按首頁底部的 + 按鈕，選擇語音記帳。辨識完成後自動建立帳目，可在明細中核對和修改；錄音觸發方式和停頓時長可在智慧記帳中調整。';
+
+  @override
+  String get rancountHelpSubtitle => '記帳方式、AI 設定與自建雲端';
+
+  @override
+  String get rancountSelfHostGuide => '自建雲端與設定說明';
+
+  @override
+  String get rancountSelfHostGuideDesc => 'RanCount 同步、視覺介面與裝置設定';
+
+  @override
+  String get aboutSourceCode => 'RanCount 原始碼';
+
+  @override
+  String get aboutSourceChanges => '程式碼變更記錄';
+
+  @override
+  String get aboutUpstreamTitle => '上游專案 BeeCount';
+
+  @override
+  String get aboutUpstreamAttribution =>
+      '基於 BeeCount 3.8.1，原作者 sunxiao（TNT-Likely）。\n版權所有 © 2024–2026 sunxiao。';
+
+  @override
+  String get aboutProjectLicense => '專案授權';
+
+  @override
+  String get aboutDependencyLicenses => '第三方元件授權';
+
+  @override
+  String get displayDiagnosticsTitle => '顯示診斷';
+
+  @override
+  String get settingsOpenLinkFailed => '無法開啟連結，請檢查瀏覽器設定後重試';
+
+  @override
+  String get imageVisionSettingsTitle => '截圖與對帳';
+
+  @override
+  String get imageVisionSettingsDescription =>
+      '用於截圖、相簿、拍照、分享圖片辨識，以及 AI 對帳。模型需支援圖片辨識和文字分析。';
+
+  @override
+  String get imageVisionBaseUrl => 'OpenAI 相容 API 基礎位址';
+
+  @override
+  String get imageVisionKeepKey => '已儲存，留空則保留原金鑰';
+
+  @override
+  String get imageVisionLocalPrivacy =>
+      '位址、模型和金鑰僅儲存在本機，不隨帳本同步。圖片及對帳所需內容直接傳送到所填介面。';
+
+  @override
+  String get imageVisionConfigInvalid => '請填寫有效的 HTTP(S) API 位址、視覺模型和金鑰';
+
+  @override
+  String get imageVisionConfigSaved => '介面設定已儲存在本機';
+
+  @override
+  String get imageVisionConfigLoadFailed => '暫時無法讀取本機設定，請重試';
+
+  @override
+  String get imageVisionConfigSaveFailed => '安全儲存空間無法使用，設定未完整儲存，請重試';
+
+  @override
+  String get aiAssistantVoiceSettingsTitle => 'AI 助手與語音';
+
+  @override
+  String get cloudOtherMethods => '更多同步方式';
+
+  @override
+  String get aiVoicePromptDescription => '語音記帳的辨識提示詞';
 }

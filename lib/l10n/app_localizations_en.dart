@@ -3650,14 +3650,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudCustomS3Subtitle => 'AWS S3 / Cloudflare R2 / MinIO';
 
   @override
-  String get cloudBeeCountCloudTitle => 'BeeCount Cloud';
+  String get cloudBeeCountCloudTitle => 'Self-hosted cloud';
 
   @override
   String get cloudBeeCountCloudSubtitle =>
       'Self-hosted · Incremental sync · Multi-device';
 
   @override
-  String get cloudConfigureBeeCountCloudTitle => 'Configure BeeCount Cloud';
+  String get cloudConfigureBeeCountCloudTitle => 'Configure self-hosted cloud';
 
   @override
   String get cloudBeeCountCloudUrlLabel => 'Server URL';
@@ -4518,18 +4518,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'If one-tap import isn\'t available, follow these steps to create the shortcut manually.';
 
   @override
-  String get aiSettingsTitle => 'AI Assistant';
+  String get aiSettingsTitle => 'AI settings';
 
   @override
   String get aiSettingsSubtitle =>
-      'Configure AI models and recognition strategy';
+      'Models for images, reconciliation, voice and the AI assistant';
 
   @override
   String get aiEnableTitle => 'Enable AI Assistant';
 
   @override
-  String get aiEnableSubtitle =>
-      'Use AI vision to recognize bill screenshots, extract amount, merchant, time, and support natural language conversation';
+  String get aiEnableSubtitle => 'Enable the AI assistant and voice billing';
 
   @override
   String get aiEnableToastOn => 'AI Assistant enabled';
@@ -8447,4 +8446,121 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get appearanceGlassSimplifiedDescription =>
       'Soft transparency with lighter rendering';
+
+  @override
+  String get billingGuideTitle => 'Ways to record transactions';
+
+  @override
+  String get billingGuideSubtitle => 'Images, voice and shortcuts';
+
+  @override
+  String get billingGuideScreenshotTitle => 'Screenshot billing';
+
+  @override
+  String get billingGuideScreenshotSettings => 'Screenshot tile and drafts';
+
+  @override
+  String get billingGuideScreenshotSettingsDesc =>
+      'Quick Settings tile and saved drafts';
+
+  @override
+  String get billingGuideScreenshotAndroid =>
+      'Enter your vision API URL, model and key under AI settings → Screenshot and reconciliation; these settings stay on this device. Add Screenshot billing to Quick Settings, use it on a payment screen and grant one-time capture access. Review each draft before saving.';
+
+  @override
+  String get billingGuideImagesTitle => 'Gallery and camera';
+
+  @override
+  String get billingGuideImagesAndroid =>
+      'Long-press + on the home screen and choose Gallery or Camera. Images use the API under AI settings → Screenshot and reconciliation. Check the amount, account and time in each draft before saving. Resume unfinished drafts from screenshot billing.';
+
+  @override
+  String get billingGuideImagesIos =>
+      'Configure an image recognition model in AI settings. Long-press + on the home screen and choose Gallery or Camera. Recognition creates transactions automatically; review and edit them in transaction details. Auto-add Attachment controls whether the original image is kept.';
+
+  @override
+  String get billingGuideShareAndroid =>
+      'Share a bill image from your gallery or payment app to RanCount. Shared images use the API under AI settings → Screenshot and reconciliation and create drafts. Transactions are saved only after you review and confirm them.';
+
+  @override
+  String get billingGuideVoice =>
+      'Enable the AI assistant and configure speech and text models in AI settings. Long-press + on the home screen and choose voice billing. Recognition creates transactions automatically; review and edit them in transaction details. Adjust the recording trigger and pause duration in Smart Billing.';
+
+  @override
+  String get rancountHelpSubtitle => 'Recording, AI setup and self-hosted sync';
+
+  @override
+  String get rancountSelfHostGuide => 'Self-hosting and configuration';
+
+  @override
+  String get rancountSelfHostGuideDesc =>
+      'RanCount sync, vision API and device settings';
+
+  @override
+  String get aboutSourceCode => 'RanCount source code';
+
+  @override
+  String get aboutSourceChanges => 'Source change history';
+
+  @override
+  String get aboutUpstreamTitle => 'Upstream project: BeeCount';
+
+  @override
+  String get aboutUpstreamAttribution =>
+      'Based on BeeCount 3.8.1 by sunxiao (TNT-Likely).\nCopyright © 2024–2026 sunxiao.';
+
+  @override
+  String get aboutProjectLicense => 'Project license';
+
+  @override
+  String get aboutDependencyLicenses => 'Third-party licenses';
+
+  @override
+  String get displayDiagnosticsTitle => 'Display diagnostics';
+
+  @override
+  String get settingsOpenLinkFailed =>
+      'Could not open the link. Check your browser settings and try again.';
+
+  @override
+  String get imageVisionSettingsTitle => 'Screenshot and reconciliation';
+
+  @override
+  String get imageVisionSettingsDescription =>
+      'Used for screenshots, gallery, camera, shared images and AI reconciliation. Choose a model that supports images and text analysis.';
+
+  @override
+  String get imageVisionBaseUrl => 'OpenAI-compatible API base URL';
+
+  @override
+  String get imageVisionKeepKey => 'Saved; leave blank to keep the current key';
+
+  @override
+  String get imageVisionLocalPrivacy =>
+      'The URL, model and key stay on this device and are not synced with ledgers. Images and reconciliation data go directly to this endpoint.';
+
+  @override
+  String get imageVisionConfigInvalid =>
+      'Enter a valid HTTP(S) API URL, vision model and key';
+
+  @override
+  String get imageVisionConfigSaved => 'API configuration saved on this device';
+
+  @override
+  String get imageVisionConfigLoadFailed =>
+      'Could not read this device’s configuration. Please retry.';
+
+  @override
+  String get imageVisionConfigSaveFailed =>
+      'Secure storage is unavailable. The configuration was not fully saved; please retry.';
+
+  @override
+  String get aiAssistantVoiceSettingsTitle => 'AI assistant and voice';
+
+  @override
+  String get cloudOtherMethods => 'More sync methods';
+
+  @override
+  String get aiVoicePromptDescription =>
+      'Recognition prompts for voice billing';
 }

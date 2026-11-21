@@ -1,6 +1,5 @@
-import 'dart:io' show Platform, File;
+import 'dart:io' show File;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:beecount/widgets/biz/bee_icon.dart';
 
@@ -16,24 +15,17 @@ import '../cloud/cloud_service_page.dart';
 import '../../services/system/logger_service.dart';
 import '../../services/ui/avatar_service.dart';
 import '../../providers/avatar_providers.dart';
-import '../settings/help_center_page.dart';
+import '../settings/rancount_help_page.dart';
 import '../../providers/sync_providers.dart' as sp;
-import '../../services/export/share_poster_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../cloud/cloud_sync_page.dart';
 import '../cloud/beecount_cloud_sync_page.dart';
-import '../../utils/website_urls.dart';
-import '../../providers/github_star_provider.dart';
 import '../settings/data_management_page.dart';
 import '../settings/appearance_settings_page.dart';
 import '../settings/smart_billing_page.dart';
 import '../settings/automation_page.dart';
 import '../settings/about_page.dart';
-import '../report/annual_report_page.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:in_app_review/in_app_review.dart';
 import '../../utils/ui_scale_extensions.dart';
-import '../donation/donation_page.dart';
 
 class MinePage extends ConsumerWidget {
   const MinePage({super.key});
@@ -127,8 +119,8 @@ class MinePage extends ConsumerWidget {
                                       case CloudBackendType.beecountCloud:
                                         return cloudVersion != null &&
                                                 cloudVersion.isNotEmpty
-                                            ? 'BeeCount Cloud v$cloudVersion'
-                                            : 'BeeCount Cloud';
+                                            ? '${AppLocalizations.of(sectionContext).cloudBeeCountCloudTitle} v$cloudVersion'
+                                            : AppLocalizations.of(sectionContext).cloudBeeCountCloudTitle;
                                     }
                                   },
                                 ),
@@ -452,175 +444,20 @@ class MinePage extends ConsumerWidget {
                         },
                       ),
                       BeeTokens.cardDivider(context),
-                      // 使用帮助:默认 App 内嵌 WebView(embed 模式)。
-                      // 审核兜底:kHelpCenterInApp 改 false 重新打包即回退外部浏览器
                       AppListTile(
                         leading: Icons.help_outline,
                         title: AppLocalizations.of(context).mineHelp,
-                        subtitle: AppLocalizations.of(context).mineHelpSubtitle,
-                        onTap: () async {
-                          if (kHelpCenterInApp) {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const HelpCenterPage(),
-                              ),
-                            );
-                          } else {
-                            final locale = Localizations.localeOf(context);
-                            await _tryOpenUrl(
-                              Uri.parse(WebsiteUrls.docs(locale)),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                // 支持我们
-                LiquidMainSectionTitle(
-                  title: AppLocalizations.of(context).mineSupportAuthor,
-                ),
-                SizedBox(height: liquid ? 0 : 8.0.scaled(context, ref)),
-                SectionCard(
-                  margin: EdgeInsets.fromLTRB(
-                    12.0.scaled(context, ref),
-                    0,
-                    12.0.scaled(context, ref),
-                    0,
-                  ),
-                  child: Column(
-                    children: [
-                      // 仅在iOS显示打赏入口
-                      if (Platform.isIOS) ...[
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final primaryColor = Theme.of(
-                              context,
-                            ).colorScheme.primary;
-                            return AppListTile(
-                              leading: Icons.favorite,
-                              leadingWidget: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: primaryColor.withValues(alpha: 0.12),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.favorite_border,
-                                  color: primaryColor,
-                                ),
-                              ),
-                              title: AppLocalizations.of(context).donationTitle,
-                              subtitle: AppLocalizations.of(
-                                context,
-                              ).donationEntrySubtitle,
-                              trailing: Icon(
-                                Icons.chevron_right,
-                                color: BeeTokens.iconTertiary(context),
-                                size: 20,
-                              ),
-                              onTap: () async {
-                                await Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => const DonationPage(),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        BeeTokens.cardDivider(context),
-                      ],
-                      // GitHub Star
-                      Consumer(
-                        builder: (context, ref, _) {
-                          final starCountAsync = ref.watch(
-                            githubStarCountProvider,
-                          );
-                          final starCount = starCountAsync.valueOrNull ??
-                              githubStarFallbackCount;
-                          return AppListTile(
-                            leading: Icons.star_outline,
-                            title: AppLocalizations.of(
-                              context,
-                            ).mineSupportAuthor,
-                            subtitle: AppLocalizations.of(
-                              context,
-                            ).mineSupportAuthorSubtitle(starCount.toString()),
-                            onTap: () => _showGitHubStarGuide(context),
-                          );
-                        },
-                      ),
-                      BeeTokens.cardDivider(context),
-                      // 年度账单
-                      AppListTile(
-                        leading: Icons.auto_graph_rounded,
-                        title: AppLocalizations.of(context).annualReportTitle,
                         subtitle: AppLocalizations.of(
                           context,
-                        ).annualReportEntrySubtitle,
-                        trailing: Icon(
-                          Icons.chevron_right,
-                          color: BeeTokens.iconTertiary(context),
-                          size: 20,
-                        ),
-                        onTap: () {
-                          Navigator.of(context).push(
+                        ).rancountHelpSubtitle,
+                        onTap: () async {
+                          await Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => const AnnualReportPage(),
+                              builder: (_) => const RanCountHelpPage(),
                             ),
                           );
                         },
                       ),
-                      BeeTokens.cardDivider(context),
-                      // 分享海报
-                      AppListTile(
-                        leading: Icons.ios_share_rounded,
-                        title: AppLocalizations.of(context).mineShareApp,
-                        subtitle: AppLocalizations.of(
-                          context,
-                        ).mineShareWithFriends,
-                        trailing: Icon(
-                          Icons.chevron_right,
-                          color: BeeTokens.iconTertiary(context),
-                          size: 20,
-                        ),
-                        onTap: () {
-                          // 打开海报轮播预览对话框（支持年度、月度、总览3种海报）
-                          SharePosterService.showPosterCarouselPreview(context);
-                        },
-                      ),
-                      BeeTokens.cardDivider(context),
-                      // 复制推广文案
-                      AppListTile(
-                        leading: Icons.content_copy_rounded,
-                        title: AppLocalizations.of(context).mineCopyPromoText,
-                        subtitle: AppLocalizations.of(
-                          context,
-                        ).mineCopyPromoSubtitle,
-                        onTap: () async {
-                          final l10n = AppLocalizations.of(context);
-                          await Clipboard.setData(
-                            ClipboardData(text: l10n.shareGuidanceCopyText),
-                          );
-                          if (context.mounted) {
-                            showToast(context, l10n.shareGuidanceCopied);
-                          }
-                        },
-                      ),
-                      // 只在iOS上显示评分入口（Android还未上架）
-                      if (Platform.isIOS) ...[
-                        BeeTokens.cardDivider(context),
-                        AppListTile(
-                          leading: Icons.star_border_rounded,
-                          title: AppLocalizations.of(context).mineRateApp,
-                          subtitle: AppLocalizations.of(
-                            context,
-                          ).mineRateAppSubtitle,
-                          onTap: () => _rateApp(context),
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -696,109 +533,6 @@ class _StatCell extends ConsumerWidget {
         ),
       ],
     );
-  }
-}
-
-/// 尝试使用多种方式打开URL，提供更好的兼容性
-Future<bool> _tryOpenUrl(Uri url) async {
-  try {
-    // 方式1: 默认外部应用打开
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-      return true;
-    }
-
-    // 方式2: 浏览器内打开
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalNonBrowserApplication);
-      return true;
-    }
-
-    // 方式3: 平台默认方式
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.platformDefault);
-      return true;
-    }
-
-    logger.error('MinePage', '无法打开URL: $url');
-    return false;
-  } catch (e) {
-    logger.error('MinePage', '打开URL失败: $url', e);
-    return false;
-  }
-}
-
-/// 显示 GitHub Star 引导弹窗
-void _showGitHubStarGuide(BuildContext context) {
-  final l10n = AppLocalizations.of(context);
-  final screenHeight = MediaQuery.of(context).size.height;
-
-  showDialog(
-    context: context,
-    builder: (context) => BeeAlertDialog(
-      title: Text(l10n.githubStarGuideTitle),
-      content: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: screenHeight * 0.5),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n.githubStarGuideContent,
-                style: TextStyle(color: Colors.grey[600], fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-              // 引导图片
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  'assets/images/github_star_guide.png',
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        FilledButton(
-          onPressed: () {
-            Navigator.pop(context);
-            _tryOpenUrl(Uri.parse('https://github.com/TNT-Likely/BeeCount'));
-          },
-          child: Text(l10n.githubStarGuideButton),
-        ),
-      ],
-    ),
-  );
-}
-
-/// 请求应用评分
-///
-/// iOS系统对原生评分弹窗有限制：
-/// 1. 每365天最多弹出3次
-/// 2. 模拟器上不显示
-/// 3. 用户可在系统设置中禁用
-///
-/// 因此直接打开App Store评分页面更可靠
-Future<void> _rateApp(BuildContext context) async {
-  try {
-    final InAppReview inAppReview = InAppReview.instance;
-
-    // 直接打开应用商店评分页面（更可靠，不受系统限制）
-    if (Platform.isIOS) {
-      await inAppReview.openStoreListing(
-        appStoreId: '6754611670', // BeeCount的App Store ID
-      );
-      logger.info('MinePage', '已打开App Store评分页面');
-    } else {
-      // Android会自动打开Google Play（如果已上架）
-      await inAppReview.openStoreListing();
-      logger.info('MinePage', '已打开Google Play评分页面');
-    }
-  } catch (e) {
-    logger.error('MinePage', '打开评分失败', e);
-    // 失败时不显示错误提示，静默失败
   }
 }
 

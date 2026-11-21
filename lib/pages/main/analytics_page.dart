@@ -18,6 +18,7 @@ import '../../services/export/share_poster_service.dart';
 import '../../data/db.dart' as db;
 import '../../utils/month_range.dart';
 import '../../utils/analytics_average.dart';
+import '../report/annual_report_page.dart';
 
 class AnalyticsPage extends ConsumerStatefulWidget {
   const AnalyticsPage({super.key});
@@ -657,23 +658,38 @@ class _AnalyticsPageState extends ConsumerState<AnalyticsPage> {
             padding: EdgeInsets.zero,
             bottom: Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              child: CapsuleSwitcher<String>(
-                selectedValue: _scope,
-                options: [
-                  CapsuleOption(
-                    value: 'month',
-                    label: AppLocalizations.of(context).analyticsMonth,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: CapsuleSwitcher<String>(
+                      selectedValue: _scope,
+                      options: [
+                        CapsuleOption(
+                          value: 'month',
+                          label: AppLocalizations.of(context).analyticsMonth,
+                        ),
+                        CapsuleOption(
+                          value: 'year',
+                          label: AppLocalizations.of(context).analyticsYear,
+                        ),
+                        CapsuleOption(
+                          value: 'all',
+                          label: AppLocalizations.of(context).analyticsAll,
+                        ),
+                      ],
+                      onChanged: (value) => setState(() => _scope = value),
+                    ),
                   ),
-                  CapsuleOption(
-                    value: 'year',
-                    label: AppLocalizations.of(context).analyticsYear,
-                  ),
-                  CapsuleOption(
-                    value: 'all',
-                    label: AppLocalizations.of(context).analyticsAll,
+                  IconButton(
+                    icon: const Icon(Icons.auto_graph_rounded),
+                    tooltip: AppLocalizations.of(context).annualReportTitle,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AnnualReportPage(),
+                      ),
+                    ),
                   ),
                 ],
-                onChanged: (value) => setState(() => _scope = value),
               ),
             ),
           ),

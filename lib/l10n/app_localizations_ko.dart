@@ -3559,13 +3559,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudCustomS3Subtitle => 'AWS S3 / Cloudflare R2 / MinIO';
 
   @override
-  String get cloudBeeCountCloudTitle => 'BeeCount 클라우드';
+  String get cloudBeeCountCloudTitle => '자체 호스팅 클라우드';
 
   @override
   String get cloudBeeCountCloudSubtitle => '셀프 호스팅 · 증분 동기화 · 다중 기기';
 
   @override
-  String get cloudConfigureBeeCountCloudTitle => 'BeeCount 클라우드 설정';
+  String get cloudConfigureBeeCountCloudTitle => '자체 호스팅 클라우드 설정';
 
   @override
   String get cloudBeeCountCloudUrlLabel => '서버 URL';
@@ -4384,17 +4384,16 @@ class AppLocalizationsKo extends AppLocalizations {
       '한 번에 가져오기를 사용할 수 없다면 아래 단계를 따라 직접 단축어를 만드세요.';
 
   @override
-  String get aiSettingsTitle => 'AI 어시스턴트';
+  String get aiSettingsTitle => 'AI 설정';
 
   @override
-  String get aiSettingsSubtitle => 'AI 모델과 인식 전략을 설정합니다';
+  String get aiSettingsSubtitle => '이미지, 대사, 음성 및 AI 도우미 모델 설정';
 
   @override
   String get aiEnableTitle => 'AI 어시스턴트 활성화';
 
   @override
-  String get aiEnableSubtitle =>
-      'AI 비전으로 영수증 스크린샷을 인식해 금액, 가맹점, 시간을 추출하고 자연어 대화를 지원합니다';
+  String get aiEnableSubtitle => 'AI 도우미 및 음성 기록 활성화';
 
   @override
   String get aiEnableToastOn => 'AI 어시스턴트가 활성화되었습니다';
@@ -8228,4 +8227,115 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get appearanceGlassSimplifiedDescription => '부드러운 투명 효과로 렌더링 부하를 줄입니다';
+
+  @override
+  String get billingGuideTitle => '거래 기록 방법';
+
+  @override
+  String get billingGuideSubtitle => '이미지, 음성 및 바로가기';
+
+  @override
+  String get billingGuideScreenshotTitle => '스크린샷 기록';
+
+  @override
+  String get billingGuideScreenshotSettings => '스크린샷 타일 및 초안';
+
+  @override
+  String get billingGuideScreenshotSettingsDesc => '빠른 설정 타일 및 저장된 초안';
+
+  @override
+  String get billingGuideScreenshotAndroid =>
+      'AI 설정 → 스크린샷 및 대사에서 비전 API 주소, 모델과 키를 입력하세요. 설정은 이 기기에만 저장됩니다. 빠른 설정에 스크린샷 기록 타일을 추가하고 결제 화면에서 눌러 일회성 화면 캡처를 허용하세요. 인식 후 각 초안을 확인하고 저장하세요.';
+
+  @override
+  String get billingGuideImagesTitle => '갤러리 및 카메라';
+
+  @override
+  String get billingGuideImagesAndroid =>
+      '홈 화면의 + 버튼을 길게 눌러 갤러리 또는 카메라를 선택하세요. AI 설정 → 스크린샷 및 대사에 설정된 API로 이미지를 인식합니다. 각 초안의 금액, 계좌와 시간을 확인하고 저장하세요. 미완성 초안은 스크린샷 기록에서 이어서 작성할 수 있습니다.';
+
+  @override
+  String get billingGuideImagesIos =>
+      'AI 설정에서 이미지 인식 모델을 설정하세요. 홈 화면의 + 버튼을 길게 눌러 갤러리 또는 카메라를 선택하세요. 인식 후 거래가 자동 생성되며 거래 상세에서 확인하고 수정할 수 있습니다. 원본 이미지 보관 여부는 첨부파일 자동 추가 설정으로 정합니다.';
+
+  @override
+  String get billingGuideShareAndroid =>
+      '갤러리나 결제 앱에서 청구서 이미지를 RanCount로 공유하세요. AI 설정 → 스크린샷 및 대사에 설정된 API를 사용하여 초안을 만듭니다. 확인하고 승인한 후에만 거래가 저장됩니다.';
+
+  @override
+  String get billingGuideVoice =>
+      'AI 설정에서 AI 도우미를 켜고 음성 및 텍스트 모델을 설정하세요. 홈 화면의 + 버튼을 길게 눌러 음성 기록을 선택하세요. 인식 후 거래가 자동 생성되며 거래 상세에서 확인하고 수정할 수 있습니다. 녹음 시작 방식과 일시 정지 시간은 스마트 기록에서 조절하세요.';
+
+  @override
+  String get rancountHelpSubtitle => '기록 방법, AI 설정 및 자체 호스팅 동기화';
+
+  @override
+  String get rancountSelfHostGuide => '자체 호스팅 및 구성';
+
+  @override
+  String get rancountSelfHostGuideDesc => 'RanCount 동기화, 비전 API 및 기기 설정';
+
+  @override
+  String get aboutSourceCode => 'RanCount 소스 코드';
+
+  @override
+  String get aboutSourceChanges => '소스 변경 내역';
+
+  @override
+  String get aboutUpstreamTitle => '원본 프로젝트: BeeCount';
+
+  @override
+  String get aboutUpstreamAttribution =>
+      'sunxiao(TNT-Likely)의 BeeCount 3.8.1 기반.\nCopyright © 2024–2026 sunxiao.';
+
+  @override
+  String get aboutProjectLicense => '프로젝트 라이선스';
+
+  @override
+  String get aboutDependencyLicenses => '타사 라이선스';
+
+  @override
+  String get displayDiagnosticsTitle => '디스플레이 진단';
+
+  @override
+  String get settingsOpenLinkFailed => '링크를 열 수 없습니다. 브라우저 설정을 확인하고 다시 시도하세요.';
+
+  @override
+  String get imageVisionSettingsTitle => '스크린샷 및 대사';
+
+  @override
+  String get imageVisionSettingsDescription =>
+      '스크린샷, 갤러리, 카메라, 공유 이미지 인식과 AI 대사에 사용됩니다. 이미지와 텍스트 분석을 지원하는 모델을 선택하세요.';
+
+  @override
+  String get imageVisionBaseUrl => 'OpenAI 호환 API 기본 주소';
+
+  @override
+  String get imageVisionKeepKey => '저장됨. 기존 키를 유지하려면 비워 두세요';
+
+  @override
+  String get imageVisionLocalPrivacy =>
+      '주소, 모델과 키는 이 기기에만 저장되며 장부와 동기화되지 않습니다. 이미지와 대사에 필요한 데이터는 입력한 주소로 직접 전송됩니다.';
+
+  @override
+  String get imageVisionConfigInvalid => '유효한 HTTP(S) API 주소, 비전 모델과 키를 입력하세요';
+
+  @override
+  String get imageVisionConfigSaved => 'API 설정이 이 기기에 저장되었습니다';
+
+  @override
+  String get imageVisionConfigLoadFailed => '기기의 설정을 읽을 수 없습니다. 다시 시도하세요.';
+
+  @override
+  String get imageVisionConfigSaveFailed =>
+      '보안 저장소를 사용할 수 없습니다. 설정이 완전히 저장되지 않았습니다. 다시 시도하세요.';
+
+  @override
+  String get aiAssistantVoiceSettingsTitle => 'AI 도우미 및 음성';
+
+  @override
+  String get cloudOtherMethods => '다른 동기화 방법';
+
+  @override
+  String get aiVoicePromptDescription => '음성 기록의 인식 프롬프트';
 }

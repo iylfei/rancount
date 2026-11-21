@@ -10,7 +10,7 @@ class ReconciliationAi {
 
   Future<AIServiceProviderConfig> _config() async {
     final c = await const ImageVisionConfigStore().load();
-    if (!c.isComplete) throw StateError('请先在截图记账设置中配置 AI 服务');
+    if (!c.isComplete) throw StateError('请先在 AI 设置的「截图与对账」中配置模型');
     return AIServiceProviderConfig(
       id: 'reconciliation',
       name: '对账 AI',

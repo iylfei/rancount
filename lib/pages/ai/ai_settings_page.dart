@@ -1,9 +1,12 @@
+import 'dart:io' show Platform;
+
 import '../../styles/liquid_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../widgets/ui/ui.dart';
 import '../../widgets/biz/section_card.dart';
+import '../../widgets/biz/app_list_tile.dart';
 import '../../styles/tokens.dart';
 import '../../utils/ui_scale_extensions.dart';
 import '../../providers/theme_providers.dart';
@@ -15,6 +18,7 @@ import '../../ai/privacy/ai_privacy_consent.dart';
 import '../../widgets/ai/ai_privacy_consent_dialog.dart';
 import 'ai_prompt_edit_page.dart';
 import 'ai_provider_manage_page.dart';
+import 'image_vision_settings_section.dart';
 
 /// AI智能识别设置页面
 class AISettingsPage extends ConsumerStatefulWidget {
@@ -25,8 +29,6 @@ class AISettingsPage extends ConsumerStatefulWidget {
 }
 
 class _AISettingsPageState extends ConsumerState<AISettingsPage> {
-  bool _advancedExpanded = false;
-
   @override
   void initState() {
     super.initState();
@@ -66,7 +68,18 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
                 vertical: 8.0.scaled(context, ref),
               ),
               children: [
-                // 1. 总开关
+                if (Platform.isAndroid) ...[
+                  const ImageVisionSettingsSection(),
+                  SizedBox(height: 20.0.scaled(context, ref)),
+                ],
+                if (Platform.isAndroid)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, bottom: 12),
+                    child: Text(
+                      l10n.aiAssistantVoiceSettingsTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
                 _buildEnableSection(config),
                 SizedBox(height: 8.0.scaled(context, ref)),
 
@@ -78,8 +91,7 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
                 _buildCapabilityBindingSection(),
                 SizedBox(height: 8.0.scaled(context, ref)),
 
-                // 4. 高级设置（可折叠）
-                _buildAdvancedSettingsSection(config),
+                _buildPromptEntry(),
 
                 SizedBox(height: 32.0.scaled(context, ref)),
               ],
@@ -90,7 +102,7 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
     );
   }
 
-  /// 1. 总开关区域
+  /// AI 助手和语音记账开关
   Widget _buildEnableSection(AIConfigData config) {
     final l10n = AppLocalizations.of(context);
     final notifier = ref.read(aiConfigProvider.notifier);
@@ -244,15 +256,17 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
           providers: providers,
           capabilityType: AICapabilityType.text,
         ),
-        BeeTokens.cardDivider(context),
-        _buildCapabilityTile(
-          icon: Icons.image_outlined,
-          title: l10n.aiCapabilityImageUnderstand,
-          subtitle: l10n.aiCapabilityImageUnderstandDesc,
-          currentProviderId: binding.visionProviderId,
-          providers: providers,
-          capabilityType: AICapabilityType.vision,
-        ),
+        if (!Platform.isAndroid) ...[
+          BeeTokens.cardDivider(context),
+          _buildCapabilityTile(
+            icon: Icons.image_outlined,
+            title: l10n.aiCapabilityImageUnderstand,
+            subtitle: l10n.aiCapabilityImageUnderstandDesc,
+            currentProviderId: binding.visionProviderId,
+            providers: providers,
+            capabilityType: AICapabilityType.vision,
+          ),
+        ],
         BeeTokens.cardDivider(context),
         _buildCapabilityTile(
           icon: Icons.mic_outlined,
@@ -398,178 +412,19 @@ class _AISettingsPageState extends ConsumerState<AISettingsPage> {
     );
   }
 
-  /// 高级设置（可折叠）
-  Widget _buildAdvancedSettingsSection(AIConfigData config) {
+  Widget _buildPromptEntry() {
     final l10n = AppLocalizations.of(context);
-    final primaryColor = (LiquidTheme.isActive(context)
-        ? Theme.of(context).colorScheme.primary
-        : ref.watch(primaryColorProvider));
-    final notifier = ref.read(aiConfigProvider.notifier);
-
     return SectionCard(
       margin: EdgeInsets.zero,
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: _advancedExpanded,
-          onExpansionChanged: (expanded) {
-            setState(() => _advancedExpanded = expanded);
-          },
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-          childrenPadding: EdgeInsets.zero,
-          leading: Icon(Icons.tune, size: 20, color: primaryColor),
-          title: Text(
-            l10n.aiPromptAdvancedSettings,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          subtitle: Text(
-            l10n.aiAdvancedSettingsDesc,
-            style: TextStyle(
-              fontSize: 12,
-              color: BeeTokens.textTertiary(context),
-            ),
-          ),
-          children: [
-            BeeTokens.cardDivider(context),
-
-            // === 执行策略 ===
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.route_outlined,
-                    size: 18,
-                    color: BeeTokens.textSecondary(context),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.aiStrategyTitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: BeeTokens.textSecondary(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            RadioListTile<AIStrategy>(
-              value: AIStrategy.cloudFirst,
-              groupValue: config.strategy,
-              onChanged: (value) async {
-                if (value != null) {
-                  await notifier.setStrategy(value);
-                  if (mounted) {
-                    showToast(
-                      context,
-                      l10n.aiStrategySwitched(l10n.aiStrategyCloudFirst),
-                    );
-                  }
-                }
-              },
-              title: Text(
-                l10n.aiStrategyCloudFirst,
-                style: const TextStyle(fontSize: 14),
-              ),
-              subtitle: Text(
-                l10n.aiStrategyCloudFirstDesc,
-                style: const TextStyle(fontSize: 12),
-              ),
-              activeColor: primaryColor,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              dense: true,
-            ),
-            RadioListTile<AIStrategy>(
-              value: AIStrategy.cloudOnly,
-              groupValue: config.strategy,
-              onChanged: (value) async {
-                if (value != null) {
-                  await notifier.setStrategy(value);
-                  if (mounted) {
-                    showToast(
-                      context,
-                      l10n.aiStrategySwitched(l10n.aiStrategyCloudOnly),
-                    );
-                  }
-                }
-              },
-              title: Text(
-                l10n.aiStrategyCloudOnly,
-                style: const TextStyle(fontSize: 14),
-              ),
-              subtitle: Text(
-                l10n.aiStrategyCloudOnlyDesc,
-                style: const TextStyle(fontSize: 12),
-              ),
-              activeColor: primaryColor,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              dense: true,
-            ),
-            RadioListTile<AIStrategy>(
-              value: AIStrategy.localFirst,
-              groupValue: config.strategy,
-              onChanged: null,
-              title: Text(
-                l10n.aiStrategyLocalFirst,
-                style: const TextStyle(fontSize: 14),
-              ),
-              subtitle: Text(
-                l10n.aiStrategyUnavailable,
-                style: const TextStyle(fontSize: 12),
-              ),
-              activeColor: primaryColor,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              dense: true,
-            ),
-            RadioListTile<AIStrategy>(
-              value: AIStrategy.localOnly,
-              groupValue: config.strategy,
-              onChanged: null,
-              title: Text(
-                l10n.aiStrategyLocalOnly,
-                style: const TextStyle(fontSize: 14),
-              ),
-              subtitle: Text(
-                l10n.aiStrategyUnavailable,
-                style: const TextStyle(fontSize: 12),
-              ),
-              activeColor: primaryColor,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              dense: true,
-            ),
-
-            BeeTokens.cardDivider(context),
-
-            // 历史「本地模型(训练中)」占位 entry 已删除(2026-05-24)。本地 AI 视觉
-            // 未来走 Apple Foundation Models / Gemini Nano(平台原生 SDK,非 tflite),
-            // 详见 .docs/on-device-vlm/README.md。
-
-            // === 自定义提示词 ===
-            ListTile(
-              dense: true,
-              leading: Icon(Icons.edit_note, size: 20, color: primaryColor),
-              title: Text(
-                l10n.aiPromptEditEntry,
-                style: const TextStyle(fontSize: 14),
-              ),
-              subtitle: Text(
-                l10n.aiPromptEditEntryDesc,
-                style: const TextStyle(fontSize: 12),
-              ),
-              trailing: const Icon(Icons.chevron_right, size: 20),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AIPromptEditPage()),
-                );
-              },
-            ),
-
-            const SizedBox(height: 8),
-          ],
-        ),
+      child: AppListTile(
+        leading: Icons.edit_note,
+        title: l10n.aiPromptEditEntry,
+        subtitle: Platform.isAndroid
+            ? l10n.aiVoicePromptDescription
+            : l10n.aiPromptEditEntryDesc,
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const AIPromptEditPage())),
       ),
     );
   }

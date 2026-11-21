@@ -144,8 +144,8 @@ class _ImageDraftPageState extends ConsumerState<ImageDraftPage> {
       if (mounted) {
         setState(
           () => _error = _label(
-            '识别失败。请到截图记账设置检查视觉接口后重试',
-            'Recognition failed. Check the vision API in Screenshot billing settings.',
+            '识别失败。请到 AI 设置的「截图与对账」检查视觉接口后重试',
+            'Recognition failed. Check Screenshot and reconciliation in AI settings.',
           ),
         );
       }

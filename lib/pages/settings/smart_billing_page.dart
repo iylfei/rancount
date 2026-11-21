@@ -9,120 +9,12 @@ import '../../providers/smart_billing_providers.dart';
 import '../../providers/voice_billing_providers.dart';
 import '../ai/ai_settings_page.dart';
 import '../automation/auto_billing_settings_page.dart';
-import 'shortcuts_guide_page.dart';
+import 'billing_guide_page.dart';
 import '../../l10n/app_localizations.dart';
 
 /// 智能记账二级页面
 class SmartBillingPage extends ConsumerWidget {
   const SmartBillingPage({super.key});
-
-  /// 显示功能引导弹窗
-  void _showFeatureGuideDialog(
-    BuildContext context,
-    String title,
-    String description,
-    String aiRequirement,
-    bool requiresAI, {
-    String? actionHint,
-  }) {
-    final l10n = AppLocalizations.of(context);
-    final hint = actionHint ?? l10n.smartBillingGuideHint;
-
-    showDialog(
-      context: context,
-      builder: (context) => BeeAlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.info_outline,
-                color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 8),
-            Text(title),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              description,
-              style: const TextStyle(fontSize: 15),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: requiresAI
-                    ? Colors.orange.withValues(alpha: 0.1)
-                    : Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: requiresAI ? Colors.orange : Colors.blue,
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    requiresAI ? Icons.warning_amber : Icons.psychology,
-                    color: requiresAI ? Colors.orange : Colors.blue,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      aiRequirement,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color:
-                            requiresAI ? Colors.orange[900] : Colors.blue[900],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.touch_app,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      hint,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.commonKnow),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// 语音记账设置区：触发方式 + 自动检测下的静音时长滑块
   Widget _buildVoiceBillingSection(BuildContext context, WidgetRef ref) {
@@ -207,7 +99,6 @@ class SmartBillingPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final isChinese = Localizations.localeOf(context).languageCode == 'zh';
 
     return Scaffold(
       backgroundColor: BeeTokens.scaffoldBackground(context),
@@ -245,132 +136,38 @@ class SmartBillingPage extends ConsumerWidget {
 
                 const SizedBox(height: 16),
 
-                // 快速记账功能引导
                 SectionCard(
                   margin: EdgeInsets.zero,
                   child: Column(
                     children: [
-                      // 图片记账
                       AppListTile(
-                        leading: Icons.photo_library_outlined,
-                        title: l10n.smartBillingImageBilling,
-                        subtitle: l10n.smartBillingImageBillingDesc,
-                        onTap: () {
-                          _showFeatureGuideDialog(
-                            context,
-                            l10n.smartBillingImageBilling,
-                            l10n.smartBillingImageBillingGuide,
-                            l10n.smartBillingVisionAIRequired,
-                            true,
-                          );
-                        },
+                        leading: Icons.auto_fix_high,
+                        title: Platform.isAndroid
+                            ? l10n.billingGuideScreenshotTitle
+                            : l10n.autoScreenshotBillingIosTitle,
+                        subtitle: Platform.isAndroid
+                            ? l10n.billingGuideScreenshotSettingsDesc
+                            : l10n.autoScreenshotBillingIosDesc,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AutoBillingSettingsPage(),
+                          ),
+                        ),
                       ),
                       BeeTokens.cardDivider(context),
-
-                      // 拍照记账
                       AppListTile(
-                        leading: Icons.camera_alt_outlined,
-                        title: l10n.smartBillingCameraBilling,
-                        subtitle: l10n.smartBillingCameraBillingDesc,
-                        onTap: () {
-                          _showFeatureGuideDialog(
-                            context,
-                            l10n.smartBillingCameraBilling,
-                            l10n.smartBillingCameraBillingGuide,
-                            l10n.smartBillingVisionAIRequired,
-                            true,
-                          );
-                        },
-                      ),
-                      BeeTokens.cardDivider(context),
-
-                      // 语音记账
-                      AppListTile(
-                        leading: Icons.mic_outlined,
-                        title: l10n.smartBillingVoiceBilling,
-                        subtitle: l10n.smartBillingVoiceBillingDesc,
-                        onTap: () {
-                          _showFeatureGuideDialog(
-                            context,
-                            l10n.smartBillingVoiceBilling,
-                            l10n.smartBillingVoiceBillingGuide,
-                            l10n.smartBillingAIRequired,
-                            true,
-                          );
-                        },
+                        leading: Icons.menu_book_outlined,
+                        title: l10n.billingGuideTitle,
+                        subtitle: l10n.billingGuideSubtitle,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const BillingGuidePage(),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 16),
-
-                // 图片和截图入口
-                SectionCard(
-                  margin: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      // Android 分享图片先进入草稿确认。
-                      if (Platform.isAndroid) ...[
-                        AppListTile(
-                          leading: Icons.share_outlined,
-                          title: l10n.shareBilling,
-                          subtitle: isChinese
-                              ? '分享图片后核对草稿，再确认入账'
-                              : 'Review a draft before saving a shared image',
-                          onTap: () {
-                            _showFeatureGuideDialog(
-                              context,
-                              l10n.shareBilling,
-                              isChinese
-                                  ? '从支付应用分享图片，识别完成后逐笔核对并确认保存。'
-                                  : 'Share a payment image, review each draft, then confirm.',
-                              l10n.smartBillingVisionAIRequired,
-                              true,
-                              actionHint: isChinese
-                                  ? '分享不会直接入账'
-                                  : 'Sharing does not save a transaction',
-                            );
-                          },
-                        ),
-                        BeeTokens.cardDivider(context),
-                      ],
-                      // Android 快捷设置主动截图；iOS 保持原有快捷指令入口。
-                      AppListTile(
-                          leading: Icons.auto_fix_high,
-                          title: Platform.isAndroid
-                              ? (isChinese ? '截图记账' : 'Screenshot billing')
-                              : l10n.autoScreenshotBillingIosTitle,
-                          subtitle: Platform.isAndroid
-                              ? (isChinese
-                                  ? '从快捷设置截屏，编辑草稿后确认入账'
-                                  : 'Capture from Quick Settings, review, then save')
-                              : l10n.autoScreenshotBillingIosDesc,
-                          onTap: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const AutoBillingSettingsPage()),
-                            );
-                          },
-                        ),
-                      BeeTokens.cardDivider(context),
-                      // 快捷指令
-                      AppListTile(
-                        leading: Icons.app_shortcut,
-                        title: l10n.shortcutsGuide,
-                        subtitle: l10n.shortcutsGuideDesc,
-                        onTap: () async {
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (_) => const ShortcutsGuidePage()),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
                 const SizedBox(height: 16),
 
                 // 智能记账通用设置
@@ -394,24 +191,33 @@ class SmartBillingPage extends ConsumerWidget {
                           },
                         ),
                       ),
-                      BeeTokens.cardDivider(context),
-                      // 自动添加附件
-                      AppListTile(
-                        leading: Icons.attachment_outlined,
-                        title: l10n.smartBillingAutoAttachment,
-                        subtitle: l10n.smartBillingAutoAttachmentDesc,
-                        trailing: Switch.adaptive(
-                          value: ref.watch(smartBillingAutoAttachmentProvider),
-                          activeColor: Colors.white,
-                          activeTrackColor: Theme.of(context).colorScheme.primary,
-                          onChanged: (value) {
-                            ref
-                                .read(
-                                    smartBillingAutoAttachmentProvider.notifier)
-                                .state = value;
-                          },
+                      if (!Platform.isAndroid) ...[
+                        BeeTokens.cardDivider(context),
+                        // 自动添加附件
+                        AppListTile(
+                          leading: Icons.attachment_outlined,
+                          title: l10n.smartBillingAutoAttachment,
+                          subtitle: l10n.smartBillingAutoAttachmentDesc,
+                          trailing: Switch.adaptive(
+                            value: ref.watch(
+                              smartBillingAutoAttachmentProvider,
+                            ),
+                            activeColor: Colors.white,
+                            activeTrackColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            onChanged: (value) {
+                              ref
+                                      .read(
+                                        smartBillingAutoAttachmentProvider
+                                            .notifier,
+                                      )
+                                      .state =
+                                  value;
+                            },
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),

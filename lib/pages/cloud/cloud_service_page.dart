@@ -12,14 +12,15 @@ import '../../providers/sync_providers.dart';
 import '../../providers/database_providers.dart';
 import '../../services/system/logger_service.dart';
 import '../../widgets/ui/ui.dart';
-import '../../widgets/ui/capsule_switcher.dart';
 import '../../widgets/biz/section_card.dart';
 import '../../styles/tokens.dart';
 import '../../l10n/app_localizations.dart';
 
 // GitHub配置教程链接
-const _kSupabaseGuideUrl = 'https://github.com/TNT-Likely/BeeCount/wiki/Supabase-%E4%BA%91%E5%90%8C%E6%AD%A5%E9%85%8D%E7%BD%AE';
-const _kWebdavGuideUrl = 'https://github.com/TNT-Likely/BeeCount/wiki/WebDAV-%E4%BA%91%E5%90%8C%E6%AD%A5%E9%85%8D%E7%BD%AE';
+const _kSupabaseGuideUrl =
+    'https://github.com/TNT-Likely/BeeCount/wiki/Supabase-%E4%BA%91%E5%90%8C%E6%AD%A5%E9%85%8D%E7%BD%AE';
+const _kWebdavGuideUrl =
+    'https://github.com/TNT-Likely/BeeCount/wiki/WebDAV-%E4%BA%91%E5%90%8C%E6%AD%A5%E9%85%8D%E7%BD%AE';
 
 class CloudServicePage extends ConsumerStatefulWidget {
   const CloudServicePage({super.key});
@@ -31,24 +32,13 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
   bool _testingConnection = false;
   final Map<String, bool> _connectionTestResults = {};
   bool _hasAutoTested = false;
-  String _selectedTab = 'offline'; // 'offline' | 'backup' | 'cloud'
 
   @override
   void initState() {
     super.initState();
 
-    // 根据当前激活的配置决定初始 Tab
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final activeAsync = ref.read(activeCloudConfigProvider);
-      if (activeAsync.hasValue) {
-        final active = activeAsync.value!;
-        if (active.type == CloudBackendType.beecountCloud) {
-          setState(() => _selectedTab = 'cloud');
-        } else if (active.type != CloudBackendType.local) {
-          setState(() => _selectedTab = 'backup');
-        }
-      }
-      _autoTestActiveConnection();
+      if (mounted) _autoTestActiveConnection();
     });
   }
 
@@ -102,11 +92,17 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.wifi_find),
-                        onPressed: _testingConnection ? null : () => _testConnection(active),
-                        tooltip: AppLocalizations.of(context).cloudTestConnection,
+                        onPressed: _testingConnection
+                            ? null
+                            : () => _testConnection(active),
+                        tooltip: AppLocalizations.of(
+                          context,
+                        ).cloudTestConnection,
                       ),
                     ]
                   : null,
@@ -118,170 +114,216 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
                   : null,
             ),
           ),
-          // 胶囊切换器
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: CapsuleSwitcher<String>(
-              selectedValue: _selectedTab,
-              options: [
-                CapsuleOption(value: 'offline', label: AppLocalizations.of(context).cloudTabOffline),
-                CapsuleOption(value: 'backup', label: AppLocalizations.of(context).cloudTabBackup),
-                CapsuleOption(value: 'cloud', label: AppLocalizations.of(context).cloudTabCloudSync),
-              ],
-              onChanged: (value) => setState(() => _selectedTab = value),
-            ),
-          ),
           Expanded(
             child: activeAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('${AppLocalizations.of(context).commonError}: $e')),
+              error: (e, _) => Center(
+                child: Text('${AppLocalizations.of(context).commonError}: $e'),
+              ),
               data: (active) {
-                if (_selectedTab == 'offline') {
-                  // ===== 离线模式 =====
-                  return ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _buildServiceCard(
+                final usesOtherService =
+                    active.type != CloudBackendType.local &&
+                    active.type != CloudBackendType.beecountCloud;
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _buildServiceCard(
+                      context: context,
+                      icon: Icons.phone_android,
+                      iconColor: BeeTokens.brandLocal,
+                      title: AppLocalizations.of(
+                        context,
+                      ).cloudLocalStorageTitle,
+                      subtitle: AppLocalizations.of(
+                        context,
+                      ).cloudLocalStorageSubtitle,
+                      isSelected: active.type == CloudBackendType.local,
+                      isDisabled: false,
+                      onTap: () => _switchService(CloudBackendType.local),
+                    ),
+                    const SizedBox(height: 12),
+                    beecountCloudAsync.when(
+                      loading: () => const SizedBox(
+                        height: 100,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (e, _) => const SizedBox.shrink(),
+                      data: (bcCfg) => _buildServiceCard(
                         context: context,
-                        icon: Icons.phone_android,
-                        iconColor: BeeTokens.brandLocal,
-                        title: AppLocalizations.of(context).cloudLocalStorageTitle,
-                        subtitle: AppLocalizations.of(context).cloudLocalStorageSubtitle,
-                        isSelected: active.type == CloudBackendType.local,
+                        icon: Icons.cloud_circle,
+                        iconColor: BeeTokens.brandCloud,
+                        title: AppLocalizations.of(
+                          context,
+                        ).cloudBeeCountCloudTitle,
+                        subtitle: bcCfg?.valid == true
+                            ? bcCfg!.obfuscatedUrl()
+                            : AppLocalizations.of(
+                                context,
+                              ).cloudBeeCountCloudSubtitle,
+                        isSelected:
+                            active.type == CloudBackendType.beecountCloud,
+                        isConfigured: bcCfg?.valid == true,
                         isDisabled: false,
-                        onTap: () => _switchService(CloudBackendType.local),
+                        onTap: () => bcCfg?.valid == true
+                            ? _switchService(CloudBackendType.beecountCloud)
+                            : _configureService(CloudBackendType.beecountCloud),
+                        onConfigure: bcCfg?.valid == true
+                            ? () => _configureService(
+                                CloudBackendType.beecountCloud,
+                              )
+                            : null,
+                        onShowGuide: _showBeeCountCloudHelpDialog,
                       ),
-                    ],
-                  );
-                } else if (_selectedTab == 'backup') {
-                  // ===== 备份同步 =====
-                  return ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      // 多设备同步警告
-                      if (active.type != CloudBackendType.local &&
-                          active.type != CloudBackendType.beecountCloud) ...[
-                        _buildMultiDeviceWarning(context),
-                        const SizedBox(height: 12),
-                      ],
-
-                      // iCloud (仅 iOS)
-                      if (!kIsWeb && Platform.isIOS) ...[
-                        _buildICloudCard(context, active, isDisabled: false),
-                        const SizedBox(height: 12),
-                      ],
-
-                      // WebDAV
-                      webdavAsync.when(
-                        loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
-                        error: (e, _) => const SizedBox.shrink(),
-                        data: (webdavCfg) => _buildServiceCard(
-                          context: context,
-                          icon: Icons.folder_shared,
-                          iconColor: BeeTokens.brandWebdav,
-                          title: AppLocalizations.of(context).cloudCustomWebdavTitle,
-                          subtitle: webdavCfg?.valid == true
-                              ? webdavCfg!.obfuscatedUrl()
-                              : AppLocalizations.of(context).cloudCustomWebdavSubtitle,
-                          isSelected: active.type == CloudBackendType.webdav,
-                          isConfigured: webdavCfg?.valid == true,
-                          isDisabled: false,
-                          onTap: () => webdavCfg?.valid == true
-                              ? _switchService(CloudBackendType.webdav)
-                              : _configureService(CloudBackendType.webdav),
-                          onConfigure: webdavCfg?.valid == true
-                              ? () => _configureService(CloudBackendType.webdav)
-                              : null,
-                          onShowGuide: _showWebdavHelpDialog,
+                    ),
+                    const SizedBox(height: 16),
+                    SectionCard(
+                      margin: EdgeInsets.zero,
+                      child: ExpansionTile(
+                        key: ValueKey('other-sync-${active.type.name}'),
+                        initiallyExpanded: usesOtherService,
+                        maintainState: true,
+                        leading: const Icon(Icons.more_horiz),
+                        title: Text(
+                          AppLocalizations.of(context).cloudOtherMethods,
                         ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // S3
-                      s3Async.when(
-                        loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
-                        error: (e, _) => const SizedBox.shrink(),
-                        data: (s3Cfg) => _buildServiceCard(
-                          context: context,
-                          icon: Icons.storage,
-                          iconColor: BeeTokens.brandS3,
-                          title: AppLocalizations.of(context).cloudCustomS3Title,
-                          subtitle: s3Cfg?.valid == true
-                              ? s3Cfg!.obfuscatedUrl()
-                              : AppLocalizations.of(context).cloudCustomS3Subtitle,
-                          isSelected: active.type == CloudBackendType.s3,
-                          isConfigured: s3Cfg?.valid == true,
-                          isDisabled: false,
-                          onTap: () => s3Cfg?.valid == true
-                              ? _switchService(CloudBackendType.s3)
-                              : _configureService(CloudBackendType.s3),
-                          onConfigure: s3Cfg?.valid == true
-                              ? () => _configureService(CloudBackendType.s3)
-                              : null,
-                          onShowGuide: _showS3HelpDialog,
+                        subtitle: Text(
+                          !kIsWeb && Platform.isIOS
+                              ? 'iCloud · WebDAV · S3 · Supabase'
+                              : 'WebDAV · S3 · Supabase',
                         ),
-                      ),
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: const EdgeInsets.only(top: 12),
+                        children: [
+                          // 多设备同步警告
+                          if (active.type != CloudBackendType.local &&
+                              active.type !=
+                                  CloudBackendType.beecountCloud) ...[
+                            _buildMultiDeviceWarning(context),
+                            const SizedBox(height: 12),
+                          ],
 
-                      const SizedBox(height: 12),
+                          // iCloud (仅 iOS)
+                          if (!kIsWeb && Platform.isIOS) ...[
+                            _buildICloudCard(
+                              context,
+                              active,
+                              isDisabled: false,
+                            ),
+                            const SizedBox(height: 12),
+                          ],
 
-                      // Supabase
-                      supabaseAsync.when(
-                        loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
-                        error: (e, _) => const SizedBox.shrink(),
-                        data: (supabaseCfg) => _buildServiceCard(
-                          context: context,
-                          icon: Icons.cloud,
-                          iconColor: BeeTokens.brandSupabase,
-                          title: AppLocalizations.of(context).cloudCustomSupabaseTitle,
-                          subtitle: supabaseCfg?.valid == true
-                              ? supabaseCfg!.obfuscatedUrl()
-                              : AppLocalizations.of(context).cloudCustomSupabaseSubtitle,
-                          isSelected: active.type == CloudBackendType.supabase,
-                          isConfigured: supabaseCfg?.valid == true,
-                          isDisabled: false,
-                          onTap: () => supabaseCfg?.valid == true
-                              ? _switchService(CloudBackendType.supabase)
-                              : _configureService(CloudBackendType.supabase),
-                          onConfigure: supabaseCfg?.valid == true
-                              ? () => _configureService(CloudBackendType.supabase)
-                              : null,
-                          onShowGuide: _showSupabaseHelpDialog,
-                        ),
+                          // WebDAV
+                          webdavAsync.when(
+                            loading: () => const SizedBox(
+                              height: 100,
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                            error: (e, _) => const SizedBox.shrink(),
+                            data: (webdavCfg) => _buildServiceCard(
+                              context: context,
+                              icon: Icons.folder_shared,
+                              iconColor: BeeTokens.brandWebdav,
+                              title: AppLocalizations.of(
+                                context,
+                              ).cloudCustomWebdavTitle,
+                              subtitle: webdavCfg?.valid == true
+                                  ? webdavCfg!.obfuscatedUrl()
+                                  : AppLocalizations.of(
+                                      context,
+                                    ).cloudCustomWebdavSubtitle,
+                              isSelected:
+                                  active.type == CloudBackendType.webdav,
+                              isConfigured: webdavCfg?.valid == true,
+                              isDisabled: false,
+                              onTap: () => webdavCfg?.valid == true
+                                  ? _switchService(CloudBackendType.webdav)
+                                  : _configureService(CloudBackendType.webdav),
+                              onConfigure: webdavCfg?.valid == true
+                                  ? () => _configureService(
+                                      CloudBackendType.webdav,
+                                    )
+                                  : null,
+                              onShowGuide: _showWebdavHelpDialog,
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // S3
+                          s3Async.when(
+                            loading: () => const SizedBox(
+                              height: 100,
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                            error: (e, _) => const SizedBox.shrink(),
+                            data: (s3Cfg) => _buildServiceCard(
+                              context: context,
+                              icon: Icons.storage,
+                              iconColor: BeeTokens.brandS3,
+                              title: AppLocalizations.of(
+                                context,
+                              ).cloudCustomS3Title,
+                              subtitle: s3Cfg?.valid == true
+                                  ? s3Cfg!.obfuscatedUrl()
+                                  : AppLocalizations.of(
+                                      context,
+                                    ).cloudCustomS3Subtitle,
+                              isSelected: active.type == CloudBackendType.s3,
+                              isConfigured: s3Cfg?.valid == true,
+                              isDisabled: false,
+                              onTap: () => s3Cfg?.valid == true
+                                  ? _switchService(CloudBackendType.s3)
+                                  : _configureService(CloudBackendType.s3),
+                              onConfigure: s3Cfg?.valid == true
+                                  ? () => _configureService(CloudBackendType.s3)
+                                  : null,
+                              onShowGuide: _showS3HelpDialog,
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // Supabase
+                          supabaseAsync.when(
+                            loading: () => const SizedBox(
+                              height: 100,
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                            error: (e, _) => const SizedBox.shrink(),
+                            data: (supabaseCfg) => _buildServiceCard(
+                              context: context,
+                              icon: Icons.cloud,
+                              iconColor: BeeTokens.brandSupabase,
+                              title: AppLocalizations.of(
+                                context,
+                              ).cloudCustomSupabaseTitle,
+                              subtitle: supabaseCfg?.valid == true
+                                  ? supabaseCfg!.obfuscatedUrl()
+                                  : AppLocalizations.of(
+                                      context,
+                                    ).cloudCustomSupabaseSubtitle,
+                              isSelected:
+                                  active.type == CloudBackendType.supabase,
+                              isConfigured: supabaseCfg?.valid == true,
+                              isDisabled: false,
+                              onTap: () => supabaseCfg?.valid == true
+                                  ? _switchService(CloudBackendType.supabase)
+                                  : _configureService(
+                                      CloudBackendType.supabase,
+                                    ),
+                              onConfigure: supabaseCfg?.valid == true
+                                  ? () => _configureService(
+                                      CloudBackendType.supabase,
+                                    )
+                                  : null,
+                              onShowGuide: _showSupabaseHelpDialog,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  );
-                } else {
-                  // ===== 云端协同 (BeeCount Cloud) =====
-                  return ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      beecountCloudAsync.when(
-                        loading: () => const SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
-                        error: (e, _) => const SizedBox.shrink(),
-                        data: (bcCfg) => _buildServiceCard(
-                          context: context,
-                          icon: Icons.cloud_circle,
-                          iconColor: BeeTokens.brandCloud,
-                          title: AppLocalizations.of(context).cloudBeeCountCloudTitle,
-                          subtitle: bcCfg?.valid == true
-                              ? bcCfg!.obfuscatedUrl()
-                              : AppLocalizations.of(context).cloudBeeCountCloudSubtitle,
-                          isSelected: active.type == CloudBackendType.beecountCloud,
-                          isConfigured: bcCfg?.valid == true,
-                          isDisabled: false,
-                          onTap: () => bcCfg?.valid == true
-                              ? _switchService(CloudBackendType.beecountCloud)
-                              : _configureService(CloudBackendType.beecountCloud),
-                          onConfigure: bcCfg?.valid == true
-                              ? () => _configureService(CloudBackendType.beecountCloud)
-                              : null,
-                          onShowGuide: _showBeeCountCloudHelpDialog,
-                        ),
-                      ),
-                    ],
-                  );
-                }
+                    ),
+                  ],
+                );
               },
             ),
           ),
@@ -1795,7 +1837,7 @@ class _CloudServicePageState extends ConsumerState<CloudServicePage> {
       case CloudBackendType.s3:
         return 'S3';
       case CloudBackendType.beecountCloud:
-        return 'BeeCount Cloud';
+        return AppLocalizations.of(context).cloudBeeCountCloudTitle;
     }
   }
 

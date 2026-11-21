@@ -208,32 +208,34 @@ class _StorageManagementPageState extends ConsumerState<StorageManagementPage> {
                       vertical: 8.0.scaled(context, ref),
                     ),
                     children: [
-                      // AI模型
-                      SectionCard(
-                        margin: EdgeInsets.zero,
-                        child: AppListTile(
-                          leading: Icons.psychology_outlined,
-                          title: l10n.storageAIModels,
-                          subtitle: _aiModelFiles.isEmpty
-                              ? l10n.storageNoData
-                              : '${_aiModelFiles.length} ${l10n.storageFiles}',
-                          trailing: Text(
-                            _formatSize(_aiModelsSize),
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: _aiModelsSize > 0
-                                  ? Theme.of(context).colorScheme.primary
-                                  : BeeTokens.textSecondary(context),
+                      // 只为升级遗留的本地模型保留清理入口。
+                      if (_aiModelFiles.isNotEmpty)
+                        SectionCard(
+                          margin: EdgeInsets.zero,
+                          child: AppListTile(
+                            leading: Icons.psychology_outlined,
+                            title: l10n.storageAIModels,
+                            subtitle: _aiModelFiles.isEmpty
+                                ? l10n.storageNoData
+                                : '${_aiModelFiles.length} ${l10n.storageFiles}',
+                            trailing: Text(
+                              _formatSize(_aiModelsSize),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: _aiModelsSize > 0
+                                    ? Theme.of(context).colorScheme.primary
+                                    : BeeTokens.textSecondary(context),
+                              ),
                             ),
+                            onTap: _aiModelsSize > 0 ? _clearAIModels : null,
                           ),
-                          onTap: _aiModelsSize > 0 ? _clearAIModels : null,
                         ),
-                      ),
 
                       // APK安装包(仅Android)
                       if (Platform.isAndroid) ...[
-                        SizedBox(height: 8.0.scaled(context, ref)),
+                        if (_aiModelFiles.isNotEmpty)
+                          SizedBox(height: 8.0.scaled(context, ref)),
                         SectionCard(
                           margin: EdgeInsets.zero,
                           child: AppListTile(
